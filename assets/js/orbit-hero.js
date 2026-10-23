@@ -99,9 +99,22 @@
         uniform vec4 uClick[4];
         uniform float uClickW;
 
+        uniform float uImgAspect;
+        uniform float uCardAspect;
+
         void main() {
-            vec2 uvL = vUv;
-            // Ondas de pulso no clique
+            vec2 baseUv = vUv;
+            if (uImgAspect > 0.05 && uCardAspect > 0.05) {
+                if (uImgAspect > uCardAspect) {
+                    float s = uCardAspect / uImgAspect;
+                    baseUv.x = (vUv.x - 0.5) * s + 0.5;
+                } else {
+                    float s = uImgAspect / uCardAspect;
+                    baseUv.y = (vUv.y - 0.5) * s + 0.5;
+                }
+            }
+
+            vec2 uvL = baseUv;
             for (int k = 0; k < 4; k++) {
                 if (uClick[k].w > 0.001) {
                     vec2 q = (vUv - uClick[k].xy) * uSize;
@@ -262,7 +275,18 @@
         const uFadeCenterLoc = gl.getUniformLocation(program, 'uFadeCenter');
         const uClickLoc = gl.getUniformLocation(program, 'uClick');
         const uClickWLoc = gl.getUniformLocation(program, 'uClickW');
+        const uImgAspectLoc = gl.getUniformLocation(program, 'uImgAspect');
+        const uCardAspectLoc = gl.getUniformLocation(program, 'uCardAspect');
 
+        function calcCardDimensions(rawAspect, isMob) {
+            const targetArea = isMob ? (105 * 68) : (145 * 92);
+            const aspect = Math.min(Math.max(rawAspect || (16 / 10), 0.65), 1.95);
+            const h = Math.round(Math.sqrt(targetArea / aspect));
+            const w = Math.round(h * aspect);
+            return { width: w, height: h, aspect };
+        }
+
+        const cards = [];
         const textures = [];
         const dummyTex = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, dummyTex);
@@ -282,6 +306,20 @@
             img.onload = () => {
                 gl.bindTexture(gl.TEXTURE_2D, tex);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+
+                if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                    const natAspect = img.naturalWidth / img.naturalHeight;
+                    item.naturalAspect = natAspect;
+                    cards.forEach(c => {
+                        if (c.item === item) {
+                            c.imgAspect = natAspect;
+                            const d = calcCardDimensions(natAspect, window.innerWidth < 768);
+                            c.width = d.width;
+                            c.height = d.height;
+                            c.aspect = d.aspect;
+                        }
+                    });
+                }
             };
             img.onerror = () => {
                 if (item.full && img.src !== item.full) {
@@ -319,10 +357,7 @@
             ringsSvg.appendChild(ellipse);
         });
 
-        const cards = [];
         let itemIndex = 0;
-        const baseWidth = isMobile ? 115 : 155;
-        const baseHeight = isMobile ? 72 : 98;
 
         ringConfigs.forEach((ring, ringIndex) => {
             const angleStep = (Math.PI * 2) / ring.count;
@@ -333,6 +368,11 @@
 
                 const initialAngle = (i * angleStep) + (ringIndex * 0.5);
 
+                const metaW = item.width || 0;
+                const metaH = item.height || 0;
+                const initAspect = (metaW > 0 && metaH > 0) ? (metaW / metaH) : (16 / 10);
+                const dims = calcCardDimensions(item.naturalAspect || initAspect, isMobile);
+
                 cards.push({
                     id: itemIndex,
                     item,
@@ -342,8 +382,10 @@
                     ry: ring.ry,
                     baseSpeed: ring.speed,
                     angle: initialAngle,
-                    width: baseWidth,
-                    height: baseHeight,
+                    width: dims.width,
+                    height: dims.height,
+                    aspect: dims.aspect,
+                    imgAspect: item.naturalAspect || initAspect,
                     radius: 12,
                     
                     x: 0,
@@ -458,6 +500,13 @@
             canvas.style.height = height + 'px';
 
             gl.viewport(0, 0, canvas.width, canvas.height);
+
+            const isMob = window.innerWidth < 768;
+            cards.forEach(c => {
+                const d = calcCardDimensions(c.imgAspect || c.aspect, isMob);
+                c.width = d.width;
+                c.height = d.height;
+            });
         }
 
         window.addEventListener('resize', resize, { passive: true });
@@ -659,6 +708,8 @@
                 gl.uniform1f(uBlurLoc, card.cardBlur);
                 gl.uniform1f(uFadeCenterLoc, card.fadeCenter);
                 gl.uniform4fv(uClickLoc, new Float32Array(card.clickUniform));
+                gl.uniform1f(uImgAspectLoc, card.imgAspect || card.aspect || (card.width / card.height));
+                gl.uniform1f(uCardAspectLoc, card.width / card.height);
 
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, card.texture || dummyTex);

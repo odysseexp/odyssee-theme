@@ -37,11 +37,17 @@ if ( $orbit_query->have_posts() ) {
             }
         }
 
+        $img_meta = wp_get_attachment_metadata( $thumb_id );
+        $w = ! empty( $img_meta['width'] ) ? intval( $img_meta['width'] ) : 0;
+        $h = ! empty( $img_meta['height'] ) ? intval( $img_meta['height'] ) : 0;
+
         $orbit_items[] = array(
-            'id'    => get_the_ID(),
-            'title' => get_the_title(),
-            'thumb' => $chosen_thumb,
-            'full'  => $full_url,
+            'id'     => get_the_ID(),
+            'title'  => get_the_title(),
+            'thumb'  => $chosen_thumb,
+            'full'   => $full_url,
+            'width'  => $w,
+            'height' => $h,
         );
     }
     wp_reset_postdata();
