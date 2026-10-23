@@ -75,7 +75,9 @@ if ( ! empty( $orbit_items ) ) {
         </script>
 
         <div class="hero-content-centered">
-            <img src="<?php echo esc_url( home_url( '/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp' ) ); ?>" class="hero-symbol" alt="Símbolo">
+            <div class="hero-logo-container" style="transform-style:preserve-3d;" data-tilt data-tilt-reverse="true" data-tilt-max="20" data-tilt-speed="150" data-tilt-scale="1.06" data-tilt-full-page-listening data-tilt-gyroscope="true" data-tilt-gyroscopeMinAngleX="-25" data-tilt-gyroscopeMaxAngleX="25" data-tilt-gyroscopeMinAngleY="-25" data-tilt-gyroscopeMaxAngleY="25">
+                <img src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/odysseexp-logo-colorful.webp' ); ?>" class="hero-symbol" alt="Odyssee" width="340" height="340" fetchpriority="high">
+            </div>
             <h1 class="hero-slogan" data-key="hero-slogan">Experiencie o Próximo Nível da Criatividade</h1>
             <a href="#recentes" class="scroll-indicator" aria-label="Rolar para os projetos"><i class="fas fa-chevron-down"></i></a>
         </div>

@@ -27,8 +27,9 @@ Thumbs.db
 *~
 
 # Dependencies
-vendor/
+/vendor/
 node_modules/
+!assets/vendor/
 
 # Server configurations
 .htaccess
@@ -39,3 +40,7 @@ web.config
 inc/*.md
 guia-*.md
 implementacao-*.md
+
+# Large raw SVG source (71MB, production uses 128KB 2048x2048 webp)
+assets/images/odysseexp-logo-colorful.svg
+

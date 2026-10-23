@@ -44,7 +44,7 @@ function odyssee_security_headers() {
 
 function odyssee_scripts() {
     
-    $theme_version = '2.0.4';
+    $theme_version = '2.0.5';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
@@ -52,7 +52,9 @@ function odyssee_scripts() {
 
     wp_enqueue_style( 'fontawesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', array(), '6.4.0' );
 
-    wp_enqueue_script( 'odyssee-app', get_template_directory_uri() . '/assets/js/app.js', array(), $theme_version, true );
+    wp_enqueue_script( 'vanilla-tilt', get_template_directory_uri() . '/assets/vendor/vanilla-tilt/vanilla-tilt.min.js', array(), $theme_version, true );
+
+    wp_enqueue_script( 'odyssee-app', get_template_directory_uri() . '/assets/js/app.js', array( 'vanilla-tilt' ), $theme_version, true );
 
     wp_localize_script( 'odyssee-app', 'odysseeSecure', array(
         'nonce' => wp_create_nonce( 'odyssee_nonce' ),

@@ -2020,14 +2020,33 @@ function initUI() {
     } catch (e) { }
 }
 
+function initHeroTilt() {
+    if (typeof VanillaTilt !== 'undefined') {
+        const el = document.querySelector('.hero-logo-container');
+        if (el && !el.vanillaTilt) {
+            VanillaTilt.init(el, {
+                reverse: true,
+                max: 20,
+                speed: 150,
+                scale: 1.06,
+                "full-page-listening": true,
+                gyroscope: true,
+                gyroscopeMinAngleX: -25,
+                gyroscopeMaxAngleX: 25,
+                gyroscopeMinAngleY: -25,
+                gyroscopeMaxAngleY: 25
+            });
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[INIT] DOM pronto. Inicializando UI...');
     initUI();
+    initHeroTilt();
 
     fetchRealPosts().then(() => {
         initUI();
     }).catch(err => {
-        console.warn('[INIT] Atualização em segundo plano:', err);
     });
 
     try { detectFontAwesomeAndEnableSvgFallback(); } catch(e){}
@@ -2035,4 +2054,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.addEventListener('load', () => {
     initUI();
+    initHeroTilt();
 });
