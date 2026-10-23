@@ -63,15 +63,12 @@
 
         void main() {
             vUv = aUv;
-            // Posição local em pixels
             vec4 pos = vec4(aPosition.x * uSize.x, aPosition.y * uSize.y, aPosition.z, 1.0);
             vec4 world = uModel * pos;
 
-            // Curvatura côncava/convexa do plano
             float d2 = dot(aPosition.xy, aPosition.xy);
             world.z += uCurve * (0.25 - d2) * 2.0;
 
-            // Peso do cursor: protuberância em direção à câmera no ponto mais próximo do mouse
             vec2 dpx = (aPosition.xy - uMouse) * uSize;
             float rr = max(uSize.x, uSize.y) * 0.65;
             world.z += uWarp * exp(-dot(dpx, dpx) / (rr * rr));
@@ -126,7 +123,6 @@
 
             vec2 uv = clamp(uvL, vec2(0.001), vec2(0.999));
 
-            // Aberração cromática que aumenta perto do cursor (RGB split)
             vec2 d = vUv - 0.5;
             vec2 shift = d * dot(d, d) * 4.0 * uAber;
 
@@ -149,10 +145,8 @@
                 col = texture(uMap, clamp(uv, vec2(0.0), vec2(1.0))).rgb;
             }
 
-            // Fade para o fundo do tema (escuro ou claro) no centro para não dificultar a leitura
             col = mix(col, uBg, clamp(uFadeCenter * 0.82, 0.0, 0.95));
 
-            // SDF para cantos arredondados suaves e hairline frame
             vec2 q = abs((vUv - 0.5) * uSize) - (0.5 * uSize - vec2(uRadius));
             float dEdge = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - uRadius;
             float frameBand = 1.0 - smoothstep(0.5, 1.5, abs(dEdge + 1.0));
@@ -452,11 +446,13 @@
             }
 
             if (hitCard) {
-                const clickUvX = (clickX - (hitCard.x - (hitCard.width * hitCard.scale) / 2)) / (hitCard.width * hitCard.scale);
-                const clickUvY = (clickY - (hitCard.y - (hitCard.height * hitCard.scale) / 2)) / (hitCard.height * hitCard.scale);
+                const w = hitCard.width * hitCard.scale;
+                const h = hitCard.height * hitCard.scale;
+                const clickUvX = (clickX - (hitCard.x - w / 2)) / w;
+                const clickUvY = (clickY - (hitCard.y - h / 2)) / h;
                 hitCard.clicks[0] = {
-                    x: clickUvX,
-                    y: 1 - clickUvY,
+                    x: Math.max(0, Math.min(1, clickUvX)),
+                    y: Math.max(0, Math.min(1, 1 - clickUvY)),
                     radius: 0,
                     amp: 24,
                     time: performance.now() / 1000
@@ -466,7 +462,6 @@
                 cards.forEach(c => c.isBoosted = false); 
                 hitCard.isBoosted = willBoost;
             } else {
-                
                 cards.forEach(c => c.isBoosted = false);
             }
         });
@@ -557,11 +552,10 @@
             let hoveredCard = null;
 
             cards.forEach(card => {
-                
-                const targetBoost = card.isBoosted ? 1.0 : 0.0;
-                card.boostK += (targetBoost - card.boostK) * 0.12;
+                   const targetBoost = card.isBoosted ? 1.0 : 0.0;
+                card.boostK += (targetBoost - card.boostK) * 0.14;
 
-                const speedMult = 1.0 - (card.boostK * 0.75);
+                const speedMult = 1.0 - (card.boostK * 0.88);
                 const directionFactor = card.baseSpeed >= 0 ? 1 : -1;
                 const totalSpeed = (card.baseSpeed + (scrollVelocity * directionFactor * 2.2)) * speedMult;
                 card.angle += totalSpeed;
@@ -577,7 +571,7 @@
 
                 const normalizedDepth = (sinA + 1) / 2; 
                 const baseScale = (0.76 + (normalizedDepth * 0.44)) * zoomScale;
-                const boostScaleFactor = 1.0 + (card.boostK * 1.6);
+                const boostScaleFactor = 1.0 + (card.boostK * 0.45);
                 card.scale = baseScale * boostScaleFactor;
 
                 let warp = 0;
@@ -619,6 +613,16 @@
                     localMouseY = (mouseY - posY) / cardH;
                 }
 
+                if (card.isBoosted && isMouseActive && !isHover) {
+                    const dx = mouseX - posX;
+                    const dy = mouseY - posY;
+                    const cardW = card.width * card.scale;
+                    const cardH = card.height * card.scale;
+                    if (Math.abs(dx) > cardW * 0.75 || Math.abs(dy) > cardH * 0.75) {
+                        card.isBoosted = false;
+                    }
+                }
+
                 card.x = posX;
                 card.y = posY;
                 card.warp = warp;
@@ -628,8 +632,8 @@
                 card.isHover = isHover;
 
                 const orbitZ = (sinA * card.ry * 0.45) + (card.ringIndex * 14.0);
-                const hoverZ = isHover ? 160.0 : 0.0;
-                const boostZ = card.boostK * 2500.0;
+                const hoverZ = isHover ? 60.0 : 0.0;
+                const boostZ = card.boostK * 160.0;
                 card.z = orbitZ + hoverZ + boostZ;
 
                 const centerRx = 560;
