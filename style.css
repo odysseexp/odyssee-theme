@@ -652,7 +652,7 @@ body.theme-dark .theme-picker button {
         rgba(11, 15, 23, 0.85) 82%,
         var(--bg-page) 100%
     );
-    z-index: 1;
+    z-index: 3 !important;
     pointer-events: none;
 }
 [data-theme="light"] .gradient-fade-bottom {
@@ -3721,7 +3721,32 @@ body.theme-dark #onboarding-container .theme-picker #btn-dark {
     box-sizing: border-box !important;
 }
 .hero-section::after {
-    display: none !important;
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 380px !important;
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        rgba(11, 15, 23, 0.08) 25%, 
+        rgba(11, 15, 23, 0.35) 55%, 
+        rgba(11, 15, 23, 0.78) 80%, 
+        var(--bg-page) 100%
+    ) !important;
+    pointer-events: none !important;
+    z-index: 3 !important;
+}
+[data-theme="light"] .hero-section::after,
+body.theme-light .hero-section::after {
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        rgba(248, 250, 252, 0.08) 25%, 
+        rgba(248, 250, 252, 0.35) 55%, 
+        rgba(248, 250, 252, 0.78) 80%, 
+        var(--bg-page) 100%
+    ) !important;
 }
 .artcraft-orbit-container {
     position: absolute !important;
@@ -3741,6 +3766,8 @@ body.theme-dark #onboarding-container .theme-picker #btn-dark {
     pointer-events: auto !important;
     cursor: default !important;
     z-index: 2 !important;
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 72%, transparent 97%) !important;
+    mask-image: linear-gradient(to bottom, black 0%, black 72%, transparent 97%) !important;
 }
 .orbit-rings-svg {
     position: absolute !important;

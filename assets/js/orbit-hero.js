@@ -60,6 +60,7 @@
         uniform vec2 uSize;
 
         out vec2 vUv;
+        out float vNdcY;
 
         void main() {
             vUv = aUv;
@@ -73,13 +74,16 @@
             float rr = max(uSize.x, uSize.y) * 0.65;
             world.z += uWarp * exp(-dot(dpx, dpx) / (rr * rr));
 
-            gl_Position = uProjection * uView * world;
+            vec4 clipPos = uProjection * uView * world;
+            vNdcY = clipPos.y / max(0.001, clipPos.w);
+            gl_Position = clipPos;
         }`;
 
         const fsSource = `#version 300 es
         precision highp float;
 
         in vec2 vUv;
+        in float vNdcY;
         out vec4 outColor;
 
         uniform sampler2D uMap;
@@ -156,7 +160,9 @@
             float frameBand = 1.0 - smoothstep(0.5, 1.5, abs(dEdge + 1.0));
             col = mix(col, uFrameCol, frameBand * uFrameA * (1.0 - uFadeCenter * 0.6));
             float aa = 1.0 - smoothstep(-0.8, 0.8, dEdge);
-            float finalAlpha = uAlpha * aa;
+            float bottomFade = smoothstep(-0.95, -0.60, vNdcY);
+            col = mix(uBg, col, bottomFade);
+            float finalAlpha = uAlpha * aa * bottomFade;
             if (finalAlpha < 0.005) {
                 discard;
             }
@@ -312,14 +318,14 @@
 
         const isMobile = window.innerWidth < 768;
         const ringConfigs = isMobile ? [
-            { rx: 160, ry: 85, speed: 0.0030, count: 2 },
-            { rx: 260, ry: 135, speed: -0.0022, count: 4 },
-            { rx: 370, ry: 190, speed: 0.0016, count: 6 }
+            { rx: 160, ry: 75, speed: 0.0030, count: 2 },
+            { rx: 260, ry: 120, speed: -0.0022, count: 4 },
+            { rx: 370, ry: 165, speed: 0.0016, count: 6 }
         ] : [
-            { rx: 290, ry: 135, speed: 0.0019, count: 2 },
-            { rx: 480, ry: 220, speed: -0.0014, count: 5 },
-            { rx: 700, ry: 315, speed: 0.0011, count: 8 },
-            { rx: 920, ry: 405, speed: -0.0008, count: 9 }
+            { rx: 290, ry: 110, speed: 0.0019, count: 2 },
+            { rx: 480, ry: 180, speed: -0.0014, count: 5 },
+            { rx: 700, ry: 255, speed: 0.0011, count: 8 },
+            { rx: 920, ry: 330, speed: -0.0008, count: 9 }
         ];
 
         const ringsSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
