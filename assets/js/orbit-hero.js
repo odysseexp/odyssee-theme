@@ -131,40 +131,22 @@
             vec2 shift = d * dot(d, d) * 4.0 * uAber;
 
             vec3 col;
-            if (uBlur > 0.005) {
-                // Blur defocus estilo ArtCraft para posts no centro/nebula
-                float b = uBlur * 0.038;
-                vec3 acc = vec3(
-                    texture(uMap, clamp(uv + shift, vec2(0.0), vec2(1.0))).r,
-                    texture(uMap, clamp(uv, vec2(0.0), vec2(1.0))).g,
-                    texture(uMap, clamp(uv - shift, vec2(0.0), vec2(1.0))).b
-                ) * 2.0;
-
-                // Anel cardinal
-                acc += texture(uMap, clamp(uv + vec2(b * 0.55, 0.0), vec2(0.0), vec2(1.0))).rgb * 1.2;
-                acc += texture(uMap, clamp(uv - vec2(b * 0.55, 0.0), vec2(0.0), vec2(1.0))).rgb * 1.2;
-                acc += texture(uMap, clamp(uv + vec2(0.0, b * 0.55), vec2(0.0), vec2(1.0))).rgb * 1.2;
-                acc += texture(uMap, clamp(uv - vec2(0.0, b * 0.55), vec2(0.0), vec2(1.0))).rgb * 1.2;
-
-                // Anel diagonal
-                acc += texture(uMap, clamp(uv + vec2(b * 0.75, b * 0.75), vec2(0.0), vec2(1.0))).rgb;
-                acc += texture(uMap, clamp(uv + vec2(-b * 0.75, b * 0.75), vec2(0.0), vec2(1.0))).rgb;
-                acc += texture(uMap, clamp(uv + vec2(b * 0.75, -b * 0.75), vec2(0.0), vec2(1.0))).rgb;
-                acc += texture(uMap, clamp(uv + vec2(-b * 0.75, -b * 0.75), vec2(0.0), vec2(1.0))).rgb;
-
-                // Anel externo
-                acc += texture(uMap, clamp(uv + vec2(b * 1.15, 0.0), vec2(0.0), vec2(1.0))).rgb * 0.8;
-                acc += texture(uMap, clamp(uv - vec2(b * 1.15, 0.0), vec2(0.0), vec2(1.0))).rgb * 0.8;
-                acc += texture(uMap, clamp(uv + vec2(0.0, b * 1.15), vec2(0.0), vec2(1.0))).rgb * 0.8;
-                acc += texture(uMap, clamp(uv - vec2(0.0, b * 1.15), vec2(0.0), vec2(1.0))).rgb * 0.8;
-
-                col = acc / 14.0;
-            } else {
+            if (uBlur > 0.008) {
+                float b = uBlur * 0.024;
+                vec3 acc = texture(uMap, uv).rgb * 2.0;
+                acc += texture(uMap, clamp(uv + vec2(b, b), vec2(0.0), vec2(1.0))).rgb;
+                acc += texture(uMap, clamp(uv + vec2(-b, b), vec2(0.0), vec2(1.0))).rgb;
+                acc += texture(uMap, clamp(uv + vec2(b, -b), vec2(0.0), vec2(1.0))).rgb;
+                acc += texture(uMap, clamp(uv + vec2(-b, -b), vec2(0.0), vec2(1.0))).rgb;
+                col = acc * 0.1666667;
+            } else if (uAber > 0.0006) {
                 col = vec3(
                     texture(uMap, clamp(uv + shift, vec2(0.0), vec2(1.0))).r,
                     texture(uMap, clamp(uv, vec2(0.0), vec2(1.0))).g,
                     texture(uMap, clamp(uv - shift, vec2(0.0), vec2(1.0))).b
                 );
+            } else {
+                col = texture(uMap, clamp(uv, vec2(0.0), vec2(1.0))).rgb;
             }
 
             // Fade para o fundo do tema (escuro ou claro) no centro para não dificultar a leitura
@@ -207,8 +189,8 @@
             return;
         }
 
-        const cols = 24;
-        const rows = 16;
+        const cols = 12;
+        const rows = 8;
         const positions = [];
         const uvs = [];
         const indices = [];
@@ -490,7 +472,7 @@
         });
 
         function resize() {
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
             const width = orbitContainer.clientWidth || window.innerWidth;
             const height = orbitContainer.clientHeight || window.innerHeight;
 
@@ -719,9 +701,52 @@
 
             gl.bindVertexArray(null);
 
-            requestAnimationFrame(render);
+            if (isHeroVisible) {
+                animFrameId = requestAnimationFrame(render);
+            } else {
+                animFrameId = null;
+            }
         }
 
-        requestAnimationFrame(render);
+        let isHeroVisible = true;
+        let animFrameId = null;
+
+        function startLoop() {
+            if (!animFrameId && isHeroVisible) {
+                lastTime = performance.now();
+                animFrameId = requestAnimationFrame(render);
+            }
+        }
+
+        function stopLoop() {
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+                animFrameId = null;
+            }
+        }
+
+        if ('IntersectionObserver' in window) {
+            const heroObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    isHeroVisible = entry.isIntersecting;
+                    if (isHeroVisible) {
+                        startLoop();
+                    } else {
+                        stopLoop();
+                    }
+                });
+            }, { threshold: 0.05 });
+            heroObserver.observe(orbitContainer);
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopLoop();
+            } else if (isHeroVisible) {
+                startLoop();
+            }
+        });
+
+        startLoop();
     });
 })();

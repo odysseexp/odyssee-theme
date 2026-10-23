@@ -44,7 +44,7 @@ function odyssee_security_headers() {
 
 function odyssee_scripts() {
     
-    $theme_version = time();
+    $theme_version = '2.0.1';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
@@ -1642,6 +1642,11 @@ function odyssee_produtos_admin_page() {
 }
 
 function odyssee_get_initial_posts() {
+    $cached = get_transient( 'odyssee_initial_posts' );
+    if ( false !== $cached && is_array( $cached ) ) {
+        return $cached;
+    }
+
     $args = array(
         'post_type'              => 'post',
         'post_status'            => 'publish',
@@ -1705,5 +1710,15 @@ function odyssee_get_initial_posts() {
         wp_reset_postdata();
     }
 
+    set_transient( 'odyssee_initial_posts', $posts, 6 * HOUR_IN_SECONDS );
     return $posts;
 }
+
+add_action( 'save_post', function() {
+    delete_transient( 'odyssee_initial_posts' );
+    delete_transient( 'odyssee_orbit_items' );
+} );
+add_action( 'deleted_post', function() {
+    delete_transient( 'odyssee_initial_posts' );
+    delete_transient( 'odyssee_orbit_items' );
+} );

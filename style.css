@@ -622,10 +622,21 @@ body.theme-dark .theme-picker button {
     left: 0;
     width: 100%;
     height: 100%;
-    filter: blur(60px);
+    filter: blur(50px);
     z-index: 0;
     opacity: 0.6;
-    pointer-events: none
+    pointer-events: none;
+    will-change: transform;
+    transform: translateZ(0);
+    contain: strict;
+}
+.gradients-container .g1,
+.gradients-container .g2,
+.gradients-container .g3,
+.gradients-container .g4,
+.gradients-container .g5 {
+    will-change: transform;
+    transform: translateZ(0);
 }
 .gradient-fade-bottom {
     position: absolute;

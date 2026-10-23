@@ -1659,19 +1659,22 @@ function renderCarousel(containerId, filterCategory = null) {
     });
 }
 
+const mainHeaderEl = document.querySelector('.main-header');
+let lastHeaderScrolled = null;
 window.addEventListener('scroll', () => {
-    const header = document.querySelector('.main-header');
-    
-    if (header) {
-        if (window.scrollY > 50) {
-            header.classList.add('scrolled');
-            header.classList.remove('transparent');
+    if (!mainHeaderEl) return;
+    const isScrolled = window.scrollY > 50;
+    if (isScrolled !== lastHeaderScrolled) {
+        lastHeaderScrolled = isScrolled;
+        if (isScrolled) {
+            mainHeaderEl.classList.add('scrolled');
+            mainHeaderEl.classList.remove('transparent');
         } else {
-            header.classList.add('transparent');
-            header.classList.remove('scrolled');
+            mainHeaderEl.classList.add('transparent');
+            mainHeaderEl.classList.remove('scrolled');
         }
     }
-});
+}, { passive: true });
 
 if (settingsBtn) {
     settingsBtn.addEventListener('click', (e) => {
