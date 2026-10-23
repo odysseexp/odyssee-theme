@@ -18,10 +18,10 @@
             <h4 data-key="idioma">Idioma</h4>
             <div class="button-group lang-button-group">
                 <button id="set-lang-pt" class="lang-btn">
-                    <span class="flag-emoji">🇧🇷</span> <span>Português</span>
+                    <img src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/flags/br.svg' ); ?>" alt="Brasil" class="flag-icon" width="22" height="15"> <span>Português</span>
                 </button>
                 <button id="set-lang-en" class="lang-btn">
-                    <span class="flag-emoji">🇬🇧</span> <span>English</span>
+                    <img src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/flags/gb.svg' ); ?>" alt="English" class="flag-icon" width="22" height="15"> <span>English</span>
                 </button>
             </div>
         </div>
@@ -31,18 +31,16 @@
         <div class="setting-group">
             <h4 data-key="tema">Aparência</h4>
             <p style="font-size:0.8rem; color:var(--color-subtitle); opacity:0.8; margin-bottom:0.75rem;">Fundo claro limpo ou fundo escuro profundo.</p>
-            <div class="theme-picker" style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
-                <button id="set-theme-light" class="theme-select-btn" aria-label="Tema claro" style="display:flex; align-items:center; justify-content:center; gap:0.5rem; padding:0.75rem;">
+            <div class="theme-picker" style="display:flex; justify-content:center; align-items:center; gap:1.5rem;">
+                <button id="set-theme-light" class="theme-select-btn" aria-label="Tema claro" title="Tema Claro">
                     <svg class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
                         <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79zM4 10.5H1v3h3zm9-9.95h-3v3.95h3zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79zM20 10.5v3h3v-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 16.95h3v-3.95h-3zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41z" />
                     </svg>
-                    <span>Claro</span>
                 </button>
-                <button id="set-theme-dark" class="theme-select-btn" aria-label="Tema escuro" style="display:flex; align-items:center; justify-content:center; gap:0.5rem; padding:0.75rem;">
+                <button id="set-theme-dark" class="theme-select-btn" aria-label="Tema escuro" title="Tema Escuro">
                     <svg class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
                         <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
                     </svg>
-                    <span>Escuro</span>
                 </button>
             </div>
         </div>

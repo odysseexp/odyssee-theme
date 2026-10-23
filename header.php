@@ -55,8 +55,8 @@
             <div id="step-language" class="onboarding-step">
                 <p data-key="escolha-idioma">Escolha um idioma de preferência</p>
                 <div class="button-group lang-button-group">
-                    <button id="lang-pt" data-lang="pt" class="lang-btn"><span class="flag-emoji">🇧🇷</span> <span>Português Brasileiro</span></button>
-                    <button id="lang-en" data-lang="en" class="lang-btn"><span class="flag-emoji">🇬🇧</span> <span>Inglês</span></button>
+                    <button id="lang-pt" data-lang="pt" class="lang-btn"><img src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/flags/br.svg' ); ?>" alt="Brasil" class="flag-icon" width="22" height="15"> <span>Português Brasileiro</span></button>
+                    <button id="lang-en" data-lang="en" class="lang-btn"><img src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/flags/gb.svg' ); ?>" alt="English" class="flag-icon" width="22" height="15"> <span>Inglês</span></button>
                 </div>
             </div>
             <div id="step-theme" class="onboarding-step">

@@ -3648,6 +3648,24 @@ body.theme-dark .service-notice {
     line-height: 1 !important;
     display: inline-block !important;
 }
+.flag-icon {
+    width: 22px !important;
+    height: 15px !important;
+    object-fit: cover !important;
+    border-radius: 3px !important;
+    vertical-align: middle !important;
+    display: inline-block !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
+    flex-shrink: 0 !important;
+}
+body.theme-light .setting-group .theme-picker #set-theme-light,
+body.theme-dark .setting-group .theme-picker #set-theme-dark,
+body.theme-light #onboarding-container .theme-picker #btn-light,
+body.theme-dark #onboarding-container .theme-picker #btn-dark {
+    box-shadow: 0 0 0 2px var(--color-accent), inset 0 1px 0 0 rgba(255, 255, 255, 0.45), 0 0 16px var(--color-accent-glow) !important;
+    border-color: var(--color-accent) !important;
+    color: var(--color-accent) !important;
+}
 .color-picker-grid {
     display: flex !important;
     flex-wrap: wrap !important;
