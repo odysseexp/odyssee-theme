@@ -3688,7 +3688,7 @@ body.theme-dark .service-notice {
     align-items: center !important;
     justify-content: center !important;
     perspective: 1200px !important;
-    padding-top: 80px !important;
+    padding-top: 40px !important;
     box-sizing: border-box !important;
 }
 .hero-section::after {
@@ -3696,19 +3696,17 @@ body.theme-dark .service-notice {
 }
 .artcraft-orbit-container {
     position: absolute !important;
-    top: 80px !important;
+    top: 0 !important;
     left: 0 !important;
     width: 100% !important;
-    height: calc(100% - 80px) !important;
+    height: 100% !important;
     pointer-events: none !important;
     z-index: 2 !important;
-    overflow: hidden !important;
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 98%) !important;
-    mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 98%) !important;
+    overflow: visible !important;
 }
 .artcraft-orbit-canvas {
     position: absolute !important;
-    top: 52% !important;
+    top: 54% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     pointer-events: auto !important;
@@ -3717,7 +3715,7 @@ body.theme-dark .service-notice {
 }
 .orbit-rings-svg {
     position: absolute !important;
-    top: 52% !important;
+    top: 54% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     width: 2000px !important;
@@ -3747,7 +3745,7 @@ body.theme-dark .service-notice {
     text-align: center !important;
     max-width: 900px !important;
     padding: 0 20px !important;
-    margin-top: 15px !important;
+    margin-top: 35px !important;
 }
 .hero-content-centered::before {
     content: "" !important;
