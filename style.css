@@ -543,15 +543,16 @@ body.theme-dark .theme-picker button {
     padding: 0 2rem;
     z-index: 1000;
     box-sizing: border-box;
-    transition: all 0.3s ease
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease
 }
-.main-header.transparent {
-    background-color: transparent;
-    box-shadow: none
-}
+.main-header.transparent,
 .main-header.scrolled {
     background-color: var(--bg-card);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1)
+    border-bottom: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12)
 }
 .header-logo {
     height: 60px;
@@ -1723,13 +1724,11 @@ body.color-red .color-option-btn#set-color-red .color-name {
     .mobile-menu-toggle {
         display: block
     }
-    .main-header.transparent {
-        background-color: transparent !important;
-        box-shadow: none !important
-    }
+    .main-header.transparent,
     .main-header.scrolled {
         background-color: var(--bg-card) !important;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important
+        border-bottom: 1px solid var(--border-subtle) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important
     }
 }
 #mobile-menu-overlay {
@@ -3689,25 +3688,27 @@ body.theme-dark .service-notice {
     align-items: center !important;
     justify-content: center !important;
     perspective: 1200px !important;
+    padding-top: 80px !important;
+    box-sizing: border-box !important;
 }
 .hero-section::after {
     display: none !important;
 }
 .artcraft-orbit-container {
     position: absolute !important;
-    top: 0 !important;
+    top: 80px !important;
     left: 0 !important;
     width: 100% !important;
-    height: 100% !important;
+    height: calc(100% - 80px) !important;
     pointer-events: none !important;
     z-index: 2 !important;
     overflow: hidden !important;
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 96%) !important;
-    mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 96%) !important;
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 98%) !important;
+    mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 98%) !important;
 }
 .artcraft-orbit-canvas {
     position: absolute !important;
-    top: 50% !important;
+    top: 52% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     pointer-events: auto !important;
@@ -3716,7 +3717,7 @@ body.theme-dark .service-notice {
 }
 .orbit-rings-svg {
     position: absolute !important;
-    top: 50% !important;
+    top: 52% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     width: 2000px !important;
@@ -3746,6 +3747,7 @@ body.theme-dark .service-notice {
     text-align: center !important;
     max-width: 900px !important;
     padding: 0 20px !important;
+    margin-top: 15px !important;
 }
 .hero-content-centered::before {
     content: "" !important;

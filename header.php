@@ -166,8 +166,8 @@
             
             const logos = {
                 transparent: {
-                    light: '<?php echo esc_url( home_url( "/wp-content/uploads/2025/11/typeblack.webp" ) ); ?>',
-                    dark: '<?php echo esc_url( home_url( "/wp-content/uploads/2025/11/typewhite.webp" ) ); ?>'
+                    light: '<?php echo esc_url( home_url( "/wp-content/uploads/2025/11/typecolorblack.webp" ) ); ?>',
+                    dark: '<?php echo esc_url( home_url( "/wp-content/uploads/2025/11/typecolorwhite.webp" ) ); ?>'
                 },
                 scrolled: {
                     light: '<?php echo esc_url( home_url( "/wp-content/uploads/2025/11/typecolorblack.webp" ) ); ?>',

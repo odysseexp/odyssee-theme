@@ -294,14 +294,14 @@
 
         const isMobile = window.innerWidth < 768;
         const ringConfigs = isMobile ? [
-            { rx: 160, ry: 95, speed: 0.0032, count: 3 },
-            { rx: 250, ry: 155, speed: -0.0024, count: 4 },
-            { rx: 340, ry: 210, speed: 0.0019, count: 5 }
+            { rx: 160, ry: 85, speed: 0.0032, count: 3 },
+            { rx: 240, ry: 135, speed: -0.0024, count: 4 },
+            { rx: 320, ry: 180, speed: 0.0019, count: 5 }
         ] : [
-            { rx: 280, ry: 165, speed: 0.0020, count: 4 },
-            { rx: 460, ry: 275, speed: -0.0015, count: 6 },
-            { rx: 650, ry: 385, speed: 0.0011, count: 7 },
-            { rx: 840, ry: 495, speed: -0.0008, count: 7 }
+            { rx: 270, ry: 130, speed: 0.0020, count: 4 },
+            { rx: 440, ry: 210, speed: -0.0015, count: 6 },
+            { rx: 610, ry: 285, speed: 0.0011, count: 7 },
+            { rx: 780, ry: 360, speed: -0.0008, count: 7 }
         ];
 
         const ringsSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -321,8 +321,8 @@
 
         const cards = [];
         let itemIndex = 0;
-        const baseWidth = isMobile ? 115 : 165;
-        const baseHeight = isMobile ? 72 : 104;
+        const baseWidth = isMobile ? 115 : 155;
+        const baseHeight = isMobile ? 72 : 98;
 
         ringConfigs.forEach((ring, ringIndex) => {
             const angleStep = (Math.PI * 2) / ring.count;
@@ -392,7 +392,7 @@
             if (currentScrollY < window.innerHeight * 1.5) {
                 targetScrollVelocity = deltaY * 0.00035;
                 const scrollProgress = Math.min(Math.max(currentScrollY / (window.innerHeight * 0.8), 0), 1);
-                targetZoomScale = 1 + (scrollProgress * 0.38);
+                targetZoomScale = 1 + (scrollProgress * 0.18);
             } else {
                 targetScrollVelocity = 0;
                 targetZoomScale = 1;
@@ -545,7 +545,7 @@
                 let posY = sinA * currentRy;
 
                 const normalizedDepth = (sinA + 1) / 2; 
-                const baseScale = (0.76 + (normalizedDepth * 0.52)) * zoomScale;
+                const baseScale = (0.76 + (normalizedDepth * 0.44)) * zoomScale;
                 const boostScaleFactor = 1.0 + (card.boostK * 1.6);
                 card.scale = baseScale * boostScaleFactor;
 
