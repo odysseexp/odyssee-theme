@@ -2,7 +2,7 @@
 
 $orbit_pool = get_transient( 'odyssee_orbit_pool' );
 
-if ( false === $orbit_pool || ! is_array( $orbit_pool ) ) {
+if ( false === $orbit_pool || ! is_array( $orbit_pool ) || empty( $orbit_pool ) || empty( $orbit_pool[0]['thumb'] ) ) {
     $orbit_query = new WP_Query( array(
         'post_type'              => 'post',
         'post_status'            => 'publish',

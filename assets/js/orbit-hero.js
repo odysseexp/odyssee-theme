@@ -282,7 +282,7 @@
 
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            img.src = item.thumb;
+            img.src = item.thumb || item.full;
             img.onload = () => {
                 gl.bindTexture(gl.TEXTURE_2D, tex);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
