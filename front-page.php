@@ -1,12 +1,12 @@
 <?php get_header();
 
-$orbit_items = get_transient( 'odyssee_orbit_items' );
+$orbit_pool = get_transient( 'odyssee_orbit_pool' );
 
-if ( false === $orbit_items || ! is_array( $orbit_items ) ) {
+if ( false === $orbit_pool || ! is_array( $orbit_pool ) ) {
     $orbit_query = new WP_Query( array(
         'post_type'              => 'post',
         'post_status'            => 'publish',
-        'posts_per_page'         => 32,
+        'posts_per_page'         => 60,
         'orderby'                => 'date',
         'order'                  => 'DESC',
         'no_found_rows'          => true,
@@ -19,7 +19,7 @@ if ( false === $orbit_items || ! is_array( $orbit_items ) ) {
         ),
     ) );
 
-    $orbit_items = array();
+    $orbit_pool = array();
     if ( $orbit_query->have_posts() ) {
         while ( $orbit_query->have_posts() ) {
             $orbit_query->the_post();
@@ -36,7 +36,7 @@ if ( false === $orbit_items || ! is_array( $orbit_items ) ) {
             $w = ! empty( $img_meta['width'] ) ? intval( $img_meta['width'] ) : 0;
             $h = ! empty( $img_meta['height'] ) ? intval( $img_meta['height'] ) : 0;
 
-            $orbit_items[] = array(
+            $orbit_pool[] = array(
                 'id'     => get_the_ID(),
                 'title'  => get_the_title(),
                 'thumb'  => $chosen_thumb,
@@ -48,12 +48,15 @@ if ( false === $orbit_items || ! is_array( $orbit_items ) ) {
         wp_reset_postdata();
     }
 
-    if ( ! empty( $orbit_items ) ) {
-        shuffle( $orbit_items );
-        $orbit_items = array_slice( $orbit_items, 0, 24 );
+    if ( ! empty( $orbit_pool ) ) {
+        set_transient( 'odyssee_orbit_pool', $orbit_pool, 12 * HOUR_IN_SECONDS );
     }
+}
 
-    set_transient( 'odyssee_orbit_items', $orbit_items, 2 * HOUR_IN_SECONDS );
+$orbit_items = $orbit_pool ?: array();
+if ( ! empty( $orbit_items ) ) {
+    shuffle( $orbit_items );
+    $orbit_items = array_slice( $orbit_items, 0, 24 );
 }
 ?>
 

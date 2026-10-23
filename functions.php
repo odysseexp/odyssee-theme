@@ -93,6 +93,13 @@ function odyssee_scripts() {
     }
 }
 
+function odyssee_clear_orbit_transients() {
+    delete_transient( 'odyssee_orbit_pool' );
+    delete_transient( 'odyssee_orbit_items' );
+}
+add_action( 'save_post', 'odyssee_clear_orbit_transients' );
+add_action( 'deleted_post', 'odyssee_clear_orbit_transients' );
+
 add_action( 'wp_footer', function() {
     
     if ( ! is_singular() ) return;
