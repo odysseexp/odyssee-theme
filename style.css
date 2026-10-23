@@ -643,13 +643,9 @@ body.theme-dark .theme-picker button {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 520px;
+    height: 180px;
     background: linear-gradient(to bottom, 
         transparent 0%, 
-        rgba(11, 15, 23, 0.04) 15%,
-        rgba(11, 15, 23, 0.18) 35%,
-        rgba(11, 15, 23, 0.50) 60%,
-        rgba(11, 15, 23, 0.85) 82%,
         var(--bg-page) 100%
     );
     z-index: 1;
@@ -658,10 +654,6 @@ body.theme-dark .theme-picker button {
 [data-theme="light"] .gradient-fade-bottom {
     background: linear-gradient(to bottom, 
         transparent 0%, 
-        rgba(248, 250, 252, 0.04) 15%,
-        rgba(248, 250, 252, 0.18) 35%,
-        rgba(248, 250, 252, 0.50) 60%,
-        rgba(248, 250, 252, 0.85) 82%,
         var(--bg-page) 100%
     );
 }
@@ -815,8 +807,13 @@ body.theme-dark .theme-picker button {
 .hero-section,
 .portfolio-section.transparent-bg {
     position: relative;
-    z-index: 2;
+    z-index: 5;
     background-color: transparent !important
+}
+.portfolio-section.transparent-bg .carousel-wrapper,
+.portfolio-section.transparent-bg .carousel-card {
+    position: relative;
+    z-index: 5;
 }
 .category-section:nth-child(even) {
     background-color: var(--bg-page)
