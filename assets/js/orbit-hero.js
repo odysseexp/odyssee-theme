@@ -160,8 +160,7 @@
             float frameBand = 1.0 - smoothstep(0.5, 1.5, abs(dEdge + 1.0));
             col = mix(col, uFrameCol, frameBand * uFrameA * (1.0 - uFadeCenter * 0.6));
             float aa = 1.0 - smoothstep(-0.8, 0.8, dEdge);
-            float bottomFade = smoothstep(-0.95, -0.60, vNdcY);
-            col = mix(uBg, col, bottomFade);
+            float bottomFade = smoothstep(-0.95, -0.55, vNdcY);
             float finalAlpha = uAlpha * aa * bottomFade;
             if (finalAlpha < 0.005) {
                 discard;
