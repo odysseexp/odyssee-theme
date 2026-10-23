@@ -1,43 +1,28 @@
 <?php
-/**
- * Painel Customizado do WordPress para Gerenciar Página Sobre Mim
- * - Descrição bilíngue (PT-BR / EN-US)
- * - Experiências profissionais com datas
- * - Cursos com datas
- * - Habilidades (com categorias: softwares, criativos, office, OS)
- * - Upload de SVG/PNG para habilidades
- */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// ==============================================
-// 1. REGISTRAR PÁGINA DO MENU
-// ==============================================
 add_action( 'admin_menu', 'odyssee_cv_add_admin_menu' );
 function odyssee_cv_add_admin_menu() {
     add_menu_page(
-        'Sobre Mim',                          // Título da página
-        'Sobre Mim',                          // Título do menu
-        'manage_options',                     // Capacidade
-        'odyssee-cv-manager',                 // slug
-        'odyssee_cv_admin_page',              // Função callback
-        'dashicons-id-alt',                   // Ícone
-        25                                    // Posição do menu
+        'Sobre Mim',                          
+        'Sobre Mim',                          
+        'manage_options',                     
+        'odyssee-cv-manager',                 
+        'odyssee_cv_admin_page',              
+        'dashicons-id-alt',                   
+        25                                    
     );
 }
 
-// ==============================================
-// 2. ENQUEUE SCRIPTS E STYLES DO ADMIN
-// ==============================================
 add_action( 'admin_enqueue_scripts', 'odyssee_cv_enqueue_admin_assets' );
 function odyssee_cv_enqueue_admin_assets( $hook_suffix ) {
     if ( 'toplevel_page_odyssee-cv-manager' !== $hook_suffix ) {
         return;
     }
 
-    // CSS customizado
     wp_enqueue_style( 
         'odyssee-cv-admin', 
         get_template_directory_uri() . '/inc/cv-admin.css',
@@ -45,7 +30,6 @@ function odyssee_cv_enqueue_admin_assets( $hook_suffix ) {
         '1.0.0'
     );
 
-    // JS para repeater fields
     wp_enqueue_script(
         'odyssee-cv-admin',
         get_template_directory_uri() . '/inc/cv-admin.js',
@@ -54,25 +38,19 @@ function odyssee_cv_enqueue_admin_assets( $hook_suffix ) {
         true
     );
 
-    // Media uploader
     wp_enqueue_media();
 
-    // Localizar nonce para segurança
     wp_localize_script( 'odyssee-cv-admin', 'odysseeCVAdmin', array(
         'nonce' => wp_create_nonce( 'odyssee_cv_nonce' ),
         'ajaxurl' => admin_url( 'admin-ajax.php' ),
     ) );
 }
 
-// ==============================================
-// 3. PÁGINA PRINCIPAL DO ADMIN
-// ==============================================
 function odyssee_cv_admin_page() {
     if ( ! current_user_can( 'manage_options' ) ) {
         wp_die( 'Acesso negado' );
     }
 
-    // Verificar nonce e salvar dados
     if ( isset( $_POST['odyssee_cv_nonce'] ) && wp_verify_nonce( $_POST['odyssee_cv_nonce'], 'odyssee_cv_nonce' ) ) {
         odyssee_cv_save_data();
         ?>
@@ -82,10 +60,8 @@ function odyssee_cv_admin_page() {
         <?php
     }
 
-    // Carregar dados atuais
     $cv_data = odyssee_cv_get_data();
-    
-    // Sincronizar dados do PHP para o Banco (Rodar uma vez)
+
     if ( empty( get_option('cv_data_synced_v3') ) ) {
         $t_url = get_template_directory_uri() . '/assets/images/logos/';
         
@@ -243,7 +219,6 @@ function odyssee_cv_admin_page() {
         <form method="post" class="odyssee-cv-form">
             <?php wp_nonce_field( 'odyssee_cv_nonce', 'odyssee_cv_nonce' ); ?>
 
-            <!-- Tabs Navigation -->
             <nav class="cv-admin-tabs">
                 <button type="button" class="tab-button active" data-tab="descricao">
                     Descrição
@@ -259,7 +234,6 @@ function odyssee_cv_admin_page() {
                 </button>
             </nav>
 
-            <!-- TAB 1: Descrição -->
             <div id="tab-descricao" class="tab-content active">
                 <h2>Descrição Bilíngue</h2>
                 
@@ -378,7 +352,6 @@ function odyssee_cv_admin_page() {
                 </div>
             </div>
 
-            <!-- TAB 2: Experiências Profissionais -->
             <div id="tab-experiencias" class="tab-content">
                 <h2>Experiências Profissionais</h2>
                 
@@ -463,7 +436,6 @@ function odyssee_cv_admin_page() {
                 </div>
             </div>
 
-            <!-- TAB 3: Cursos -->
             <div id="tab-cursos" class="tab-content">
                 <h2>Cursos e Formação</h2>
                 
@@ -548,7 +520,6 @@ function odyssee_cv_admin_page() {
                 </div>
             </div>
 
-            <!-- TAB 4: Habilidades -->
             <div id="tab-habilidades" class="tab-content">
                 <h2>Habilidades</h2>
                 
@@ -657,7 +628,7 @@ function odyssee_cv_admin_page() {
 
                             <button type="button" class="button button-primary add-repeater" data-repeater="habilidades-<?php echo esc_attr( $categoria_key ); ?>-repeater" data-template="habilidade-template">
                                 <?php 
-                                // translators: %s é o nome da categoria
+                                
                                 echo sprintf( esc_html__( '+ Adicionar %s', 'odyssee' ), esc_html( $categoria_label ) );
                                 ?>
                             </button>
@@ -666,14 +637,12 @@ function odyssee_cv_admin_page() {
                 </div>
             </div>
 
-            <!-- Botão Salvar -->
             <div class="form-actions">
                 <?php submit_button( 'Salvar Alterações', 'primary', 'odyssee_cv_submit', true ); ?>
             </div>
         </form>
     </div>
 
-    <!-- Templates para Repeater Fields -->
     <script type="text/html" id="experiencia-template">
         <div class="repeater-item">
             <div class="repeater-header">
@@ -857,13 +826,6 @@ function odyssee_cv_admin_page() {
     <?php
 }
 
-// ==============================================
-// 4. FUNÇÕES DE UTILIDADE
-// ==============================================
-
-/**
- * Renderizar ícone (SVG ou IMG)
- */
 function odyssee_cv_render_icon( $icon_url, $alt_text = '' ) {
     if ( empty( $icon_url ) ) {
         return '';
@@ -887,13 +849,9 @@ function odyssee_cv_render_icon( $icon_url, $alt_text = '' ) {
     }
 }
 
-/**
- * Obter todos os dados do CV
- */
 function odyssee_cv_get_data() {
     $data = get_option( 'odyssee_cv_data', array() );
 
-    // Estrutura padrão
     $defaults = array(
         'descricao' => array(
             'pt_br' => array(
@@ -924,9 +882,6 @@ function odyssee_cv_get_data() {
     return wp_parse_args( $data, $defaults );
 }
 
-/**
- * Salvar todos os dados do CV
- */
 function odyssee_cv_save_data() {
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
@@ -957,9 +912,6 @@ function odyssee_cv_save_data() {
     update_option( 'odyssee_cv_data', $data );
 }
 
-/**
- * Sanitizar repeater fields (experiências e cursos)
- */
 function odyssee_cv_sanitize_repeater( $items ) {
     if ( ! is_array( $items ) ) {
         return array();
@@ -970,8 +922,7 @@ function odyssee_cv_sanitize_repeater( $items ) {
         if ( ! is_array( $item ) ) {
             continue;
         }
-        
-        // Verificar se pelo menos um campo principal foi preenchido
+
         $has_content = ! empty( $item['titulo'] ) || ! empty( $item['nome'] ) || 
                       ! empty( $item['empresa'] ) || ! empty( $item['instituicao'] );
         
@@ -992,9 +943,6 @@ function odyssee_cv_sanitize_repeater( $items ) {
     return $sanitized;
 }
 
-/**
- * Sanitizar habilidades (estrutura mais complexa)
- */
 function odyssee_cv_sanitize_habilidades( $habilidades_raw ) {
     if ( ! is_array( $habilidades_raw ) ) {
         return array();
@@ -1022,10 +970,6 @@ function odyssee_cv_sanitize_habilidades( $habilidades_raw ) {
 
     return $sanitized;
 }
-
-// ==============================================
-// 5. AJAX PARA UPLOAD DE ÍCONES
-// ==============================================
 
 add_action( 'wp_ajax_odyssee_upload_icon', 'odyssee_cv_ajax_upload_icon' );
 function odyssee_cv_ajax_upload_icon() {
@@ -1058,22 +1002,13 @@ function odyssee_cv_ajax_upload_icon() {
     ) );
 }
 
-// ==============================================
-// 6. MIGRAÇÃO AUTOMÁTICA DOS DADOS HARDCODED
-// ==============================================
-
-/**
- * Migrar dados hardcoded para o painel admin (executa uma única vez)
- * Se odyssee_cv_data não existir, importa dados padrão
- */
 add_action( 'admin_init', 'odyssee_cv_migrate_legacy_data' );
 function odyssee_cv_migrate_legacy_data() {
-    // Verificar se dados já foram migrados
+    
     if ( get_option( 'odyssee_cv_data' ) ) {
-        return; // Dados já existem, não migrar
+        return; 
     }
 
-    // Dados padrão extraídos do cv-page.js (hardcoded)
     $default_data = array(
         'descricao' => array(
             'pt_br' => array(
@@ -1153,27 +1088,16 @@ function odyssee_cv_migrate_legacy_data() {
         ),
     );
 
-    // Salvar dados padrão
     update_option( 'odyssee_cv_data', $default_data );
-    
-    // Log da migração
+
     error_log( '[ODYSSEE CV] Dados legados migrados com sucesso para odyssee_cv_data' );
 }
 
-// ==============================================
-// 6. OBTER DADOS DO CV PARA O FRONTEND
-// ==============================================
-
-/**
- * Disponibilizar dados do CV para o JavaScript
- * Injeta os dados na página via script inline (antes dos scripts deferred)
- */
 add_action( 'wp_head', 'odyssee_cv_localize_frontend_data', 5 );
 function odyssee_cv_localize_frontend_data() {
     if ( is_page_template( 'page-sobre-mim.php' ) ) {
         $cv_data = odyssee_cv_get_data();
-        
-        // Log para verificar execução
+
         $has_skills = ! empty( $cv_data['habilidades'] );
         $skills_count = 0;
         if ( is_array( $cv_data['habilidades'] ) ) {
@@ -1183,8 +1107,7 @@ function odyssee_cv_localize_frontend_data() {
         }
         
         error_log( '[odyssee-cv] odyssee_cv_localize_frontend_data executada: ' . ( $has_skills ? 'com ' . $skills_count . ' habilidades' : 'sem habilidades' ) );
-        
-        // Injetar dados via script inline (aparece antes dos scripts deferred)
+
         echo '<script>';
         echo 'window.odysseeCVData = ' . wp_json_encode( $cv_data ) . ';';
         echo 'console.log("[odyssee-cv] Dados injetados no window:", window.odysseyCVData);';
@@ -1192,6 +1115,3 @@ function odyssee_cv_localize_frontend_data() {
     }
 }
 
-// ==============================================
-// Fim do arquivo
-// ==============================================

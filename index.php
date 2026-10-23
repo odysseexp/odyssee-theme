@@ -1,32 +1,60 @@
-<?php get_header(); ?>
+<?php
 
-<!-- ==== PÁGINA DE POSTS (BLOG) ====
-     Filtro por busca e categoria (tags).
-     Grid e tags são renderizados pelo app.js (renderBlog / renderTagPills).
--->
+get_header();
+?>
 
-<main class="main-content">
-    <!-- Barra de filtro e busca de posts -->
-    
-    <section class="filter-section">
-        <h1 class="section-title" data-key="todos-posts">Todos os Posts</h1>
-        
-        <div class="filter-bar">
-            <input type="search" id="search-input" placeholder="Buscar por título, tag, ou conteúdo...">
-            
-            <div class="suggested-tags">
-                <span data-key="filtrar-por">Filtrar por:</span>
-            </div>
-        </div>
-    </section>
+<div class="container" style="padding-top: 3.5rem; padding-bottom: 5rem;">
+    <header class="page-hero">
+        <span class="section-badge">Portfólio & Artigos</span>
+        <h1 class="page-title">
+            <?php
+            if ( is_category() ) {
+                single_cat_title();
+            } elseif ( is_tag() ) {
+                single_tag_title();
+            } else {
+                echo 'Galeria de Projetos';
+            }
+            ?>
+        </h1>
+        <p class="page-lead">Explore nossa coleção de criações em design, edição de vídeo, motion e ilustração.</p>
+    </header>
 
-    <!-- Grid de posts (populado via JS/API) -->
-    <section class="post-grid-container">
-        <div class="post-grid">
-             <p style="text-align: center; width: 100%;" data-key="carregando-projetos">Carregando projetos...</p>
-        </div>
-    </section>
-    
-</main> 
+    <div class="portfolio-grid">
+        <?php if ( have_posts() ) : ?>
+            <?php while ( have_posts() ) : the_post(); ?>
+                <?php
+                $categories = get_the_category();
+                $cat_name = ! empty( $categories ) ? esc_html( $categories[0]->name ) : 'Projeto';
+                ?>
+                <article class="portfolio-card">
+                    <div class="card-thumb-wrapper">
+                        <?php if ( has_post_thumbnail() ) : ?>
+                            <img src="<?php the_post_thumbnail_url( 'medium_large' ); ?>" alt="<?php the_title_attribute(); ?>" class="card-thumb-img" loading="lazy">
+                        <?php else : ?>
+                            <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:var(--bg-surface-elevated); color:var(--text-muted);">
+                                <span><?php echo esc_html( $cat_name ); ?></span>
+                            </div>
+                        <?php endif; ?>
+                        <span class="card-category-tag"><?php echo esc_html( $cat_name ); ?></span>
+                    </div>
 
-<?php get_footer(); ?>
+                    <div class="card-content">
+                        <h3 class="card-title"><?php the_title(); ?></h3>
+                        <p class="card-excerpt"><?php echo wp_trim_words( get_the_excerpt(), 14, '...' ); ?></p>
+                        <div class="card-footer">
+                            <a href="<?php the_permalink(); ?>" class="card-link">
+                                Ver Projeto &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            <?php endwhile; ?>
+        <?php else : ?>
+            <p style="color:var(--text-muted); text-align:center; grid-column: 1 / -1;">Nenhum item encontrado.</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php
+get_footer();

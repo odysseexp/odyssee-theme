@@ -1,20 +1,13 @@
-/**
- * FAQ Admin Panel JavaScript
- * Gerencia repetições aninhadas (Categorias, Subcategorias, Perguntas, Links),
- * toggle de sanfona e reordenação por Drag & Drop (jQuery UI Sortable).
- */
+
 
 (function($) {
     'use strict';
 
     console.log('[FAQ-ADMIN] Inicializando script do painel FAQ...');
 
-    // =====================================================
-    // 1. TOGGLE (SANFONA) DE CABEÇALHOS
-    // =====================================================
     function initCollapsibles() {
         $(document).off('click', '.collapsible-header').on('click', '.collapsible-header', function(e) {
-            // Ignorar cliques no botão de remover
+            
             if ($(e.target).closest('.remove-button').length) {
                 return;
             }
@@ -27,13 +20,9 @@
         });
     }
 
-    // =====================================================
-    // 2. REORDENAÇÃO DRAG & DROP (SORTABLE)
-    // =====================================================
     function initSortable() {
         if (!$.fn.sortable) return;
 
-        // Categorias principais
         $('.category-container').sortable({
             handle: '.category-header',
             items: '> .category-item',
@@ -43,7 +32,6 @@
             }
         });
 
-        // Subcategorias dentro de categorias
         $('.subcategory-container').sortable({
             handle: '.subcategory-header',
             items: '> .subcategory-item',
@@ -53,7 +41,6 @@
             }
         });
 
-        // Perguntas dentro de subcategorias
         $('.question-container').sortable({
             handle: '.question-header',
             items: '> .question-item',
@@ -63,7 +50,6 @@
             }
         });
 
-        // Links dentro de perguntas
         $('.links-container-list').sortable({
             handle: '.link-handle',
             items: '> .link-item',
@@ -75,9 +61,6 @@
         $('.category-header, .subcategory-header, .question-header, .link-handle').css('cursor', 'move');
     }
 
-    // =====================================================
-    // 3. REMOÇÃO DE ITENS
-    // =====================================================
     function initRemoveButtons() {
         $(document).off('click', '.remove-button').on('click', '.remove-button', function(e) {
             e.preventDefault();
@@ -93,11 +76,8 @@
         });
     }
 
-    // =====================================================
-    // 4. ADIÇÃO DE NOVOS ITENS
-    // =====================================================
     function initAddButtons() {
-        // Adicionar Categoria
+        
         $(document).off('click', '.add-category-btn').on('click', '.add-category-btn', function(e) {
             e.preventDefault();
             var template = $('#tpl-category').html();
@@ -108,7 +88,6 @@
             $newCat.find('.category-header').trigger('click');
         });
 
-        // Adicionar Subcategoria
         $(document).off('click', '.add-subcategory-btn').on('click', '.add-subcategory-btn', function(e) {
             e.preventDefault();
             var template = $('#tpl-subcategory').html();
@@ -119,7 +98,6 @@
             $newSub.find('.subcategory-header').trigger('click');
         });
 
-        // Adicionar Pergunta
         $(document).off('click', '.add-question-btn').on('click', '.add-question-btn', function(e) {
             e.preventDefault();
             var template = $('#tpl-question').html();
@@ -130,7 +108,6 @@
             $newQ.find('.question-header').trigger('click');
         });
 
-        // Adicionar Link
         $(document).off('click', '.add-link-btn').on('click', '.add-link-btn', function(e) {
             e.preventDefault();
             var template = $('#tpl-link').html();
@@ -141,18 +118,13 @@
         });
     }
 
-    // =====================================================
-    // 5. ATUALIZAÇÃO DINÂMICA DE ÍNDICES E TÍTULOS
-    // =====================================================
     function updateAllIndices() {
         $('.category-container > .category-item').each(function(cIdx) {
             var $cat = $(this);
-            
-            // Título dinâmico da categoria
+
             var catNamePt = $cat.find('.cat-name-pt').val() || '';
             $cat.find('> .category-header .category-title span').text(catNamePt ? catNamePt : 'Categoria ' + (cIdx + 1));
 
-            // Renomear inputs da categoria
             $cat.find('input, textarea, select').each(function() {
                 var name = $(this).attr('data-name');
                 if (!name) return;
@@ -169,19 +141,16 @@
                 $(this).attr('name', finalName);
             });
 
-            // Iterar Subcategorias
             $cat.find('.subcategory-container > .subcategory-item').each(function(sIdx) {
                 var $sub = $(this);
                 var subNamePt = $sub.find('.subcat-name-pt').val() || '';
                 $sub.find('> .subcategory-header .subcategory-title span').text(subNamePt ? subNamePt : 'Subcategoria ' + (sIdx + 1));
 
-                // Iterar Perguntas
                 $sub.find('.question-container > .question-item').each(function(qIdx) {
                     var $q = $(this);
                     var qNamePt = $q.find('.question-name-pt').val() || '';
                     $q.find('> .question-header .question-title span').text(qNamePt ? qNamePt : 'Pergunta ' + (qIdx + 1));
 
-                    // Atualizar names dos campos da pergunta e seus links
                     $q.find('input, textarea, select').each(function() {
                         var name = $(this).attr('data-name');
                         if (!name) return;
@@ -197,12 +166,10 @@
         });
     }
 
-    // Sincronizar digitador de título com os headers
     $(document).on('keyup change', '.cat-name-pt, .subcat-name-pt, .question-name-pt', function() {
         updateAllIndices();
     });
 
-    // Inicialização
     $(function() {
         initCollapsibles();
         initSortable();

@@ -1,0 +1,40 @@
+# WordPress & Environment
+wp-config.php
+wp-config-*.php
+.env
+.env.*
+*.log
+
+# Database dumps & backups (Critical Security)
+*.sql
+*.sql.gz
+*.sqlite
+*.db
+*.tar
+*.tar.gz
+*.zip
+*.bak
+backup*/
+backups/
+
+# Operating System & IDE files
+.DS_Store
+Thumbs.db
+.directory
+.vscode/
+.idea/
+*.swp
+*~
+
+# Dependencies
+vendor/
+node_modules/
+
+# Server configurations
+.htaccess
+nginx.conf
+web.config
+
+# Internal implementation notes
+guia-painel-*.md
+implementacao-*.md

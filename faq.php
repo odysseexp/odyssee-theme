@@ -7,7 +7,6 @@
 
 get_header();
 
-// Carregar dados salvos no painel Admin (com fallback automático de seed)
 $faq_data = function_exists( 'odyssee_faq_get_data' ) ? odyssee_faq_get_data() : array();
 
 $hero_title_pt    = ! empty( $faq_data['hero_title_pt'] ) ? $faq_data['hero_title_pt'] : 'FAQ – Perguntas Frequentes';
@@ -19,7 +18,7 @@ $categorias = ! empty( $faq_data['categorias'] ) && is_array( $faq_data['categor
 ?>
 
 <main class="faq-page">
-    <!-- Hero da pagina FAQ -->
+    
     <section class="faq-hero">
         <div class="container">
             <h1 class="faq-main-title" data-pt="<?php echo esc_attr( $hero_title_pt ); ?>" data-en="<?php echo esc_attr( $hero_title_en ); ?>">
@@ -31,7 +30,6 @@ $categorias = ! empty( $faq_data['categorias'] ) && is_array( $faq_data['categor
         </div>
     </section>
 
-    <!-- Lista de perguntas e respostas por categoria e subcategoria -->
     <section class="faq-content">
         <div class="container">
             <div class="faq-categories-wrapper">

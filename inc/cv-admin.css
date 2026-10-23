@@ -1,20 +1,10 @@
-/* ===================================================
-   CV Admin Panel Styles
-   =================================================== */
-
 .odyssee-cv-admin-wrap {
     max-width: 1000px;
     margin-top: 20px;
 }
-
 .odyssee-cv-admin-wrap h1 {
     margin-bottom: 30px;
 }
-
-/* ===================================================
-   Tabs Navigation
-   =================================================== */
-
 .cv-admin-tabs {
     display: flex;
     gap: 10px;
@@ -22,7 +12,6 @@
     border-bottom: 1px solid #ccc;
     flex-wrap: wrap;
 }
-
 .tab-button {
     padding: 10px 20px;
     border: none;
@@ -33,30 +22,21 @@
     border-bottom: 3px solid transparent;
     transition: all 0.3s ease;
 }
-
 .tab-button:hover {
     color: #0073aa;
 }
-
 .tab-button.active {
     color: #0073aa;
     border-bottom-color: #0073aa;
     font-weight: 500;
 }
-
-/* ===================================================
-   Tab Content
-   =================================================== */
-
 .tab-content {
     display: none;
     animation: fadeIn 0.3s ease;
 }
-
 .tab-content.active {
     display: block;
 }
-
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -65,11 +45,6 @@
         opacity: 1;
     }
 }
-
-/* ===================================================
-   Form Groups & Sections
-   =================================================== */
-
 .cv-admin-section {
     background: #fff;
     padding: 20px;
@@ -77,86 +52,68 @@
     border: 1px solid #ddd;
     border-radius: 4px;
 }
-
 .cv-admin-section h3 {
     margin-top: 0;
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 2px solid #f0f0f0;
 }
-
 .form-group {
     margin-bottom: 20px;
 }
-
 .form-group label {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
     color: #333;
 }
-
 .form-group textarea,
 .form-group input[type="text"],
 .form-group select {
     width: 100%;
     box-sizing: border-box;
 }
-
 .form-group.field-2col,
 .form-group.field-3col {
     display: grid;
     gap: 20px;
 }
-
 .form-group.field-2col {
     grid-template-columns: 1fr 1fr;
 }
-
 .form-group.field-3col {
     grid-template-columns: 1fr 1fr 1fr;
 }
-
 .form-group.field-2col > div,
 .form-group.field-3col > div {
     display: flex;
     flex-direction: column;
 }
-
 .form-group.field-2col > div label,
 .form-group.field-3col > div label {
     margin-bottom: 8px;
 }
-
 .form-group.field-2col > div input,
 .form-group.field-2col > div select,
 .form-group.field-3col > div input,
 .form-group.field-3col > div select {
     width: 100%;
 }
-
 .form-group .description {
     margin: 8px 0 0 0;
     color: #666;
     font-size: 12px;
     font-style: italic;
 }
-
 .form-group em {
     color: #666;
     font-size: 12px;
     font-style: italic;
     font-weight: normal;
 }
-
-/* ===================================================
-   Repeater Fields
-   =================================================== */
-
 .repeater-container {
     margin-bottom: 20px;
 }
-
 .repeater-item {
     background: #f9f9f9;
     border: 1px solid #ddd;
@@ -164,7 +121,6 @@
     margin-bottom: 15px;
     overflow: hidden;
 }
-
 .repeater-header {
     background: #f0f0f0;
     padding: 15px;
@@ -175,33 +131,23 @@
     border-bottom: 1px solid #ddd;
     transition: background 0.2s ease;
 }
-
 .repeater-header:hover {
     background: #e8e8e8;
 }
-
 .repeater-title {
     font-weight: 500;
     color: #333;
 }
-
 .repeater-fields {
     padding: 20px;
     display: none;
 }
-
 .repeater-item.active .repeater-fields {
     display: block;
 }
-
 .repeater-item.active .repeater-header {
     background: #e8f4f8;
 }
-
-/* ===================================================
-   Habilidades Specifics
-   =================================================== */
-
 .habilidades-categoria {
     background: #fff;
     padding: 20px;
@@ -209,28 +155,20 @@
     border: 1px solid #ddd;
     border-radius: 4px;
 }
-
 .habilidades-categoria h3 {
     margin-top: 0;
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 2px solid #f0f0f0;
 }
-
 .habilidade-item {
     background: #f9f9f9;
 }
-
-/* ===================================================
-   Media Upload Group
-   =================================================== */
-
 .media-upload-group {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
-
 .icon-preview {
     width: 80px;
     height: 80px;
@@ -242,29 +180,21 @@
     background: #f9f9f9;
     overflow: hidden;
 }
-
 .icon-preview .placeholder {
     color: #999;
     font-size: 12px;
     text-align: center;
     padding: 10px;
 }
-
 .habilidade-icon-preview {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
 }
-
 .upload-icon-button,
 .remove-icon-button {
     align-self: flex-start;
 }
-
-/* ===================================================
-   Form Actions
-   =================================================== */
-
 .form-actions {
     background: #fff;
     padding: 20px;
@@ -273,32 +203,23 @@
     border-radius: 4px;
     text-align: right;
 }
-
-/* ===================================================
-   Responsive
-   =================================================== */
-
 @media (max-width: 768px) {
     .form-group.field-2col,
     .form-group.field-3col {
         grid-template-columns: 1fr;
     }
-
     .cv-admin-tabs {
         flex-direction: column;
     }
-
     .tab-button {
         width: 100%;
         text-align: left;
         border-bottom: 3px solid #ddd;
     }
-
     .tab-button.active {
         border-left: 4px solid #0073aa;
         border-bottom: 3px solid #ddd;
     }
-
     .repeater-header {
         flex-direction: column;
         align-items: flex-start;

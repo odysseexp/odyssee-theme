@@ -1,14 +1,7 @@
 <?php
-/**
- * Template Page: Sobre Mim - Currículo Web
- * Exibe: hero com foto/contatos, timeline de experiência,
- *        formação, habilidades, softwares e sistemas operacionais.
- * Traduzido via cv-page.js (initCVPage / translateCVPage).
- */
 
 get_header();
 
-// Função para resolver Case Sensitivity dos SVGs no Linux Server
 function get_actual_logo_uri($filename)
 {
     static $logos_map = null;
@@ -36,7 +29,7 @@ function get_actual_logo_uri($filename)
 ?>
 
 <main class="cv-page">
-    <!-- Hero do curriculo (foto, nome e contatos) -->
+    
     <section class="cv-hero">
         <div class="cv-hero-content">
             <div class="cv-profile-image">
@@ -64,7 +57,7 @@ function get_actual_logo_uri($filename)
                     <a href="https://www.linkedin.com/in/harleypaiva/" class="cv-contact-item" target="_blank" rel="noopener noreferrer">
                         <i class="fab fa-brands fa-linkedin-in"></i> LinkedIn
                     </a>
-                    <a href="https://odysseexp.com" class="cv-contact-item" target="_blank" rel="noopener noreferrer">
+                    <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="cv-contact-item" target="_blank" rel="noopener noreferrer">
                         <i class="fas fa-globe"></i> Odyssee Experience
                     </a>
                     <a href="https://github.com/HarleyHawk?tab=repositories" class="cv-contact-item" target="_blank" rel="noopener noreferrer">
@@ -75,7 +68,6 @@ function get_actual_logo_uri($filename)
         </div>
     </section>
 
-    <!-- Experiencia profissional (linha do tempo) -->
     <section class="cv-section cv-experience">
         <h2 class="cv-section-title" data-key="cv-experience-title">Experiência profissional</h2>
         <div class="cv-timeline">
@@ -232,7 +224,6 @@ regularizações de débitos.</li>
         </div>
     </section>
 
-    <!-- Formacao e cursos -->
     <section class="cv-section cv-education">
         <h2 class="cv-section-title" data-key="cv-education-title">Formação e cursos</h2>
         <div class="cv-education-grid">
@@ -255,7 +246,6 @@ regularizações de débitos.</li>
         </div>
     </section>
 
-    <!-- Idiomas e habilidades -->
     <section class="cv-section cv-skills">
         <h2 class="cv-section-title" data-key="cv-skills-title">Idiomas e outras habilidades</h2>
 
@@ -460,7 +450,6 @@ regularizações de débitos.</li>
         </div>
     </section>
 
-    <!-- expectativa -->
     <section class="cv-section cv-expectativa-section">
         <h2 class="cv-section-title" data-key="cv-expectativa-title">O que almejo</h2>
         <div class="cv-expectativa">
@@ -471,19 +460,15 @@ regularizações de débitos.</li>
             <p data-key="cv-expectativa-3">Não estou interessado em cargos que exijam liderança ativa ou que me responsabilizem por outros colaboradores. Minha preferência é por atuar em equipe ou de maneira independente, onde possa desempenhar minhas funções com eficácia.</p>
         </div>
     </section>
-        
 
-    <!-- Citação final -->
     <div class="cv-quote">
         <p data-key="cv-quote">"Intelligence is the ability to avoid doing work, yet getting the work done."</p>
         <span data-key="cv-quote-author">~Linus Torvalds</span>
     </div>
 </main>
 
-<!-- Script dedicado da pagina de CV (tema/imagem/traducao) -->
 <script src="<?php echo esc_url(get_template_directory_uri() . '/assets/js/cv-page.js'); ?>" defer></script>
 
-<!-- Script para carregar dados do painel admin -->
 <script src="<?php echo esc_url(get_template_directory_uri() . '/assets/js/cv-page-admin-data.js'); ?>" defer></script>
 
 <?php get_footer(); ?>

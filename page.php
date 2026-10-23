@@ -1,14 +1,21 @@
-<?php get_header(); ?>
+<?php
 
-<main class="main-content">
-    <section class="page-section" style="padding-top: 120px; padding-bottom: 60px;">
-        <?php while ( have_posts() ) : the_post(); ?>
-            <h1 class="section-title" style="text-align: center; margin-bottom: 40px;"><?php the_title(); ?></h1>
-            <div class="page-content" style="max-width: 800px; margin: 0 auto; color: var(--color-text); line-height: 1.8; font-size: 1.1rem; padding: 0 20px;">
+get_header();
+?>
+
+<div class="container" style="padding-top: 3.5rem; padding-bottom: 5rem;">
+    <?php while ( have_posts() ) : the_post(); ?>
+        <header class="page-hero" style="border-bottom:none; padding: 2rem 0; text-align: left;">
+            <h1 class="page-title"><?php the_title(); ?></h1>
+        </header>
+
+        <article class="content-wrapper">
+            <div class="entry-content" style="color: var(--text-secondary); line-height: 1.8;">
                 <?php the_content(); ?>
             </div>
-        <?php endwhile; ?>
-    </section>
-</main> 
+        </article>
+    <?php endwhile; ?>
+</div>
 
-<?php get_footer(); ?>
+<?php
+get_footer();

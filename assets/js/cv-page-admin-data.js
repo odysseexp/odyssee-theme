@@ -1,17 +1,11 @@
-/**
- * CV Page Admin Data Module
- * Carrega dados do painel admin ao invés de dados hardcoded
- * Funciona em conjunto com cv-page.js
- */
+
 
 (function() {
     'use strict';
 
-    // Log de inicialização
     console.log('[CV-PAGE-ADMIN] Script iniciado');
     console.log('[CV-PAGE-ADMIN] odysseyCVData disponível:', typeof window.odysseyCVData !== 'undefined');
 
-    // Verificar se dados do admin estão disponíveis
     if (typeof odysseyCVData === 'undefined') {
         console.warn('[CV-PAGE-ADMIN] AVISO: Dados do painel admin não encontrados (odysseyCVData é undefined)');
         console.warn('[CV-PAGE-ADMIN] Verificar se a função odyssee_cv_localize_frontend_data() está sendo chamada');
@@ -21,9 +15,6 @@
     console.log('[CV-PAGE-ADMIN] ✓ Dados do painel admin encontrados');
     console.log('[CV-PAGE-ADMIN] Dados:', odysseyCVData);
 
-    // =====================================================
-    // 1. PREENCHER DESCRIÇÃO (INTRO)
-    // =====================================================
     function loadDescription() {
         const currentLang = (window.safeStorage && window.safeStorage.getItem('userLang')) || localStorage.getItem('userLang') || 'pt';
         const langKey = currentLang === 'en' ? 'en_us' : 'pt_br';
@@ -65,9 +56,6 @@
         }
     }
 
-    // =====================================================
-    // 2. PREENCHER EXPERIÊNCIAS PROFISSIONAIS
-    // =====================================================
     function loadExperiences() {
         const currentLang = (window.safeStorage && window.safeStorage.getItem('userLang')) || localStorage.getItem('userLang') || 'pt';
         const descKey = currentLang === 'en' ? 'descricao_en' : 'descricao_pt';
@@ -79,13 +67,8 @@
             return;
         }
 
-        // Limpar timeline existente (dados hardcoded)
-        // Comentado para manter compatibilidade com dados existentes
-        // timelineContainer.innerHTML = '';
-
-        // Se temos dados do admin, substituir
         if (experiencias.length > 0) {
-            // Só preencher se houver dados de admin
+            
             const existingItems = timelineContainer.querySelectorAll('.cv-timeline-item');
             existingItems.forEach(item => item.remove());
 
@@ -115,9 +98,6 @@
         }
     }
 
-    // =====================================================
-    // 3. PREENCHER CURSOS
-    // =====================================================
     function loadCourses() {
         const currentLang = (window.safeStorage && window.safeStorage.getItem('userLang')) || localStorage.getItem('userLang') || 'pt';
         const descKey = currentLang === 'en' ? 'descricao_en' : 'descricao_pt';
@@ -135,7 +115,6 @@
             return;
         }
 
-        // Se temos dados do admin, substituir
         if (cursos.length > 0) {
             const existingItems = educationList.querySelectorAll('.cv-education-item');
             existingItems.forEach(item => item.remove());
@@ -163,24 +142,20 @@
         }
     }
 
-    // =====================================================
-    // 4. PREENCHER HABILIDADES COM ÍCONES
-    // =====================================================
     function loadSkills() {
-        // Certificar que temos dados
+        
         if (!odysseyCVData || !odysseyCVData.habilidades) {
             console.log('[CV-PAGE-ADMIN] Sem dados de habilidades');
             return;
         }
 
         const habilidades = odysseyCVData.habilidades;
-        
-        // Mapear seletores - com compatibilidade para dados retroativos
+
         const categoriasMapeadas = {
             'criativos': '#creative-software-grid',
             'office': '#office-software-grid',
             'programacao': '#programming-software-grid',
-            'softwares': '#programming-software-grid', // compatibilidade retroativa
+            'softwares': '#programming-software-grid', 
             'os': '#os-software-grid',
         };
 
@@ -198,7 +173,7 @@
             console.log(`[CV-PAGE-ADMIN] ${categoria}: ${items.length} itens`);
 
             if (items.length > 0) {
-                // Limpar apenas os itens de software, mantendo a estrutura
+                
                 const existingItems = container.querySelectorAll('.cv-software-item, .cv-os-item');
                 console.log(`[CV-PAGE-ADMIN] Removendo ${existingItems.length} itens existentes de ${categoria}`);
                 existingItems.forEach(item => item.remove());
@@ -213,7 +188,6 @@
                         iconHTML = `<img src="${escapeHtml(skill.icon_url)}" alt="${escapeHtml(skill.nome || '')}" class="cv-software-icon" />`;
                     }
 
-                    // Para OS, não mostra o nível; para outros softwares, mostra
                     const nivel = (categoria !== 'os' && categoria !== 'softwares' && skill.nivel) ? ` <span>${escapeHtml(skill.nivel)}</span>` : '';
                     const nome = skill.nome ? escapeHtml(skill.nome) : '';
 
@@ -236,13 +210,6 @@
         });
     }
 
-    // =====================================================
-    // 5. UTILIDADES
-    // =====================================================
-
-    /**
-     * Escapar HTML para evitar XSS
-     */
     function escapeHtml(text) {
         const map = {
             '&': '&amp;',
@@ -254,9 +221,6 @@
         return text.replace(/[&<>"']/g, m => map[m]);
     }
 
-    /**
-     * Função principal para carregar todos os dados
-     */
     function loadAllData() {
         console.log('[CV-PAGE-ADMIN] Carregando todos os dados...');
         loadDescription();
@@ -265,18 +229,12 @@
         loadSkills();
     }
 
-    // =====================================================
-    // 6. INICIALIZAÇÃO
-    // =====================================================
-
-    // Carregar dados ao DOM estar pronto
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', loadAllData);
     } else {
         loadAllData();
     }
 
-    // Recarregar tudo quando o idioma muda
     window.addEventListener('storage', (e) => {
         if (e.key === 'userLang') {
             console.log('[CV-PAGE-ADMIN] Idioma mudou, atualizando dados...');

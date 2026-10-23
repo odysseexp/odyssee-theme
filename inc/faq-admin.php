@@ -1,17 +1,9 @@
 <?php
-/**
- * Módulo de Administração da Página FAQ
- * Permite gerenciar Título/Subtítulo Hero, Categorias, Subcategorias, Perguntas, Respostas e Links/Anexos
- * Suporta tradução PT-BR / EN-US e reordenação por Drag & Drop.
- */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// ==============================================
-// 1. REGISTRAR PÁGINA DO MENU ADMIN
-// ==============================================
 add_action( 'admin_menu', 'odyssee_faq_add_admin_menu' );
 function odyssee_faq_add_admin_menu() {
     add_menu_page(
@@ -25,9 +17,6 @@ function odyssee_faq_add_admin_menu() {
     );
 }
 
-// ==============================================
-// 2. ENQUEUE ASSETS DO ADMIN
-// ==============================================
 add_action( 'admin_enqueue_scripts', 'odyssee_faq_enqueue_admin_assets' );
 function odyssee_faq_enqueue_admin_assets( $hook_suffix ) {
     if ( 'toplevel_page_odyssee-faq-manager' !== $hook_suffix ) {
@@ -50,9 +39,6 @@ function odyssee_faq_enqueue_admin_assets( $hook_suffix ) {
     );
 }
 
-// ==============================================
-// 3. RECUPERAR DADOS DO BANCO (COM SEED PADRÃO)
-// ==============================================
 function odyssee_faq_get_data() {
     $data = get_option( 'odyssee_faq_data', array() );
 
@@ -60,7 +46,6 @@ function odyssee_faq_get_data() {
         return $data;
     }
 
-    // Seed padrão com todas as perguntas atuais da FAQ
     $default_data = array(
         'hero_title_pt'    => 'FAQ – Perguntas Frequentes',
         'hero_title_en'    => 'FAQ – Frequently Asked Questions',
@@ -136,9 +121,6 @@ function odyssee_faq_get_data() {
     return $default_data;
 }
 
-// ==============================================
-// 4. SALVAR DADOS DO FORMULÁRIO
-// ==============================================
 function odyssee_faq_save_data() {
     if ( ! isset( $_POST['odyssee_faq_nonce'] ) || ! wp_verify_nonce( $_POST['odyssee_faq_nonce'], 'odyssee_faq_save' ) ) {
         return;
@@ -209,9 +191,6 @@ function odyssee_faq_save_data() {
     add_settings_error( 'odyssee_faq_messages', 'odyssee_faq_message', 'Configurações de FAQ salvas com sucesso!', 'updated' );
 }
 
-// ==============================================
-// 5. RENDERIZAÇÃO DA PÁGINA ADMIN
-// ==============================================
 function odyssee_faq_admin_page() {
     if ( isset( $_POST['submit_faq_admin'] ) ) {
         odyssee_faq_save_data();
@@ -227,7 +206,6 @@ function odyssee_faq_admin_page() {
         <form method="post" class="odyssee-faq-form">
             <?php wp_nonce_field( 'odyssee_faq_save', 'odyssee_faq_nonce' ); ?>
 
-            <!-- Seção Hero -->
             <div class="faq-admin-section">
                 <h2>Cabeçalho Principal (Hero)</h2>
                 <div class="form-row">
@@ -252,7 +230,6 @@ function odyssee_faq_admin_page() {
                 </div>
             </div>
 
-            <!-- Seção Categorias & Perguntas -->
             <div class="faq-admin-section">
                 <h2>Categorias, Subcategorias e Perguntas</h2>
                 <p class="description">Arraste e solte pelo cabeçalho de qualquer item para alterar a ordem de exibição no site.</p>
@@ -342,7 +319,6 @@ function odyssee_faq_admin_page() {
                                                                     </div>
                                                                 </div>
 
-                                                                <!-- Links / Botões Anexos -->
                                                                 <div class="links-container">
                                                                     <label><strong>Botões / Links de Anexo (ex: Drives de contrato, certificados)</strong></label>
                                                                     <div class="links-container-list">
@@ -385,7 +361,6 @@ function odyssee_faq_admin_page() {
         </form>
     </div>
 
-    <!-- TEMPLATES JS PARA INSERÇÃO DINÂMICA -->
     <script type="text/template" id="tpl-category">
         <div class="category-item collapsible-item">
             <div class="category-header collapsible-header">

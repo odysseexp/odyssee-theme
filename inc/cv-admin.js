@@ -1,16 +1,9 @@
-/**
- * CV Admin Panel JavaScript
- * Gerencia repeater fields, tabs e uploads de ícones
- */
+
 
 (function() {
     'use strict';
 
     console.log('[CV-ADMIN] Inicializando painel admin...');
-
-    // =====================================================
-    // 1. TAB MANAGEMENT
-    // =====================================================
 
     function initTabs() {
         const tabButtons = document.querySelectorAll('.tab-button');
@@ -25,11 +18,9 @@
                 const tabName = this.getAttribute('data-tab');
                 console.log('[CV-ADMIN] Clicou em tab:', tabName);
 
-                // Remover active de todos
                 tabButtons.forEach(btn => btn.classList.remove('active'));
                 tabContents.forEach(content => content.classList.remove('active'));
 
-                // Adicionar active ao clicado
                 this.classList.add('active');
                 const tabContent = document.getElementById('tab-' + tabName);
                 if (tabContent) {
@@ -38,10 +29,6 @@
             });
         });
     }
-
-    // =====================================================
-    // 2. REPEATER FIELDS
-    // =====================================================
 
     function initRepeaterHeaders() {
         const headers = document.querySelectorAll('.repeater-header');
@@ -102,24 +89,20 @@
                 const currentIndex = container.querySelectorAll('.repeater-item').length;
                 let html = template.innerHTML;
 
-                // Substituir placeholders
                 html = html.replace(/{index}/g, currentIndex);
                 html = html.replace(/{categoria}/g, repeaterClass.replace('habilidades-', '').replace('-repeater', ''));
 
-                // Criar novo elemento
                 const newItem = document.createElement('div');
                 newItem.innerHTML = html;
                 const newItemDiv = newItem.firstElementChild;
 
                 container.appendChild(newItemDiv);
 
-                // Expandir novo item
                 const header = newItemDiv.querySelector('.repeater-header');
                 if (header) {
                     header.click();
                 }
 
-                // Reinicializar listeners
                 initRemoveButtons();
                 initRepeaterHeaders();
                 initHabilidadeNomeInput();
@@ -151,7 +134,6 @@
                     }
                 }
 
-                // Atualizar names
                 const inputs = item.querySelectorAll('input, textarea, select');
                 inputs.forEach(input => {
                     let name = input.getAttribute('name');
@@ -182,10 +164,6 @@
         });
     }
 
-    // =====================================================
-    // 3. SORTABLE (DRAG AND DROP)
-    // =====================================================
-
     function initSortable() {
         if (typeof jQuery !== 'undefined' && jQuery.fn.sortable) {
             jQuery('.repeater-container').sortable({
@@ -195,14 +173,10 @@
                     updateRepeaterIndices();
                 }
             });
-            // Adicionar cursor de arrastar no header
+            
             jQuery('.repeater-header').css('cursor', 'move');
         }
     }
-
-    // =====================================================
-    // 4. INICIALIZAÇÃO
-    // =====================================================
 
     function init() {
         console.log('[CV-ADMIN] Iniciando componentes...');
@@ -215,7 +189,6 @@
         initHabilidadeNomeInput();
         initSortable();
 
-        // Expandir primeiro item
         const firstItem = document.querySelector('.repeater-item');
         if (firstItem) {
             firstItem.classList.add('active');
@@ -228,7 +201,6 @@
         console.log('[CV-ADMIN] Painel inicializado com sucesso!');
     }
 
-    // Inicializar quando DOM estiver pronto
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
@@ -236,10 +208,6 @@
     }
 
 })();
-
-// =====================================================
-// jQuery Fallback para upload de mídia
-// =====================================================
 
 if (typeof jQuery !== 'undefined') {
     jQuery(function($) {

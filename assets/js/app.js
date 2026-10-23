@@ -1,19 +1,5 @@
-// --- 1. DADOS (AGORA VINDO DO WORDPRESS) ---
-// Arquivo principal do tema: dados, renderizacao, interacoes e traducoes.
 
-/* ==============================================
-   ARQUIVO app.js (VERSÃO FINAL P/ WORDPRESS)
-   ============================================== */
 
-// ==============================================
-// SEGURANÇA: Funções de sanitização contra XSS
-// ==============================================
-
-/**
- * Escapa caracteres especiais HTML
- * @param {string} str - String a ser escapada
- * @returns {string} String escapada
- */
 function escapeHtml(str) {
     if (typeof str !== 'string') return '';
     const div = document.createElement('div');
@@ -21,30 +7,18 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-/**
- * Decodifica entidades HTML como &#8211; para caracteres reais (–)
- * @param {string} str - String possivelmente com entidades HTML
- * @returns {string} String com entidades decodificadas
- */
 function decodeHtmlEntities(str) {
     if (!str || typeof str !== 'string') return '';
     try {
-        // Usamos DOMParser para interpretar como HTML e obter textContent
+        
         const doc = new DOMParser().parseFromString(str, 'text/html');
         return doc.documentElement.textContent || '';
     } catch (e) {
-        // Fallback simples: tenta substituir algumas entidades comuns
+        
         return str.replace(/&#8211;/g, '–').replace(/&amp;#/g, '&#');
     }
 }
 
-/**
- * Cria elementos DOM de forma segura (evita innerHTML)
- * @param {string} tag - Nome da tag HTML
- * @param {object} attrs - Atributos do elemento
- * @param {string|HTMLElement} content - Conteúdo da tag
- * @returns {HTMLElement}
- */
 function createElement(tag, attrs = {}, content = '') {
     const el = document.createElement(tag);
 
@@ -56,7 +30,7 @@ function createElement(tag, attrs = {}, content = '') {
                 el.dataset[dataKey] = attrs[key][dataKey];
             });
         } else if (key.startsWith('on')) {
-            // Não permitir event handlers inline
+            
             console.warn(`Atributo ${key} não permitido por segurança`);
         } else {
             el.setAttribute(key, attrs[key]);
@@ -72,15 +46,9 @@ function createElement(tag, attrs = {}, content = '') {
     return el;
 }
 
-/**
- * Valida e sanitiza URLs antes de usar em href
- * @param {string} url - URL a validizar
- * @returns {string} URL segura ou vazia
- */
 function sanitizeUrl(url) {
     if (!url) return '';
 
-    // Whitelist de protocolos seguros
     const safeProtocols = ['http://', 'https://', 'mailto:', 'tel:', 'whatsapp:', '/'];
     const trimmed = url.trim().toLowerCase();
 
@@ -94,22 +62,13 @@ function sanitizeUrl(url) {
     return url;
 }
 
-/**
- * Sanitiza entrada de busca do usuário
- * Remove tags HTML e caracteres perigosos
- * @param {string} input - Texto de entrada
- * @returns {string} Texto sanitizado
- */
 function sanitizeSearchInput(input) {
     if (!input) return '';
 
-    // Remove tags HTML
     let sanitized = input.replace(/<[^>]*>/g, '');
 
-    // Remove caracteres especiais perigosos (mantém pontuação comum)
     sanitized = sanitized.replace(/[<>"{};]/g, '');
 
-    // Limita o tamanho da busca (previne DoS)
     if (sanitized.length > 200) {
         sanitized = sanitized.substring(0, 200);
     }
@@ -117,12 +76,8 @@ function sanitizeSearchInput(input) {
     return sanitized.trim();
 }
 
-// ==============================================
-// TRADUÇÕES: Textos da interface em PT-BR e EN-US
-// Chaves usadas via data-key nos elementos HTML
-// ==============================================
 const translations = {
-    // Português Brasileiro
+    
     'pt': {
         'titulo': "Odyssee Experience",
         'subtitulo': "mais que um portfólio, uma experiência web criativa",
@@ -149,7 +104,7 @@ const translations = {
         'clique-detalhes': 'Clique para ver os detalhes completos deste trabalho.',
         'ver-detalhes': 'Ver Detalhes',
         'portfolio': 'portfolio',
-        // Subcategorias
+        
         'carrossel': 'Carrossel',
         'video-curto': 'Vídeo Curto',
         'video-longo': 'Vídeo Longo',
@@ -167,7 +122,7 @@ const translations = {
         'exemplo-desc': 'Este é um exemplo visual de como seu produto pode ficar.',
         'ver-servicos': 'Ver Serviços e Preços'
     },
-    // Inglês (EN-US)
+    
     'en': {
         'titulo': "Odyssee Experience",
         'subtitulo': "more than a portfolio, a creative web experience",
@@ -194,7 +149,7 @@ const translations = {
         'clique-detalhes': 'Click to see the complete details of this work.',
         'ver-detalhes': 'View Details',
         'portfolio': 'portfolio',
-        // Subcategorias
+        
         'carrossel': 'Carousel',
         'video-curto': 'Short Video',
         'video-longo': 'Long Video',
@@ -214,7 +169,6 @@ const translations = {
     }
 };
 
-// Chaves adicionais de UI (adicionadas separadamente para organização)
 translations.pt['sobre-mim'] = 'Sobre Mim';
 translations.en['sobre-mim'] = 'About Me';
 translations.pt['configuracoes'] = 'Configurações';
@@ -240,18 +194,16 @@ translations.en['menu'] = 'Menu';
 translations.pt['continuar'] = 'Continuar →';
 translations.en['continuar'] = 'Continue →';
 
-// Chaves de economia traduzidas (usadas no cálculo de desconto dos pacotes)
 translations.pt['you-save-prefix'] = 'Você economiza R$ ';
 translations.en['you-save-prefix'] = 'You save R$ ';
 translations.pt['consulte'] = 'Consulte';
 translations.en['consulte'] = 'Contact';
 translations.pt['no-results'] = 'Nenhum projeto encontrado com esses termos.';
 translations.en['no-results'] = 'No projects found for these terms.';
-// Service/package section keys
+
 translations.pt['pacotes-promocionais'] = 'Pacotes Promocionais';
 translations.en['pacotes-promocionais'] = 'Promotional Packages';
 
-// Ilustração Digital - Configurador
 translations.pt['ilustracao-tutorial'] = 'Você primeiro escolhe o estilo da arte e depois escolhe qual será o tipo da arte e por último adicionais. Após selecionar as opções, basta interagir com o botão contratar que você será redirecionado para contato com o ilustrador.';
 translations.en['ilustracao-tutorial'] = 'First choose the art style, then choose the type of art, and finally the add-ons. After selecting the options, simply click the hire button to be redirected to contact the illustrator.';
 translations.pt['ilustracao-estilo-label'] = 'Estilo da Arte:';
@@ -263,8 +215,6 @@ translations.en['ilustracao-adicionais-label'] = 'Add-ons:';
 translations.pt['ilustracao-resumo-title'] = 'Seu Serviço';
 translations.en['ilustracao-resumo-title'] = 'Your Service';
 
-// ========== FUNÇÕES DE OTIMIZAÇÃO ==========
-// Throttle: limita a frequência de execução de uma função
 function throttle(func, limit) {
     let inThrottle;
     return function (...args) {
@@ -276,7 +226,6 @@ function throttle(func, limit) {
     };
 }
 
-// Debounce: aguarda o usuário parar de disparar o evento para executar
 function debounce(func, delay) {
     let timeoutId;
     return function (...args) {
@@ -285,12 +234,6 @@ function debounce(func, delay) {
     };
 }
 
-// ==============================================
-// MAPEAMENTO DE SLUGS: WordPress -> chave de tradução
-// Permite que categorias do WP com slugs variados
-// (ex: 'edicao-de-video' ou 'edicao-video') apontem
-// para a mesma chave de tradução.
-// ==============================================
 const wpSlugToCategoryKey = {
     'design-grafico': 'design-grafico',
     'edicao-video': 'edicao-video',
@@ -300,7 +243,7 @@ const wpSlugToCategoryKey = {
     'ilustracao': 'ilustracao',
     'ilustracao-digital': 'ilustracao',
     'impressos': 'impressos',
-    // Subcategorias
+    
     'carrossel': 'carrossel',
     'video-curto': 'video-curto',
     'video-longo': 'video-longo',
@@ -312,43 +255,24 @@ const wpSlugToCategoryKey = {
     'fanart-chibi': 'fanart-chibi'
 };
 
-// ==============================================
-// GLOSSÁRIO DE TÍTULOS: Tradução manual de posts
-// Formato: 'Título em PT': 'Title in EN'
-// Usado como fallback quando o post não tem
-// o custom field 'post_title_en' preenchido.
-// ==============================================
 const postTitleTranslations = {
-    // Exemplo:
-    // 'Identidade Visual Completa': 'Complete Visual Identity',
-    // 'Motion Graphics para YouTube': 'YouTube Motion Graphics',
+
 };
 
-// Helper: retorna tradução do título do post
-// Prioridade: 1) custom field post_title_en  2) glossário manual  3) título original
 function getPostTitleTranslation(postTitle, customMetaEN) {
     if (!postTitle) return '';
 
-    // 1. Se existir custom field 'post_title_en' no post, usa
     if (customMetaEN && customMetaEN.trim()) {
         return customMetaEN;
     }
 
-    // 2. Se existir no glossário, usa
     if (postTitleTranslations[postTitle]) {
         return postTitleTranslations[postTitle];
     }
 
-    // 3. Senão retorna vazio para manter original
     return '';
 }
 
-// ==============================================
-// TRADUÇÕES DE SERVIÇOS E PACOTES
-// Cada serviço/pacote possui tradução PT e EN
-// para título (title) e descrição (desc).
-// Chave = ID do serviço (ex: 'logotipologo')
-// ==============================================
 const serviceTranslations = {
     'logotipologo': {
         pt: { title: 'Logotipo e Logo', desc: 'Uma logo única, criativa e estrategicamente feita para captar seu público alvo.' },
@@ -387,19 +311,16 @@ const serviceTranslations = {
         en: { title: 'Sticker Design', desc: 'Design for custom stickers.' }
     },
 
-    // Video
     'video_longo': { pt: { title: 'Vídeo Longo', desc: 'Um vídeo longo, perfeito para YouTube e outras plataformas.' }, en: { title: 'Long Video', desc: 'A long-format video, great for YouTube and other platforms.' } },
     'video_curto': { pt: { title: 'Vídeo Curto', desc: 'Um vídeo curto, ideal para redes sociais verticais e anúncios.' }, en: { title: 'Short Video', desc: 'Short video, ideal for vertical socials and ads.' } },
     'thumbnail': { pt: { title: 'Thumbnail', desc: 'Thumbnail personalizada para seu vídeo.' }, en: { title: 'Thumbnail', desc: 'Custom thumbnail for your video.' } },
 
-    // Motion
     'intro_animada': { pt: { title: 'Intro Animada', desc: 'Uma intro simples e criativa com elementos 2D' }, en: { title: 'Animated Intro', desc: 'A simple and creative 2D intro.' } },
     'logomotion': { pt: { title: 'Logo/logotipo Animado', desc: 'Logo animado para vídeos e apresentações' }, en: { title: 'Animated Logo', desc: 'Animated logo for videos and presentations.' } },
     'motionmoldura': { pt: { title: 'Moldura Animada', desc: 'Moldura animada para vídeos e transmissões ao vivo' }, en: { title: 'Animated Frame', desc: 'Animated frame for videos and streams.' } },
     'waitscreen': { pt: { title: 'Tela de Espera', desc: 'Animação em looping para telas de espera' }, en: { title: 'Waitscreen', desc: 'Looping animation for waiting screens.' } },
     'motionbanner': { pt: { title: 'Banner animado', desc: 'O banner da sua marca animado para chamar atenção' }, en: { title: 'Animated Banner', desc: 'Animated banner for your brand to attract attention.' } },
 
-    // Ilustração
     'fanart_anime': { pt: { title: 'Arte Estilo Anime', desc: 'Arte digital de personagem no estilo anime personalizada para você' }, en: { title: 'Anime-style Art', desc: 'Character art in anime style, custom made for you.' } },
     'fanart_cartoon': { pt: { title: 'Arte Estilo Cartoon', desc: 'Arte digital de personagem no estilo cartoon personalizada para você' }, en: { title: 'Cartoon-style Art', desc: 'Character art in cartoon style, custom made for you.' } },
     'fanart_chibi': { pt: { title: 'Arte Estilo Chibi', desc: 'Arte digital de personagem no estilo chibi personalizada para você' }, en: { title: 'Chibi-style Art', desc: 'Chibi-style character art, custom made.' } },
@@ -409,7 +330,6 @@ const serviceTranslations = {
     'cenario_digital': { pt: { title: 'Cenário digital', desc: 'Um cenário digital detalhado para livros, jogos ou projetos pessoais' }, en: { title: 'Digital Scene', desc: 'A detailed digital scene for books, games or personal projects.' } },
 };
 
-// Traduções de pacotes (título + lista de itens traduzida)
 const packageTranslations = {
     'designmegapackage': { pt: { title: 'Mega Pacote', items: ['10 posts', '10 stories criativos', '10 carrosséis'] }, en: { title: 'Mega Package', items: ['10 posts', '10 creative stories', '10 carousels'] } },
     'designpremiumpackage': { pt: { title: 'Pacote Premium', items: ['5 posts', '5 stories', '5 carrosséis'] }, en: { title: 'Premium Package', items: ['5 posts', '5 stories', '5 carousels'] } },
@@ -426,21 +346,18 @@ const packageTranslations = {
     'dez_thumbnails': { pt: { title: 'Dez Thumbnails', items: ['10 thumbnails'] }, en: { title: 'Ten Thumbnails', items: ['10 thumbnails'] } },
 };
 
-// Helper: retorna título traduzido do serviço (fallback: busca nos arrays originais)
 function getServiceTitle(id) {
     return (serviceTranslations[id] && serviceTranslations[id][currentLanguage] && serviceTranslations[id][currentLanguage].title) || (() => {
-        // fallback: procurar no array original
+        
         const s = designServices.concat(videoServices, motionGraphicsServices, ilustracaoDigitalServices).find(x => x.id === id);
         return s ? s.title : id;
     })();
 }
 
-// Helper: retorna descrição traduzida do serviço
 function getServiceDesc(id) {
     return (serviceTranslations[id] && serviceTranslations[id][currentLanguage] && serviceTranslations[id][currentLanguage].desc) || '';
 }
 
-// Helper: retorna informativo customizado do admin (tooltip do ícone i)
 function getServiceInfo(id) {
     if (typeof odysseeOverrides !== 'undefined' && odysseeOverrides[id] && odysseeOverrides[id].informativo) {
         return odysseeOverrides[id].informativo;
@@ -448,12 +365,10 @@ function getServiceInfo(id) {
     return '';
 }
 
-// Helper: retorna título traduzido do pacote
 function getPackageTitle(id) {
     return (packageTranslations[id] && packageTranslations[id][currentLanguage] && packageTranslations[id][currentLanguage].title) || id;
 }
 
-// Helper: retorna itens traduzidos do pacote (array de strings)
 function getPackageItems(id) {
     return (packageTranslations[id] && packageTranslations[id][currentLanguage] && packageTranslations[id][currentLanguage].items) || [];
 }
@@ -466,31 +381,21 @@ let allPosts = (typeof odysseeInitialPosts !== 'undefined' && Array.isArray(odys
             const cached = (window.safeStorage && window.safeStorage.getItem(cacheKey)) || (typeof localStorage !== 'undefined' ? localStorage.getItem(cacheKey) : null);
             return cached ? JSON.parse(cached) : [];
         } catch (e) { return []; }
-    })(); // Cache local dos posts (preenchido via PHP ou API REST do WP)
+    })(); 
 
-// ==============================================
-// CONFIGURAÇÃO DO WORDPRESS
-// baseUrl: domínio do site (para chamadas REST API)
-// postsPerPage: limite de posts por requisição
-// cacheExpire: tempo de validade do cache (5 min)
-// ==============================================
 const wpConfig = {
-    baseUrl: 'https://odysseexp.com',
+    baseUrl: 'http://localhost:8881',
     postsPerPage: 100,
     cacheExpire: 5 * 60 * 1000
 };
 
-// ========== FUNÇÃO PARA EXTRAIR EXCERPT DO CONTEÚDO ==========
 function extractExcerpt(htmlContent, maxLength = 150) {
     if (!htmlContent) return '';
 
-    // Remove tags HTML
     let text = htmlContent.replace(/<[^>]*>/g, '');
 
-    // Remove múltiplos espaços
     text = text.replace(/\s+/g, ' ').trim();
 
-    // Se for mais longo que maxLength, corta e adiciona "..."
     if (text.length > maxLength) {
         text = text.substring(0, maxLength).trim() + '...';
     }
@@ -498,9 +403,8 @@ function extractExcerpt(htmlContent, maxLength = 150) {
     return text;
 }
 
-// ========== FUNÇÃO PARA EXTRAIR THUMBNAIL DO YOUTUBE ==========
 function extractYoutubeThumbnail(content) {
-    // 1. Procura em iframes (embed)
+    
     const iframeRegex = /src=["']https:\/\/(?:www\.)?youtube(?:-nocookie)?\.com\/embed\/([a-zA-Z0-9_-]{11})/;
     let match = content.match(iframeRegex);
 
@@ -509,7 +413,6 @@ function extractYoutubeThumbnail(content) {
         return `https://img.youtube.com/vi/${match[1]}/maxresdefault.webp`;
     }
 
-    // 2. Procura em URLs diretas do YouTube
     const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
     match = content.match(youtubeRegex);
 
@@ -521,21 +424,14 @@ function extractYoutubeThumbnail(content) {
     return null;
 }
 
-// ==============================================
-// FETCH DE POSTS: Busca posts reais via REST API
-// com cache local (localStorage) de 5 minutos.
-// Após buscar, renderiza carrosséis e blog.
-// ==============================================
 async function fetchRealPosts() {
     try {
         console.log('[API] Buscando posts atualizados...');
 
-        // Pega os posts do seu site utilizando a URL dinâmica fornecida pelo WordPress
         const restBaseUrl = (typeof odysseeSecure !== 'undefined' && odysseeSecure.restUrl)
             ? odysseeSecure.restUrl
             : wpConfig.baseUrl + '/wp-json/';
 
-        // Usa cache HTTP normal sem forçar recarregamento completo a cada frame
         const url = restBaseUrl + 'wp/v2/posts?_embed&per_page=' + wpConfig.postsPerPage;
         
         let response;
@@ -543,7 +439,7 @@ async function fetchRealPosts() {
             response = await fetch(url);
         } catch (fetchErr) {
             console.warn('[API] Falha de rede ao buscar posts. Tentando fallback local...', fetchErr);
-            // Fallback se estiver offline ou erro de rede
+            
             const cacheKey = 'odyssee_posts_cache';
             const cached = (window.safeStorage && window.safeStorage.getItem(cacheKey)) || (typeof localStorage !== 'undefined' ? localStorage.getItem(cacheKey) : null);
             if (cached) {
@@ -560,14 +456,13 @@ async function fetchRealPosts() {
         console.log('[API] Posts recebidos:', data.length);
 
         allPosts = data.map(post => {
-            // 1. Tenta achar a imagem destacada
+            
             let imgUrl = null;
 
             if (post._embedded && post._embedded['wp:featuredmedia'] && post._embedded['wp:featuredmedia'][0]) {
                 imgUrl = post._embedded['wp:featuredmedia'][0].source_url;
             }
 
-            // 2. Se não tem imagem destacada, procura por YouTube thumbnail no conteúdo
             if (!imgUrl) {
                 const youtubeThumb = extractYoutubeThumbnail(post.content.rendered);
                 if (youtubeThumb) {
@@ -576,42 +471,36 @@ async function fetchRealPosts() {
                 }
             }
 
-            // 3. Se ainda não tiver imagem, usa placeholder
             if (!imgUrl) {
                 imgUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200"%3E%3Crect width="300" height="200" fill="%23ccc"/%3E%3Ctext x="50%25" y="50%25" font-size="16" fill="%23999" text-anchor="middle" dy=".3em"%3ESem Imagem%3C/text%3E%3C/svg%3E';
             }
 
-            // 4. Tenta achar as categorias PAI e FILHA (SUPORTA MÚLTIPLAS)
-            let categoryList = ['geral']; // Array para suportar múltiplas categorias
-            let subCategoryList = []; // Array para múltiplas subcategorias
+            let categoryList = ['geral']; 
+            let subCategoryList = []; 
 
             if (post._embedded && post._embedded['wp:term'] && post._embedded['wp:term'][0]) {
                 const terms = post._embedded['wp:term'][0];
 
-                // Separa categorias por nível (parentais vs filhas)
-                // Se a URL tem /category/X/Y/ é filha, se tem /category/X/ é pai
                 const parentCats = [];
                 const childCats = [];
 
                 terms.forEach(cat => {
                     const urlMatch = cat.link.match(/\/category\/([^\/]+)\/([^\/]+)\//);
                     if (urlMatch) {
-                        // Tem 2 níveis = subcategoria
+                        
                         childCats.push(cat);
                     } else {
-                        // 1 nível = categoria pai
+                        
                         parentCats.push(cat);
                     }
                 });
 
-                // Armazena TODAS as categorias pai encontradas
                 if (parentCats.length > 0) {
                     categoryList = parentCats.map(cat => cat.slug);
                 } else if (terms.length > 0) {
                     categoryList = terms.map(t => t.slug);
                 }
 
-                // Armazena TODAS as subcategorias encontradas
                 if (childCats.length > 0) {
                     subCategoryList = childCats.map(cat => cat.slug);
                 }
@@ -623,15 +512,15 @@ async function fetchRealPosts() {
 
             const postMapped = {
                 title: decodedTitle,
-                titleEN: decodedTitleEN, // Custom field para título em EN
-                categories: categoryList, // MUDOU: agora é um array
-                category: categoryList[0], // Mantém a primeira para compatibilidade
-                subCategories: subCategoryList, // NOVO: array de subcategorias
-                subCategory: subCategoryList[0] || '', // Mantém a primeira para compatibilidade
+                titleEN: decodedTitleEN, 
+                categories: categoryList, 
+                category: categoryList[0], 
+                subCategories: subCategoryList, 
+                subCategory: subCategoryList[0] || '', 
                 image: imgUrl,
                 date: post.date,
                 link: post.link,
-                content: decodedContent // Captura o conteúdo completo para extrair excerpt (decodificado)
+                content: decodedContent 
             };
 
             if (postMapped.category === 'motion') {
@@ -643,11 +532,9 @@ async function fetchRealPosts() {
 
         console.log("[API] ✅ Posts carregados com sucesso:", allPosts.length);
 
-        // Remove posts inválidos
         allPosts = allPosts.filter(post => post && post.title && post.image && post.date);
         console.log("[API] Posts válidos após filtro:", allPosts.length);
 
-        // Salva no cache local
         try {
             if (window.safeStorage) {
                 window.safeStorage.setItem(cacheKey, JSON.stringify(allPosts));
@@ -660,19 +547,16 @@ async function fetchRealPosts() {
             console.warn('[CACHE] Erro ao salvar cache:', e.message);
         }
 
-        // DEBUG: mostra categorias únicas encontradas (pai e filha)
         try {
             const cats = new Set();
             const subcats = new Set();
             allPosts.forEach(p => { if (p.category) cats.add(p.category); if (p.subCategory) subcats.add(p.subCategory); });
             console.log('[API] Categorias detectadas:', Array.from(cats).join(', '));
             console.log('[API] Subcategorias detectadas:', Array.from(subcats).join(', '));
-        } catch (e) { /* ignore */ }
+        } catch (e) {  }
 
-        // Renderiza os carrosseis com os posts
         renderAllCarousels();
 
-        // E renderiza o blog (se estiver na página de posts)
         if (typeof renderBlog === 'function') renderBlog();
 
     } catch (err) {
@@ -681,14 +565,8 @@ async function fetchRealPosts() {
     }
 }
 
-/* ==============================================
-   BANCO DE PREÇOS PADRÃO
-   Valores default para cada serviço/pacote.
-   Podem ser sobrescritos via admin (odysseePrecos).
-   Chave = ID do serviço (mesmo usado nos arrays).
-   ============================================== */
 const defaultPrices = {
-    // Preços de Serviços Design Gráfico
+    
     'design_post': 20.00,
     'design_storie': 22.00,
     'design_carrossel': 60.00,
@@ -702,19 +580,16 @@ const defaultPrices = {
     'botton': 19.00,
     'adesivos': 19.00,
 
-    // Pacotes de Design
     'designmegapackage': 1250.00,
     'designpremiumpackage': 679.00,
     'postpackage': 89.00,
     'storiepackage': 105.00,
     'carrosselpackage': 449.00,
 
-    // Preços de Serviços Edição de Vídeo
     'video_longo': 350.00,
     'video_curto': 100.00,
     'thumbnail': 20.00,
 
-    // Pacotes de Edição de Vídeo
     'mega_pacote': 2650.00,
     'pacote_premium_a': 1650.00,
     'pacote_premium_b': 475.00,
@@ -723,7 +598,6 @@ const defaultPrices = {
     'cinco_thumbnails': 89.00,
     'dez_thumbnails': 169.00,
 
-    // Preços de Serviços Motion Graphics
     'intro_animada': 200.00,
     'artmotion': 250.00,
     'logomotion': 100.00,
@@ -731,7 +605,6 @@ const defaultPrices = {
     'waitscreen': 175.00,
     'motionbanner': 300.00,
 
-    // Preços de Serviços Ilustração
     'fanart_anime': 120.00,
     'fanart_cartoon': 180.00,
     'fanart_chibi': 50.00,
@@ -746,7 +619,6 @@ const defaultPrices = {
 
 };
 
-// Preços unitários padrão (base para cálculo: economia = soma_unitários - preço_pacote)
 const defaultUnitPrices = {
     'design_post': 20.00,
     'design_storie': 22.00,
@@ -756,8 +628,6 @@ const defaultUnitPrices = {
     'thumbnail': 30.00
 };
 
-// Mesclar preços do WordPress admin (se disponíveis) com os defaults
-// wp_localize_script converte tudo para string, precisamos converter de volta para number
 function parseWpPrices(obj) {
     if (!obj || typeof obj !== 'object') return {};
     const parsed = {};
@@ -778,14 +648,9 @@ const unitPrices = Object.assign({}, defaultUnitPrices,
     (typeof odysseePrecos !== 'undefined' && odysseePrecos.unitPrices) ? parseWpPrices(odysseePrecos.unitPrices) : {}
 );
 
-// Mesclar produtos customizados do WordPress admin (se disponíveis)
-// odysseeProdutos vem como objeto indexado do wp_localize_script
-// Cada produto é convertido de formato PHP para formato JS:
-//   PHP: {id, nome, categoria, tipo, descricao, informativo, itens, thumbnail, preco}
-//   JS:  {id, title, desc, informativo, image, icon, category, tipo, items, price}
 const customProducts = (function () {
     if (typeof odysseeProdutos === 'undefined') return [];
-    // wp_localize_script converte arrays PHP em objetos JS indexados por número
+    
     const arr = [];
     for (const key in odysseeProdutos) {
         if (odysseeProdutos.hasOwnProperty(key) && typeof odysseeProdutos[key] === 'object') {
@@ -805,7 +670,7 @@ const customProducts = (function () {
                 items: itensArr,
                 price: parseFloat(p.preco) || 0
             });
-            // Adicionar preço ao allPrices para que renderize corretamente
+            
             if (p.id && parseFloat(p.preco) > 0) {
                 allPrices[p.id] = parseFloat(p.preco);
             }
@@ -814,12 +679,6 @@ const customProducts = (function () {
     return arr;
 })();
 
-// ==============================================
-// MAPA DE CATEGORIAS: slug -> { label, gridId, packageGridId }
-// Usado para saber em qual grid renderizar cada
-// serviço/pacote customizado, e para montar a
-// mensagem do WhatsApp com o nome da categoria.
-// ==============================================
 const categoryMap = {
     'design-grafico': { label: 'Design Gráfico', gridId: 'design-services-grid', packageGridId: 'design-packages-grid' },
     'edicao-de-video': { label: 'Edição de Vídeo', gridId: 'video-services-grid', packageGridId: 'video-packages-grid' },
@@ -827,11 +686,6 @@ const categoryMap = {
     'ilustracao': { label: 'Ilustração Digital', gridId: 'ilustracao-estilos', packageGridId: 'ilustracao-estilos' },
 };
 
-/**
- * Renderiza os produtos customizados do admin nas grids correspondentes.
- * Suporta tipo 'servico' (card com thumbnail/desc) e 'pacote' (card com lista de itens).
- * Deve ser chamada APÓS os renders de serviços hardcoded.
- */
 function renderCustomProducts() {
     if (!customProducts.length) return;
 
@@ -857,7 +711,7 @@ function renderCustomProducts() {
         const whatsappLink = `https://wa.me/5511963208691?text=${whatsappMsg}`;
 
         if (isPacote) {
-            // Renderiza como card de pacote (igual aos pacotes hardcoded)
+            
             const itemsHTML = product.items.map(item => `<li><i class="fa fa-check-circle"></i> ${item}</li>`).join('');
             grid.innerHTML += `
                 <div class="service-card package-card">
@@ -868,7 +722,7 @@ function renderCustomProducts() {
                 </div>
             `;
         } else {
-            // Renderiza como card de serviço individual (com thumbnail e descrição)
+            
             const thumbnailHTML = product.image
                 ? `<img class="service-thumb-img" src="${product.image}" alt="${cleanTitle}" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22180%22%3E%3Crect width=%22300%22 height=%22180%22 fill=%22%23ccc%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2216%22 fill=%22%23999%22 text-anchor=%22middle%22 dy=%22.3em%22%3ESem%20Imagem%3C/text%3E%3C/svg%3E';">`
                 : '';
@@ -894,30 +748,21 @@ function renderCustomProducts() {
     });
 }
 
-/* ==============================================
-   CATÁLOGO DE SERVIÇOS: Arrays com dados de cada card
-   Cada objeto contém: id, icon, image, title, desc
-   O id deve coincidir com a chave em allPrices e
-   serviceTranslations para preço e tradução.
-   ============================================== */
-
-// --- DESIGN GRÁFICO: Serviços individuais ---
 const designServices = [
-    { id: 'design_post', icon: 'fas fa-file-image', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services.webp', title: 'Post', desc: 'Arte individual para post em redes sociais (Instagram, Facebook, LinkedIn).' },
-    { id: 'design_storie', icon: 'fas fa-bolt', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services-1.webp', title: 'Storie', desc: 'Arte individual para stories em redes sociais (Instagram, WhatsApp).' },
-    { id: 'design_carrossel', icon: 'fas fa-images', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services-2.webp', title: 'Carrossel', desc: 'Arte para carrossel contínuo ou informativo para redes sociais.' },
-    { id: 'logotipologo', icon: 'fas fa-id-card', image: 'https://odysseexp.com/wp-content/uploads/2025/09/Artboard-3-1-e1757565255458.webp', title: 'Logotipo e Logo', desc: 'Uma logo única, criativa e estrategicamente feita para captar seu público alvo.' },
-    { id: 'bannersocial', icon: 'fas fa-scroll', image: 'https://odysseexp.com/wp-content/uploads/2025/07/Screenshot-2025-06-30-184152.webp', title: 'Banner para redes sociais', desc: 'Banner para YouTube, Facebook, site, etc.' },
-    { id: 'cartao_visitas', icon: 'fas fa-palette', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services.webp', title: 'Cartão de Visitas', desc: 'Design profissional para seu cartão de visitas.' },
-    { id: 'flyer', icon: 'fas fa-newspaper', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-2.webp', title: 'Flyer', desc: 'Arte criativa para seu flyer promocional.' },
-    { id: 'convites', icon: 'fas fa-envelope-open-text', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-5.webp', title: 'Convites', desc: 'Design elegante para seus convites.' },
-    { id: 'banner', icon: 'fas fa-scroll', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-4.webp', title: 'Banner', desc: 'Arte para banners de qualquer tamanho (impresso).' },
-    { id: 'botton', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-1.webp', title: 'Arte para Botton', desc: 'Arte simples para botton personalizado.' },
-    { id: 'adesivos', icon: 'fas fa-sticky-note', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-3.webp', title: 'Arte para Adesivos', desc: 'Design para adesivos personalizados.' },
-    { id: 'visualid', icon: 'fas fa-palette', image: 'https://odysseexp.com/wp-content/uploads/2025/05/Untitled-1-11.webp', title: 'Identidade Visual', desc: 'Manual de identidade completa, mockups, brindes e mais!' },
+    { id: 'design_post', icon: 'fas fa-file-image', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services.webp', title: 'Post', desc: 'Arte individual para post em redes sociais (Instagram, Facebook, LinkedIn).' },
+    { id: 'design_storie', icon: 'fas fa-bolt', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-1.webp', title: 'Storie', desc: 'Arte individual para stories em redes sociais (Instagram, WhatsApp).' },
+    { id: 'design_carrossel', icon: 'fas fa-images', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-2.webp', title: 'Carrossel', desc: 'Arte para carrossel contínuo ou informativo para redes sociais.' },
+    { id: 'logotipologo', icon: 'fas fa-id-card', image: 'http://localhost:8881/wp-content/uploads/2025/09/Artboard-3-1-e1757565255458.webp', title: 'Logotipo e Logo', desc: 'Uma logo única, criativa e estrategicamente feita para captar seu público alvo.' },
+    { id: 'bannersocial', icon: 'fas fa-scroll', image: 'http://localhost:8881/wp-content/uploads/2025/07/Screenshot-2025-06-30-184152.webp', title: 'Banner para redes sociais', desc: 'Banner para YouTube, Facebook, site, etc.' },
+    { id: 'cartao_visitas', icon: 'fas fa-palette', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services.webp', title: 'Cartão de Visitas', desc: 'Design profissional para seu cartão de visitas.' },
+    { id: 'flyer', icon: 'fas fa-newspaper', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-2.webp', title: 'Flyer', desc: 'Arte criativa para seu flyer promocional.' },
+    { id: 'convites', icon: 'fas fa-envelope-open-text', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-5.webp', title: 'Convites', desc: 'Design elegante para seus convites.' },
+    { id: 'banner', icon: 'fas fa-scroll', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-4.webp', title: 'Banner', desc: 'Arte para banners de qualquer tamanho (impresso).' },
+    { id: 'botton', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-1.webp', title: 'Arte para Botton', desc: 'Arte simples para botton personalizado.' },
+    { id: 'adesivos', icon: 'fas fa-sticky-note', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-3.webp', title: 'Arte para Adesivos', desc: 'Design para adesivos personalizados.' },
+    { id: 'visualid', icon: 'fas fa-palette', image: 'http://localhost:8881/wp-content/uploads/2025/05/Untitled-1-11.webp', title: 'Identidade Visual', desc: 'Manual de identidade completa, mockups, brindes e mais!' },
 ];
 
-// Pacotes de Design (items = lista exibida, quantities = base para cálculo de desconto)
 const designPackages = [
     { id: 'designmegapackage', icon: 'fas fa-star', title: 'Mega Pacote', items: ['10 posts', '10 stories criativos', '10 carrosséis'], quantities: { post: 10, storie: 10, carrossel: 10 } },
     { id: 'designpremiumpackage', icon: 'fas fa-crown', title: 'Pacote Premium', items: ['5 posts', '5 stories', '5 carrosséis'], quantities: { post: 5, storie: 5, carrossel: 5 } },
@@ -926,13 +771,12 @@ const designPackages = [
     { id: 'carrosselpackage', icon: 'fas fa-images', title: 'Pacote Carrosséis', items: ['5 carrosséis'], quantities: { carrossel: 5 } }
 ];
 
-// --- EDIÇÃO DE VÍDEO: Serviços individuais ---
 const videoServices = [
-    { id: 'video_longo', icon: 'fas fa-film', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services.webp', title: 'Vídeo Longo', desc: 'Um vídeo longo, perfeito para YouTube e outras plataformas.' },
-    { id: 'video_curto', icon: 'fas fa-mobile-alt', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services-1.webp', title: 'Vídeo Curto', desc: 'Um vídeo curto, ideal para redes sociais verticais e anúncios.' },
-    { id: 'thumbnail', icon: 'fas fa-image', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services-2.webp', title: 'Thumbnail', desc: 'Thumbnail personalizada para seu vídeo.' },
+    { id: 'video_longo', icon: 'fas fa-film', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services.webp', title: 'Vídeo Longo', desc: 'Um vídeo longo, perfeito para YouTube e outras plataformas.' },
+    { id: 'video_curto', icon: 'fas fa-mobile-alt', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-1.webp', title: 'Vídeo Curto', desc: 'Um vídeo curto, ideal para redes sociais verticais e anúncios.' },
+    { id: 'thumbnail', icon: 'fas fa-image', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-2.webp', title: 'Thumbnail', desc: 'Thumbnail personalizada para seu vídeo.' },
 ];
-// Pacotes de Vídeo
+
 const videoPackages = [
     { id: 'mega_pacote', icon: 'fas fa-gem', title: 'Mega Pacote', items: ['5 vídeos longos', '10 vídeos curtos', '15 thumbnails'], quantities: { longo: 5, curto: 10, thumbnail: 15 } },
     { id: 'pacote_premium_a', icon: 'fas fa-star', title: 'Pacote Premium A', items: ['5 vídeos longos', '5 thumbnails'], quantities: { longo: 5, thumbnail: 5 } },
@@ -943,36 +787,28 @@ const videoPackages = [
     { id: 'dez_thumbnails', icon: 'fas fa-images', title: 'Dez Thumbnails', items: ['10 thumbnails'], quantities: { thumbnail: 10 } },
 ];
 
-// --- MOTION GRAPHICS: Serviços individuais ---
 const motionGraphicsServices = [
-    { id: 'intro_animada', icon: 'fas fa-play-circle fa-bounce', image: 'https://odysseexp.com/wp-content/uploads/2026/01/FalaAiWillcomsom-ezgif.com-optimize.gif', title: 'Intro Animada', desc: 'Uma intro simples e criativa com elementos 2D' },
-    { id: 'artmotion', icon: 'fas fa-scroll', image: 'https://odysseexp.com/wp-content/uploads/2025/06/harley-animated-.gif', title: 'Arte Animada', desc: 'Sua arte animada com elementos 2D' },
-    { id: 'logomotion', icon: 'fas fa-scroll', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Logo/logotipo Animado', desc: 'Logo animado para vídeos e apresentações' },
-    { id: 'motionmoldura', icon: 'fas fa-expand fa-fade', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Moldura Animada', desc: 'Moldura animada para vídeos e transmissões ao vivo' },
-    { id: 'waitscreen', icon: 'fas fa-spinner fa-spin', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Tela de Espera', desc: 'Animação em looping para telas de espera' },
-    { id: 'motionbanner', icon: 'fas fa-newspaper', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Banner animado', desc: 'O banner da sua marca animado para chamar atenção' },
+    { id: 'intro_animada', icon: 'fas fa-play-circle fa-bounce', image: 'http://localhost:8881/wp-content/uploads/2026/01/FalaAiWillcomsom-ezgif.com-optimize.gif', title: 'Intro Animada', desc: 'Uma intro simples e criativa com elementos 2D' },
+    { id: 'artmotion', icon: 'fas fa-scroll', image: 'http://localhost:8881/wp-content/uploads/2025/06/harley-animated-.gif', title: 'Arte Animada', desc: 'Sua arte animada com elementos 2D' },
+    { id: 'logomotion', icon: 'fas fa-scroll', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Logo/logotipo Animado', desc: 'Logo animado para vídeos e apresentações' },
+    { id: 'motionmoldura', icon: 'fas fa-expand fa-fade', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Moldura Animada', desc: 'Moldura animada para vídeos e transmissões ao vivo' },
+    { id: 'waitscreen', icon: 'fas fa-spinner fa-spin', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Tela de Espera', desc: 'Animação em looping para telas de espera' },
+    { id: 'motionbanner', icon: 'fas fa-newspaper', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Banner animado', desc: 'O banner da sua marca animado para chamar atenção' },
 ];
 
-// --- ILUSTRAÇÃO DIGITAL: Estilos de arte disponíveis ---
 const ilustracaoDigitalServices = [
-    { id: 'fanart_anime', icon: 'fas fa-female', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_14.webp', title: 'Arte Estilo Anime', desc: 'Arte digital de personagem no estilo anime personalizada para você' },
-    { id: 'fanart_cartoon', icon: 'fas fa-walking', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_13.webp', title: 'Arte Estilo Cartoon', desc: 'Arte digital de personagem no estilo cartoon personalizada para você' },
-    { id: 'fanart_chibi', icon: 'fab fa-github-alt', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_15.webp', title: 'Arte Estilo Chibi', desc: 'Arte digital de personagem no estilo chibi personalizada para você' },
-    { id: 'fanart_pixelart', icon: 'fas fa-pixel', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_12.webp', title: 'Arte Estilo Pixel Art', desc: 'Arte digital de personagem no estilo pixel art personalizada para você' },
-    { id: 'fanart_vetorial', icon: 'fas fa-vector-square', image: 'https://odysseexp.com/wp-content/uploads/2025/05/Jinx-Powder-Vector-lightroom-scaled-e1747298364610.webp', title: 'Arte Estilo Vetorial', desc: 'Arte digital de personagem no estilo vetorial personalizada para você' },
-    { id: 'personagem_rpg', icon: 'fas fa-dice-d20', image: 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Personagem token RPG', desc: 'Arte de personagem para RPG no estilo token de tabuleiro.' },
-    { id: 'ilustracao_perfil', icon: 'fas fa-id-badge', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_11.webp', title: 'Ilustração de perfil/busto', desc: 'Arte digital de perfil nos estilos cartoon, anime, chibi e pixel art' },
-    { id: 'ilustracao_corpo_inteiro', icon: 'fas fa-user', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_8.webp', title: 'Ilustração corpo inteiro', desc: 'Arte digital de corpo inteiro nos estilos cartoon, anime, chibi e pixel art' },
-    { id: 'esboco_rapido', icon: '\tfar fa-id-badge', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_10.webp', title: 'Esboço Rápido', desc: 'Um esboço rápido e simples de sua ideia ou personagem' },
-    { id: 'storyboard', icon: 'fas fa-landmark', image: 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_9.webp', title: 'Storyboard', desc: 'Storyboard cena a cena para seu projeto' },
+    { id: 'fanart_anime', icon: 'fas fa-female', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_14.webp', title: 'Arte Estilo Anime', desc: 'Arte digital de personagem no estilo anime personalizada para você' },
+    { id: 'fanart_cartoon', icon: 'fas fa-walking', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_13.webp', title: 'Arte Estilo Cartoon', desc: 'Arte digital de personagem no estilo cartoon personalizada para você' },
+    { id: 'fanart_chibi', icon: 'fab fa-github-alt', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_15.webp', title: 'Arte Estilo Chibi', desc: 'Arte digital de personagem no estilo chibi personalizada para você' },
+    { id: 'fanart_pixelart', icon: 'fas fa-pixel', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_12.webp', title: 'Arte Estilo Pixel Art', desc: 'Arte digital de personagem no estilo pixel art personalizada para você' },
+    { id: 'fanart_vetorial', icon: 'fas fa-vector-square', image: 'http://localhost:8881/wp-content/uploads/2025/05/Jinx-Powder-Vector-lightroom-scaled-e1747298364610.webp', title: 'Arte Estilo Vetorial', desc: 'Arte digital de personagem no estilo vetorial personalizada para você' },
+    { id: 'personagem_rpg', icon: 'fas fa-dice-d20', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Personagem token RPG', desc: 'Arte de personagem para RPG no estilo token de tabuleiro.' },
+    { id: 'ilustracao_perfil', icon: 'fas fa-id-badge', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_11.webp', title: 'Ilustração de perfil/busto', desc: 'Arte digital de perfil nos estilos cartoon, anime, chibi e pixel art' },
+    { id: 'ilustracao_corpo_inteiro', icon: 'fas fa-user', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_8.webp', title: 'Ilustração corpo inteiro', desc: 'Arte digital de corpo inteiro nos estilos cartoon, anime, chibi e pixel art' },
+    { id: 'esboco_rapido', icon: '\tfar fa-id-badge', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_10.webp', title: 'Esboço Rápido', desc: 'Um esboço rápido e simples de sua ideia ou personagem' },
+    { id: 'storyboard', icon: 'fas fa-landmark', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_9.webp', title: 'Storyboard', desc: 'Storyboard cena a cena para seu projeto' },
 ];
 
-// ==============================================
-// SOBRESCRITAS DO ADMIN: Aplica edições feitas no
-// painel WP (nome, descrição, thumbnail) sobre os
-// arrays de serviços hardcoded acima.
-// odysseeOverrides vem de wp_localize_script.
-// ==============================================
 if (typeof odysseeOverrides !== 'undefined') {
     const allServiceArrays = [designServices, designPackages, videoServices, videoPackages, motionGraphicsServices, ilustracaoDigitalServices];
     allServiceArrays.forEach(function (arr) {
@@ -994,21 +830,13 @@ if (typeof odysseeOverrides !== 'undefined') {
                 svc.ordem = idx + 1;
             }
         });
-        // Ordena pela posição definida no admin
+        
         arr.sort(function (a, b) {
             return (a.ordem || 999) - (b.ordem || 999);
         });
     });
 }
 
-/* ==============================================
-   FUNÇÕES DE CÁLCULO E RENDERIZAÇÃO
-   Calculam descontos e constroem os cards HTML
-   das seções de serviços e pacotes.
-   ============================================== */
-
-// Calcula a economia de um pacote comparando preço unitário vs preço do pacote
-// Retorna HTML com o valor economizado ou string vazia se não houver desconto
 function calculateDiscount(packagePrice, unitQuantities) {
     let bruteTotal = 0;
     bruteTotal += (unitQuantities.post || 0) * (allPrices.design_post || unitPrices.design_post || 20);
@@ -1019,24 +847,21 @@ function calculateDiscount(packagePrice, unitQuantities) {
     bruteTotal += (unitQuantities.thumbnail || 0) * (allPrices.thumbnail || unitPrices.thumbnail || 30);
     const discount = bruteTotal - packagePrice;
 
-    // Retorna a string de economia formatada
     if (discount > 0) {
         const prefix = translations[currentLanguage] && translations[currentLanguage]['you-save-prefix'] ? translations[currentLanguage]['you-save-prefix'] : 'Você economiza R$ ';
-        // Formata o número com duas casas e vírgula para pt
+        
         const amount = currentLanguage === 'en' ? discount.toFixed(2) : discount.toFixed(2).replace('.', ',');
         return `<span class="service-discount">${prefix}${amount}</span>`;
     }
-    return ''; // Retorna nada se não tiver desconto
+    return ''; 
 }
 
-// Renderiza cards de Design Gráfico (serviços individuais + pacotes)
-// Popula as grids #design-services-grid e #design-packages-grid
 function renderDesignServices() {
     const servicesGrid = document.getElementById('design-services-grid');
     const packagesGrid = document.getElementById('design-packages-grid');
 
     if (servicesGrid) {
-        servicesGrid.innerHTML = ''; // Limpa a grid
+        servicesGrid.innerHTML = ''; 
         designServices.filter(s => !s.oculto).forEach(service => {
             const price = allPrices[service.id];
             const priceString = price ? `R$ ${price.toFixed(2).replace('.', ',')}` : (translations[currentLanguage] && translations[currentLanguage]['consulte'] ? translations[currentLanguage]['consulte'] : 'Consulte');
@@ -1069,13 +894,12 @@ function renderDesignServices() {
     }
 
     if (packagesGrid) {
-        packagesGrid.innerHTML = ''; // Limpa a grid
+        packagesGrid.innerHTML = ''; 
         designPackages.filter(p => !p.oculto).forEach(pkg => {
             const price = allPrices[pkg.id];
             const priceString = price ? `R$ ${price.toFixed(2).replace('.', ',')}` : (translations[currentLanguage] && translations[currentLanguage]['consulte'] ? translations[currentLanguage]['consulte'] : 'Consulte');
             const discountHTML = calculateDiscount(price, pkg.quantities);
 
-            // Cria o HTML da lista de itens
             const itemsHTML = pkg.items.map(item => `<li><i class="fa fa-check-circle"></i> ${item}</li>`).join('');
 
             const pkgTitle = getPackageTitle(pkg.id) || pkg.title;
@@ -1097,14 +921,12 @@ function renderDesignServices() {
     }
 }
 
-// Renderiza cards de Edição de Vídeo (serviços + pacotes)
-// Popula as grids #video-services-grid e #video-packages-grid
 function renderVideoServices() {
     const servicesGrid = document.getElementById('video-services-grid');
     const packagesGrid = document.getElementById('video-packages-grid');
 
     if (servicesGrid) {
-        servicesGrid.innerHTML = ''; // Limpa a grid
+        servicesGrid.innerHTML = ''; 
         videoServices.filter(s => !s.oculto).forEach(service => {
             const price = allPrices[service.id];
             const priceString = price ? `R$ ${price.toFixed(2).replace('.', ',')}` : (translations[currentLanguage] && translations[currentLanguage]['consulte'] ? translations[currentLanguage]['consulte'] : 'Consulte');
@@ -1137,13 +959,12 @@ function renderVideoServices() {
     }
 
     if (packagesGrid) {
-        packagesGrid.innerHTML = ''; // Limpa a grid
+        packagesGrid.innerHTML = ''; 
         videoPackages.filter(p => !p.oculto).forEach(pkg => {
             const price = allPrices[pkg.id];
             const priceString = price ? `R$ ${price.toFixed(2).replace('.', ',')}` : (translations[currentLanguage] && translations[currentLanguage]['consulte'] ? translations[currentLanguage]['consulte'] : 'Consulte');
             const discountHTML = calculateDiscount(price, pkg.quantities);
 
-            // Cria o HTML da lista de itens
             const itemsHTML = pkg.items.map(item => `<li><i class="fa fa-check-circle"></i> ${item}</li>`).join('');
 
             const pkgTitle = getPackageTitle(pkg.id) || pkg.title;
@@ -1165,13 +986,11 @@ function renderVideoServices() {
     }
 }
 
-// Renderiza cards de Motion Graphics (somente serviços, sem pacotes)
-// Popula a grid #motion-graphics-services-grid
 function rendermotionGraphicsServices() {
     const servicesGrid = document.getElementById('motion-graphics-services-grid');
 
     if (servicesGrid) {
-        servicesGrid.innerHTML = ''; // Limpa a grid
+        servicesGrid.innerHTML = ''; 
         motionGraphicsServices.filter(s => !s.oculto).forEach(service => {
             const price = allPrices[service.id];
             const priceString = price ? `R$ ${price.toFixed(2).replace('.', ',')}` : (translations[currentLanguage] && translations[currentLanguage]['consulte'] ? translations[currentLanguage]['consulte'] : 'Consulte');
@@ -1204,29 +1023,20 @@ function rendermotionGraphicsServices() {
     }
 }
 
-// ==============================================
-// CONFIGURADOR DE ILUSTRAÇÃO DIGITAL
-// Sistema multi-step: Estilo → Tipo → Adicionais
-// IDs referenciam os arrays ilustracaoDigitalServices
-// e motionGraphicsServices para dados dos cards.
-// ==============================================
 const ilustracaoConfigurador = {
-    estilos: ['fanart_anime', 'fanart_cartoon', 'fanart_pixelart', 'fanart_chibi', 'fanart_vetorial'],       // Passo 1: estilo da arte
-    tipos: ['ilustracao_perfil', 'ilustracao_corpo_inteiro', 'personagem_rpg', 'esboco_rapido', 'storyboard'], // Passo 2: tipo de arte
-    adicionais: ['nenhum', 'artmotion']  // Passo 3: adicionais opcionais
+    estilos: ['fanart_anime', 'fanart_cartoon', 'fanart_pixelart', 'fanart_chibi', 'fanart_vetorial'],       
+    tipos: ['ilustracao_perfil', 'ilustracao_corpo_inteiro', 'personagem_rpg', 'esboco_rapido', 'storyboard'], 
+    adicionais: ['nenhum', 'artmotion']  
 };
 
-// Estado da seleção atual do usuário no configurador
 let ilustracaoSelecionada = {
     estilo: null,
     tipo: null,
     adicional: null
 };
 
-// Renderiza os 3 grupos de cards do configurador (estilos, tipos, adicionais)
-// Cards selecionados recebem classe 'active'. Grupos ocultos até o passo anterior ser preenchido.
 function renderilustracaoConfigurador() {
-    // Renderizar cards de estilos
+    
     const estiloscont = document.getElementById('ilustracao-estilos');
     if (estiloscont) {
         estiloscont.innerHTML = '';
@@ -1255,7 +1065,6 @@ function renderilustracaoConfigurador() {
         });
     }
 
-    // Renderizar cards de tipos
     const tiposGroup = document.getElementById('ilustracao-tipos-group');
     const tiposcont = document.getElementById('ilustracao-tipos');
     if (tiposcont && tiposGroup) {
@@ -1290,7 +1099,6 @@ function renderilustracaoConfigurador() {
         }
     }
 
-    // Renderizar cards de adicionais
     const adicionaiscont = document.getElementById('ilustracao-adicionais');
     const adicionaisgroup = document.getElementById('ilustracao-adicionais-group');
     if (adicionaiscont && adicionaisgroup) {
@@ -1309,7 +1117,7 @@ function renderilustracaoConfigurador() {
                 } else if (adicionalId === 'artmotion') {
                     serviceData = ilustracaoDigitalServices.find(s => s.id === 'artmotion' || (s.id === 'intro_animada'));
                     if (!serviceData) {
-                        // Procurar por Motion Graphics - artmotion
+                        
                         const motionService = motionGraphicsServices && motionGraphicsServices.find(s => s.id === 'artmotion');
                         if (motionService) {
                             title = motionService.title;
@@ -1318,7 +1126,7 @@ function renderilustracaoConfigurador() {
                         } else {
                             title = 'Arte Animada';
                             desc = 'Adiciona animação à sua ilustração (tipo motion)';
-                            image = 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp';
+                            image = 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp';
                         }
                     } else {
                         title = serviceData.title;
@@ -1361,9 +1169,8 @@ function renderilustracaoConfigurador() {
     }
 }
 
-// Helper: traduz labels dinâmicos do configurador de ilustração
 function getTranslation(text) {
-    // Dicionário de traduções para os labels
+    
     const translations_config = {
         pt: {
             'Arte Estilo Anime': 'Arte Estilo Anime',
@@ -1399,8 +1206,6 @@ function getTranslation(text) {
     return translations_config[lang] && translations_config[lang][text] ? translations_config[lang][text] : text;
 }
 
-// Callbacks de seleção para cada passo do configurador
-// Ao selecionar um estilo, reseta tipo e adicional
 function selecionarEstiloIlustracao(estiloId) {
     ilustracaoSelecionada.estilo = estiloId;
     ilustracaoSelecionada.tipo = null;
@@ -1421,9 +1226,6 @@ function selecionarAdicionalIlustracao(adicionalId) {
     mostrarResumoIlustracao();
 }
 
-// Calcula e exibe o resumo da ilustração configurada
-// Preço total = preço_estilo + preço_tipo + preço_adicional
-// Gera link do WhatsApp com detalhes da seleção
 function mostrarResumoIlustracao() {
     const resumoBox = document.getElementById('ilustracao-resumo');
     const resumoTexto = document.getElementById('ilustracao-resumo-texto');
@@ -1435,20 +1237,17 @@ function mostrarResumoIlustracao() {
         return;
     }
 
-    // Puxar dados dos serviços
     const estiloData = ilustracaoDigitalServices.find(s => s.id === ilustracaoSelecionada.estilo);
     const tipoData = ilustracaoDigitalServices.find(s => s.id === ilustracaoSelecionada.tipo);
 
     const estiloTitle = estiloData ? estiloData.title : '';
     const tipoTitle = tipoData ? tipoData.title : '';
 
-    // Calcular preço somando ESTILO + TIPO + ADICIONAL
     let priceEstilo = allPrices[ilustracaoSelecionada.estilo] || 0;
     let priceBase = allPrices[ilustracaoSelecionada.tipo] || 0;
     let priceAdicional = ilustracaoSelecionada.adicional === 'artmotion' ? allPrices['artmotion'] : 0;
     let totalPrice = priceEstilo + priceBase + priceAdicional;
 
-    // Montar texto do resumo
     let resumoText = `${getTranslation(estiloTitle)} - ${getTranslation(tipoTitle)}`;
     if (ilustracaoSelecionada.adicional !== 'nenhum') {
         let adicionalTitle = 'Arte Animada';
@@ -1459,32 +1258,24 @@ function mostrarResumoIlustracao() {
         resumoText += ` + ${getTranslation(adicionalTitle)}`;
     }
 
-    // Formatar preço
     const priceFormatted = currentLanguage === 'en' ? totalPrice.toFixed(2) : totalPrice.toFixed(2).replace('.', ',');
 
-    // Atualizar HTML
     resumoTexto.textContent = resumoText;
     resumoPreco.innerHTML = `<strong>R$ ${priceFormatted}</strong>`;
 
-    // Montar mensagem do WhatsApp
     const whatsappMsg = encodeURIComponent(
         `Olá, gostaria de solicitar um orçamento para uma ilustração digital com as seguintes características:\n\n*Estilo:* ${getTranslation(estiloTitle)}\n*Tipo:* ${getTranslation(tipoTitle)}\n*Adicionais:* ${ilustracaoSelecionada.adicional === 'nenhum' ? 'Nenhum' : 'Arte Animada'}\n*Preço base:* R$ ${priceFormatted}`
     );
     btnContratar.href = `https://wa.me/5511963208691?text=${whatsappMsg}`;
 
-    // Mostrar resumo
     resumoBox.style.display = 'block';
 }
 
-// Renderiza o configurador de ilustração (substitui cards individuais)
 function renderilustracaoDigitalServices() {
-    // Agora renderiza o configurador em vez dos cards individuais
+    
     renderilustracaoConfigurador();
 }
 
-// ==============================================
-// ESTADO GLOBAL E ELEMENTOS DOM
-// ==============================================
 let currentLanguage = (window.safeStorage && window.safeStorage.getItem('userLang')) || (typeof localStorage !== 'undefined' ? localStorage.getItem('userLang') : null) || 'pt';
 const body = document.body;
 const container = document.getElementById('onboarding-container');
@@ -1493,11 +1284,6 @@ const backdrop = document.getElementById('settings-backdrop');
 const settingsBtn = document.getElementById('btn-settings');
 const closeSettingsBtn = document.getElementById('close-settings-btn');
 
-/* ==============================================
-   FUNÇÕES AUXILIARES: Tradução, tema, navegação
-   ============================================== */
-
-// Traduz todos os elementos com data-key e re-renderiza cards dinâmicos
 function translatePage() {
     document.documentElement.lang = currentLanguage;
     const elements = document.querySelectorAll('[data-key]');
@@ -1508,7 +1294,6 @@ function translatePage() {
         }
     });
 
-    // 1) Tradução de títulos de seção baseados no id do <section>
     document.querySelectorAll('.section-title').forEach(el => {
         const section = el.closest('section');
         if (section && translations[currentLanguage] && translations[currentLanguage][section.id]) {
@@ -1516,7 +1301,6 @@ function translatePage() {
         }
     });
 
-    // 2) Tradução dos links do menu principal (por href)
     document.querySelectorAll('.main-nav a').forEach(a => {
         const href = a.getAttribute('href') || '';
         if (href.startsWith('#')) {
@@ -1527,7 +1311,6 @@ function translatePage() {
         }
     });
 
-    // 3) Menu mobile
     document.querySelectorAll('.mobile-nav-links a').forEach(a => {
         const href = a.getAttribute('href') || '';
         if (href.startsWith('#')) {
@@ -1538,13 +1321,11 @@ function translatePage() {
         }
     });
 
-    // 4) Busca - placeholder
     const searchInput = document.getElementById('search-input');
     if (searchInput && translations[currentLanguage] && translations[currentLanguage]['buscar-placeholder']) {
         searchInput.placeholder = translations[currentLanguage]['buscar-placeholder'];
     }
 
-    // 5) Onboarding texts (se existir)
     const onboardingTitle = document.querySelector('.onboarding-title');
     if (onboardingTitle && translations[currentLanguage] && translations[currentLanguage]['titulo']) onboardingTitle.textContent = translations[currentLanguage]['titulo'];
     const onboardingSubtitle = document.querySelector('.onboarding-subtitle');
@@ -1556,63 +1337,53 @@ function translatePage() {
     const note = document.querySelector('#step-theme .note');
     if (note && translations[currentLanguage] && translations[currentLanguage]['aviso-tema']) note.textContent = translations[currentLanguage]['aviso-tema'];
 
-    // 6) Footer / contact area
     const contato = document.querySelector('#contato h2');
     if (contato && translations[currentLanguage] && translations[currentLanguage]['contato']) contato.textContent = translations[currentLanguage]['contato'];
     const faleBtn = document.querySelector('.footer-section .btn-primary');
     if (faleBtn && translations[currentLanguage] && translations[currentLanguage]['fale-whatsapp']) faleBtn.textContent = translations[currentLanguage]['fale-whatsapp'];
 
-    // Re-render dynamic service cards (se existirem) para aplicar traduções
     try { if (typeof renderDesignServices === 'function') renderDesignServices(); } catch (e) { console.error('[RENDER] renderDesignServices error:', e); }
     try { if (typeof renderVideoServices === 'function') renderVideoServices(); } catch (e) { console.error('[RENDER] renderVideoServices error:', e); }
     try { if (typeof rendermotionGraphicsServices === 'function') rendermotionGraphicsServices(); } catch (e) { console.error('[RENDER] rendermotionGraphicsServices error:', e); }
     try { if (typeof renderilustracaoDigitalServices === 'function') renderilustracaoDigitalServices(); } catch (e) { console.error('[RENDER] renderilustracaoDigitalServices error:', e); }
-    // Renderizar produtos custom do admin (após os hardcoded)
+    
     try { if (typeof renderCustomProducts === 'function') renderCustomProducts(); } catch (e) { console.error('[RENDER] renderCustomProducts error:', e); }
 
-    // Re-render tag pills com tradução
     try { if (typeof renderTagPills === 'function') renderTagPills(); } catch (e) { console.error('[RENDER] renderTagPills error:', e); }
 
-    // Re-render blog posts com textos traduzidos
     const grid = document.querySelector('.post-grid');
     if (grid && grid.children.length > 0) {
         try { renderBlog(); } catch (e) { console.error('[RENDER] renderBlog error:', e); }
     }
 
-    // Habilita indicadores de swipe nas grids de serviços em mobile
     try {
         if (typeof enableServiceGridMobileScrollHints === 'function') {
-            // Deixa um timeout pequeno para garantir que o DOM tenha sido atualizado
+            
             setTimeout(enableServiceGridMobileScrollHints, 120);
         }
     } catch (e) { console.error('[RENDER] enableServiceGridMobileScrollHints error:', e); }
 }
 
-// --- Mobile: indicador de swipe e melhoria de scroll para grids de serviços ---
 function enableServiceGridMobileScrollHints() {
-    // Seleciona grids de serviços e pacotes pelo sufixo do id
+    
     const grids = document.querySelectorAll('[id$="-services-grid"], [id$="-packages-grid"]');
     if (!grids || grids.length === 0) return;
 
     grids.forEach(grid => {
-        // aplica classe para o CSS (opcional)
+        
         grid.classList.add('mobile-h-scroll');
 
-        // garante posição relativa para o hint
         if (getComputedStyle(grid).position === 'static') grid.style.position = 'relative';
 
-        // remove hint existente
         const existing = grid.querySelector('.swipe-hint');
         if (existing) existing.remove();
 
-        // se houver overflow (mais conteúdo que a largura), adiciona hint
         if (grid.scrollWidth > grid.clientWidth + 10) {
             const hint = document.createElement('div');
             hint.className = 'swipe-hint';
             hint.innerHTML = `<span class="swipe-text">${(translations[currentLanguage] && translations[currentLanguage]['swipe']) ? translations[currentLanguage]['swipe'] : 'Swipe'}</span> <span class="swipe-chevron"><i class="fas fa-chevron-right"></i></span>`;
             grid.appendChild(hint);
 
-            // Esconder o hint ao primeiro scroll ou toque
             const hideHint = () => {
                 hint.style.opacity = '0';
                 setTimeout(() => { try { hint.remove(); } catch (e) { } }, 300);
@@ -1659,16 +1430,11 @@ function toggleSocial() {
     if (socialLinks) socialLinks.classList.toggle('hidden');
 }
 
-// ==============================================
-// CARROSSEL: Cria cards de post para o carrossel
-// Suporta drag (mouse/touch) e clique para navegar
-// ==============================================
 function createCard(post) {
     const card = document.createElement('div');
     card.className = 'carousel-card';
     let isDragging = false;
 
-    // DRAGGABLE FALSE É CRUCIAL; decoding async evita travar a thread principal
     card.innerHTML = `
         <img src="${escapeHtml(post.image)}" class="carousel-img" alt="${escapeHtml(post.title)}" draggable="false" loading="lazy" decoding="async">
         <div class="carousel-info">
@@ -1677,7 +1443,6 @@ function createCard(post) {
         </div>
     `;
 
-    // Detecta se está arrastando ou clicando
     let startPos = 0;
     card.addEventListener('mousedown', (e) => {
         startPos = e.pageX;
@@ -1690,7 +1455,6 @@ function createCard(post) {
         }
     });
 
-    // Adiciona evento de clique apenas se não estiver arrastando
     card.addEventListener('click', (e) => {
         if (!isDragging && post.link) {
             const safeLink = sanitizeUrl(post.link);
@@ -1703,9 +1467,6 @@ function createCard(post) {
     return card;
 }
 
-// ==============================================
-// CARROSSEL: Renderiza todos os carrosséis da Home
-// ==============================================
 function renderAllCarousels() {
     const carousels = [
         ['carousel-recentes', null],
@@ -1725,19 +1486,13 @@ function renderAllCarousels() {
     });
 }
 
-// ==============================================
-// CARROSSEL: Esteira contínua com tripla duplicação
-// Usa requestAnimationFrame para scroll suave.
-// Suporta drag, touch, hover-pause e loop infinito.
-// ==============================================
 function renderCarousel(containerId, filterCategory = null) {
     const container = document.getElementById(containerId);
-    if (!container) return; // Se o container não existe, aborta sem erro
+    if (!container) return; 
 
-    // 1. Filtrar e Ordenar
     let filteredPosts = allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
     if (filterCategory) {
-        // Filtra posts que têm a categoria (pode estar em categories array)
+        
         filteredPosts = filteredPosts.filter(post =>
             post.categories && post.categories.includes(filterCategory)
         );
@@ -1745,19 +1500,15 @@ function renderCarousel(containerId, filterCategory = null) {
 
     const basePosts = filteredPosts.slice(0, 8);
 
-    // 2. Criar o Trilho
     const track = document.createElement('div');
     track.className = 'carousel-track';
 
-    // 3. TRIPLA DUPLICAÇÃO (Set A + Set B + Set C)
-    // Isso garante que sempre temos conteúdo para esquerda e direita
     const triplePosts = [...basePosts, ...basePosts, ...basePosts];
     triplePosts.forEach(post => {
         track.appendChild(createCard(post));
     });
     container.appendChild(track);
 
-    // 4. Variáveis de Animação
     let position = 0;
     let speed = 0.2;
     let isDown = false;
@@ -1766,9 +1517,8 @@ function renderCarousel(containerId, filterCategory = null) {
     let isHovering = false;
     let initialized = false;
     let singleSetWidth = 0;
-    let animationId = null; // Para controlar o loop de animação
+    let animationId = null; 
 
-    // Espera imagens do trilho carregarem para evitar mudanças de largura
     function waitForTrackImages(timeout = 1500) {
         const imgs = Array.from(track.querySelectorAll('img'));
         if (imgs.length === 0) return Promise.resolve();
@@ -1786,13 +1536,13 @@ function renderCarousel(containerId, filterCategory = null) {
                     img.addEventListener('error', check, { once: true });
                 }
             });
-            // fallback: resolve após timeout mesmo se algo travar
+            
             setTimeout(resolve, timeout);
         });
     }
 
     function animate() {
-        // Calcula a largura de UM conjunto de posts de forma robusta
+        
         const totalWidth = track.scrollWidth;
         let calculatedWidth = totalWidth / 3;
         try {
@@ -1809,17 +1559,14 @@ function renderCarousel(containerId, filterCategory = null) {
 
         singleSetWidth = calculatedWidth;
 
-        // Inicialização
         if (!initialized && totalWidth > 0 && singleSetWidth > 0) {
             position = -singleSetWidth;
             initialized = true;
         }
 
-        // Auto-scroll apenas quando NÃO está em drag
         if (!isDown && !isHovering && initialized) {
             position -= speed;
 
-            // Teleporte infinito
             if (position <= -(singleSetWidth * 2)) {
                 position += singleSetWidth;
             } else if (position >= 0) {
@@ -1827,14 +1574,11 @@ function renderCarousel(containerId, filterCategory = null) {
             }
         }
 
-        // Aplica transform
         track.style.transform = `translateX(${position}px)`;
 
-        // Continua o loop
         animationId = requestAnimationFrame(animate);
     }
 
-    // Inicia a animação imediatamente (0ms de atraso) para fluidez instantânea
     const totalWidth = track.scrollWidth;
     let initialSingleWidth = totalWidth / 3;
     if (totalWidth > 0 && initialSingleWidth > 0) {
@@ -1842,8 +1586,6 @@ function renderCarousel(containerId, filterCategory = null) {
         initialized = true;
     }
     requestAnimationFrame(animate);
-
-    // --- EVENTOS DE MOUSE E TOUCH (SISTEMA SIMPLIFICADO) ---
 
     let dragStartX = 0;
     let dragStartPosition = 0;
@@ -1871,7 +1613,6 @@ function renderCarousel(containerId, filterCategory = null) {
         setTimeout(() => { isHovering = false; }, 500);
     }
 
-    // Mouse (com throttle para melhor performance)
     track.addEventListener('mousedown', (e) => {
         e.preventDefault();
         handleDragStart(e.clientX);
@@ -1881,7 +1622,7 @@ function renderCarousel(containerId, filterCategory = null) {
         if (isDown) {
             handleDragMove(clientX);
         }
-    }, 16); // ~60fps
+    }, 16); 
 
     window.addEventListener('mousemove', (e) => {
         throttledMouseMove(e.clientX);
@@ -1891,7 +1632,6 @@ function renderCarousel(containerId, filterCategory = null) {
         handleDragEnd();
     });
 
-    // Touch (com throttle para melhor performance)
     track.addEventListener('touchstart', (e) => {
         handleDragStart(e.touches[0].clientX);
     }, { passive: true });
@@ -1900,7 +1640,7 @@ function renderCarousel(containerId, filterCategory = null) {
         if (isDown) {
             handleDragMove(clientX);
         }
-    }, 16); // ~60fps
+    }, 16); 
 
     track.addEventListener('touchmove', (e) => {
         throttledTouchMove(e.touches[0].clientX);
@@ -1910,7 +1650,6 @@ function renderCarousel(containerId, filterCategory = null) {
         handleDragEnd();
     }, { passive: true });
 
-    // Hover para pausar
     track.addEventListener('mouseenter', () => {
         if (!isDown) isHovering = true;
     });
@@ -1920,17 +1659,9 @@ function renderCarousel(containerId, filterCategory = null) {
     });
 }
 
-
-/* ==============================================
-   EVENT LISTENERS GERAIS
-   Header scroll, settings sidebar, temas, cores,
-   idioma, menu mobile.
-   ============================================== */
-
-// Header: alterna entre transparente e scrolled
 window.addEventListener('scroll', () => {
     const header = document.querySelector('.main-header');
-    // Removi a restrição de tamanho de tela! Agora roda sempre.
+    
     if (header) {
         if (window.scrollY > 50) {
             header.classList.add('scrolled');
@@ -1951,8 +1682,6 @@ if (settingsBtn) {
 if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
 if (backdrop) backdrop.addEventListener('click', closeSettings);
 
-
-// Temas
 const btnLight = document.getElementById('btn-light');
 const btnDark = document.getElementById('btn-dark');
 const setLight = document.getElementById('set-theme-light');
@@ -1970,7 +1699,6 @@ if (btnDark) btnDark.addEventListener('click', () => applyTheme('dark'));
 if (setLight) setLight.addEventListener('click', () => applyTheme('light'));
 if (setDark) setDark.addEventListener('click', () => applyTheme('dark'));
 
-// Fallback: if theme buttons were rendered without SVG (older markups or CSS-injection), inject inline SVGs
 if (setLight && !setLight.querySelector('svg')) {
     setLight.insertAdjacentHTML('afterbegin', '<svg class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true"><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79zM4 10.5H1v3h3zm9-9.95h-3v3.95h3zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79zM20 10.5v3h3v-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 16.95h3v-3.95h-3zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41z"/></svg>');
 }
@@ -1978,10 +1706,9 @@ if (setDark && !setDark.querySelector('svg')) {
     setDark.insertAdjacentHTML('afterbegin', '<svg class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>');
 }
 
-// Ensure mobile footer items have icons
 document.querySelectorAll('#mobile-menu-overlay .mobile-menu-footer .btn-mobile-faq, #mobile-menu-overlay .mobile-menu-footer .btn-mobile-settings').forEach(el => {
     if (!el.querySelector('svg')) {
-        // small generic icon fallback (question or cog based on class)
+        
         if (el.classList.contains('btn-mobile-settings')) {
             el.insertAdjacentHTML('afterbegin', '<svg class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 00.11-.65l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.066 7.066 0 00-1.62-.94l-.36-2.54A.5.5 0 0013.4 2h-2.8a.5.5 0 00-.5.42l-.36 2.54c-.57.21-1.11.5-1.62.94L5.6 5.96a.5.5 0 00-.6.22L3.08 9.5a.5.5 0 00.11.65l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L3.19 15.2a.5.5 0 00-.11.65l1.92 3.32c.14.24.44.34.68.22l2.39-.96c.5.44 1.05.8 1.62.94l.36 2.54c.05.28.28.48.5.48h2.8c.28 0 .46-.2.5-.48l.36-2.54c.57-.21 1.11-.5 1.62-.94l2.39.96c.24.12.54.02.68-.22l1.92-3.32a.5.5 0 00-.11-.65l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/></svg>');
         } else if (el.classList.contains('btn-mobile-faq')) {
@@ -1990,7 +1717,6 @@ document.querySelectorAll('#mobile-menu-overlay .mobile-menu-footer .btn-mobile-
     }
 });
 
-// Debug: report whether theme buttons contain SVGs
 console.debug('theme icons:', { setLightHasSVG: !!(setLight && setLight.querySelector('svg')), setDarkHasSVG: !!(setDark && setDark.querySelector('svg')) });
 document.querySelectorAll('.color-dot, .color-option-btn').forEach(dot => {
     dot.addEventListener('click', (e) => {
@@ -2014,27 +1740,25 @@ document.getElementById('set-lang-pt')?.addEventListener('click', () => {
     currentLanguage = 'pt';
     if (window.safeStorage) { window.safeStorage.setItem('userLang', 'pt'); } else { try { localStorage.setItem('userLang', 'pt'); } catch (e) { } }
     translatePage();
-    // Notifica outras partes do app (como a página Sobre) que o idioma mudou
+    
     try { window.dispatchEvent(new CustomEvent('odyssee-storage', { detail: { key: 'userLang', value: 'pt' } })); } catch (e) { }
 });
 document.getElementById('set-lang-en')?.addEventListener('click', () => {
     currentLanguage = 'en';
     if (window.safeStorage) { window.safeStorage.setItem('userLang', 'en'); } else { try { localStorage.setItem('userLang', 'en'); } catch (e) { } }
     translatePage();
-    // Notifica outras partes do app (como a página Sobre) que o idioma mudou
+    
     try { window.dispatchEvent(new CustomEvent('odyssee-storage', { detail: { key: 'userLang', value: 'en' } })); } catch (e) { }
 });
 
 const socialBtn = document.getElementById('social-media-btn');
 if (socialBtn) socialBtn.addEventListener('click', toggleSocial);
 
-// Menu Mobile
 const btnMobile = document.getElementById('btn-mobile-menu');
 const mobileMenu = document.getElementById('mobile-menu-overlay');
 const closeMobile = document.getElementById('close-mobile-menu');
 const btnSettingsMobile = document.getElementById('btn-settings-mobile');
 
-// Debug: check presence of header controls in runtime
 console.debug('UI elements:', {
     settingsBtn: !!settingsBtn,
     btnMobile: !!btnMobile,
@@ -2054,13 +1778,9 @@ if (btnSettingsMobile) {
     });
 }
 
-/* --- 4. INICIALIZAÇÃO --- */
-// Global error handlers to avoid silent failures and help debugging
 window.addEventListener('error', (ev) => { try { console.error('[GLOBAL ERROR]', ev.message || ev.error || ev); } catch (e) { } });
 window.addEventListener('unhandledrejection', (ev) => { try { console.error('[UNHANDLED REJECTION]', ev.reason); } catch (e) { } });
 
-// SEGURANÇA: Garantir rel="noopener noreferrer" em todos os links target="_blank"
-// Defesa em profundidade para links criados dinamicamente via innerHTML
 document.addEventListener('click', function (e) {
     const link = e.target.closest('a[target="_blank"]');
     if (link && !link.getAttribute('rel')) {
@@ -2070,39 +1790,26 @@ document.addEventListener('click', function (e) {
     }
 }, true);
 
-// Roda o tradutor imediatamente
 translatePage();
 
-// Inicialização de UI feita após fetchRealPosts() para garantir dados disponíveis
-
-/* ==============================================
-   MÓDULO BLOG: Renderização de posts, filtros,
-   busca com sanitização e tags de categoria.
-   ============================================== */
-
-// Renderiza grid de posts com filtro de texto e categoria
 function renderBlog(searchTerm = '', categoryFilter = '') {
     const grid = document.querySelector('.post-grid');
-    if (!grid) return; // Não estamos na página de posts
+    if (!grid) return; 
 
-    grid.innerHTML = ''; // Limpa os exemplos estáticos
+    grid.innerHTML = ''; 
 
-    // 1. Filtragem
     const filtered = allPosts.filter(post => {
-        // Busca por texto (Título ou Categoria)
+        
         const textMatch = searchTerm === '' ||
             post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (post.categories && post.categories.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase())));
 
-        // Busca por Categoria (clique nas tags)
-        // Verifica se a categoria está no array de categorias do post
         const catMatch = categoryFilter === '' ||
             (post.categories && post.categories.includes(categoryFilter));
 
         return textMatch && catMatch;
     });
 
-    // Se não achar nada
     if (filtered.length === 0) {
         const noResults = translations[currentLanguage] && translations[currentLanguage]['no-results'] ? translations[currentLanguage]['no-results'] : 'Nenhum projeto encontrado com esses termos.';
         const p = document.createElement('p');
@@ -2115,9 +1822,8 @@ function renderBlog(searchTerm = '', categoryFilter = '') {
         return;
     }
 
-    // 2. Renderização
     filtered.forEach(post => {
-        // Verifica se post é válido
+        
         if (!post || !post.image || !post.date || !post.title) {
             console.warn('[BLOG] Post inválido:', post);
             return;
@@ -2126,21 +1832,17 @@ function renderBlog(searchTerm = '', categoryFilter = '') {
         const card = document.createElement('div');
         card.className = 'post-card';
 
-        // Formata a data
         const dateStr = new Date(post.date).toLocaleDateString(currentLanguage === 'en' ? 'en-US' : 'pt-BR');
 
-        // Pega traduções
         const verDetalhes = translations[currentLanguage]['ver-detalhes'] || 'Ver Detalhes';
         const portfolioText = translations[currentLanguage]['portfolio'] || 'portfolio';
 
-        // Traduz TODAS as categorias (suporta múltiplas)
         const categoriesTranslated = post.categories.map(cat => {
             const categoryKey = wpSlugToCategoryKey[cat] || cat;
             return translations[currentLanguage][categoryKey] ||
                 cat.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
         });
 
-        // Traduz TODAS as subcategorias também
         let subCategoriesTranslated = [];
         if (post.subCategories && post.subCategories.length > 0) {
             subCategoriesTranslated = post.subCategories.map(subCat => {
@@ -2150,23 +1852,20 @@ function renderBlog(searchTerm = '', categoryFilter = '') {
             });
         }
 
-        // Pega o título traduzido (se existir no glossário, senão usa o original)
         let postTitle = post.title;
         if (currentLanguage === 'en') {
-            // Tenta custom field primeiro, depois glossário
+            
             const translatedTitle = getPostTitleTranslation(post.title, post.titleEN);
             if (translatedTitle) {
                 postTitle = translatedTitle;
             } else {
-                // Log para facilitar adição de traduções
+                
                 console.log(`[TRADUÇÃO] Título não traduzido: "${post.title}" → adicione em postTitleTranslations ou no custom field 'post_title_en'`);
             }
         }
 
-        // Extrai excerpt do conteúdo real do post (primeiras 150 caracteres)
         const excerptText = extractExcerpt(post.content, 150);
 
-        // Renderiza TODAS as categorias e subcategorias
         const categoriesHTML = categoriesTranslated.map(cat => `<span class="post-category">${escapeHtml(cat)}</span>`).join('');
         const subCategoriesHTML = subCategoriesTranslated.map(subCat => `<span class="post-sub-category">${escapeHtml(subCat)}</span>`).join('');
 
@@ -2183,7 +1882,6 @@ function renderBlog(searchTerm = '', categoryFilter = '') {
             </div>
         `;
 
-        // Adiciona evento de clique para redirecionar para o post individual
         card.style.cursor = 'pointer';
         card.addEventListener('click', () => {
             if (post.link) {
@@ -2196,18 +1894,13 @@ function renderBlog(searchTerm = '', categoryFilter = '') {
     });
 }
 
-// --- EVENTOS DA PÁGINA DE BLOG ---
-
-// Renderiza botões de filtro por categoria (tag pills) com tradução
 function renderTagPills() {
     const suggestedTags = document.querySelector('.suggested-tags');
     if (!suggestedTags) return;
 
-    // Remove os botões antigos (mantém o span "Filtrar por:")
     const existingPills = suggestedTags.querySelectorAll('.tag-pill');
     existingPills.forEach(pill => pill.remove());
 
-    // Define as categorias (use slugs reais retornados pelo WP em `post.category`)
     const categories = [
         { id: '', label: 'todos' },
         { id: 'design-grafico', label: 'design-grafico' },
@@ -2217,28 +1910,23 @@ function renderTagPills() {
         { id: 'impressos', label: 'impressos' }
     ];
 
-    // Cria os botões
     categories.forEach(cat => {
         const btn = document.createElement('button');
         btn.className = 'tag-pill';
         btn.dataset.tag = cat.id;
 
-        // Pega a tradução
         const translation = translations[currentLanguage][cat.label] || cat.label;
         btn.textContent = translation;
 
         suggestedTags.appendChild(btn);
 
-        // Adiciona listener para filtro
         btn.addEventListener('click', () => {
-            // Remove classe ativa de todos
+            
             document.querySelectorAll('.tag-pill').forEach(b => b.style.backgroundColor = '');
 
-            // Ativa o clicado
             btn.style.backgroundColor = 'var(--color-accent)';
             btn.style.color = '#fff';
 
-            // Filtra posts
             renderBlog('', cat.id);
         });
     });
@@ -2246,15 +1934,12 @@ function renderTagPills() {
 
 const searchInput = document.getElementById('search-input');
 
-// 1. Busca ao digitar COM VALIDAÇÃO
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
         let searchValue = e.target.value;
 
-        // Sanitizar: remover tags HTML e caracteres perigosos
         searchValue = sanitizeSearchInput(searchValue);
 
-        // Atualizar input se foi alterado (remover tags)
         if (searchValue !== e.target.value) {
             e.target.value = searchValue;
         }
@@ -2263,9 +1948,8 @@ if (searchInput) {
     });
 }
 
-// 2. Renderiza tags com tradução ao carregar página
 function detectFontAwesomeAndEnableSvgFallback() {
-    // Cria um elemento temporário para verificar se o pseudo-elemento ::before do FA está entregando conteúdo
+    
     const temp = document.createElement('i');
     temp.className = 'fas fa-star test-fa';
     temp.style.position = 'absolute';
@@ -2276,29 +1960,21 @@ function detectFontAwesomeAndEnableSvgFallback() {
         const content = window.getComputedStyle(temp, '::before').getPropertyValue('content');
         if (content && content !== 'none' && content !== '""') faAvailable = true;
     } catch (e) {
-        // Falha ao acessar ::before — assume que não está disponível
+        
         faAvailable = false;
     }
     temp.remove();
 
     if (!faAvailable) {
-        // Mostra as SVGs fallback que inserimos junto com os <i>
+        
         document.querySelectorAll('.package-icon-svg').forEach(svg => {
             svg.style.display = 'inline-flex';
         });
     }
 }
 
-/* ==============================================
-   INICIALIZAÇÃO: DOMContentLoaded
-   Vincula event listeners e renderiza UI inicial
-   ============================================== */
 document.addEventListener('DOMContentLoaded', () => {
-    // ==============================================
-    // SEGURANÇA: Event listeners (remover onclick)
-    // ==============================================
 
-    // Botões de seleção de idioma (substituir onclick)
     const langPtBtn = document.getElementById('lang-pt');
     const langEnBtn = document.getElementById('lang-en');
 
@@ -2309,21 +1985,15 @@ document.addEventListener('DOMContentLoaded', () => {
         langEnBtn.addEventListener('click', () => selectLanguage('en'));
     }
 
-    // Botão continuar do onboarding (substituir onclick)
     const btnContinuar = document.getElementById('btn-continuar');
     if (btnContinuar) {
         btnContinuar.addEventListener('click', finalizarOnboarding);
     }
 
-    // Renderizar tags
     renderTagPills();
     detectFontAwesomeAndEnableSvgFallback();
 });
 
-/* ==============================================
-   INICIALIZAÇÃO INSTANTÂNEA (DOMContentLoaded & LOAD)
-   Renderiza carrosséis e blog em 0ms usando dados pré-carregados
-   ============================================== */
 function initUI() {
     if (!allPosts || allPosts.length === 0) return;
 
@@ -2351,7 +2021,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[INIT] DOM pronto. Inicializando UI...');
     initUI();
 
-    // Busca atualizações em segundo plano sem bloquear a renderização inicial
     fetchRealPosts().then(() => {
         initUI();
     }).catch(err => {

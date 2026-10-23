@@ -1,25 +1,12 @@
 <?php
 
-// ==============================================
-// SEGURANÇA: Bloquear acesso direto ao arquivo
-// ==============================================
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// ==============================================
-// CARREGAMENTO DE MÓDULOS DO TEMA
-// ==============================================
+require_once get_template_directory() . '/inc/cv-admin.php';
+require_once get_template_directory() . '/inc/faq-admin.php';
 
-// Módulo de Administração da Página Sobre Mim (CV) e FAQ
-if ( is_admin() ) {
-    require_once get_template_directory() . '/inc/cv-admin.php';
-    require_once get_template_directory() . '/inc/faq-admin.php';
-}
-
-// ==============================================
-// SEGURANÇA: Gerar CSP Nonce único por requisição
-// ==============================================
 function odyssee_generate_csp_nonce() {
     if ( ! defined( 'ODYSSEE_CSP_NONCE' ) ) {
         define( 'ODYSSEE_CSP_NONCE', base64_encode( random_bytes( 16 ) ) );
@@ -27,70 +14,52 @@ function odyssee_generate_csp_nonce() {
     return ODYSSEE_CSP_NONCE;
 }
 
-// ==============================================
-// SEGURANÇA: Headers HTTP de proteção (2026)
-// ==============================================
 function odyssee_security_headers() {
-    // Não aplicar CSP no painel admin — bloqueia scripts internos do WP
+    
     if ( is_admin() ) {
         return;
     }
 
     $nonce = odyssee_generate_csp_nonce();
 
-    // Detecta se está em localhost/XAMPP para não forçar HTTPS e quebrar imagens locais
     $is_localhost = isset($_SERVER['HTTP_HOST']) && (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
+    $local_connect = $is_localhost ? " http://localhost:8881" : "";
 
-    // Content Security Policy base
-    $csp_policy = "default-src 'self'; script-src 'self' 'nonce-{$nonce}' https://www.googletagmanager.com https://www.instagram.com https://*.instagram.com https://platform.instagram.com https://*.cdninstagram.com https://connect.facebook.net https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.instagram.com https://*.cdninstagram.com; img-src 'self' data: https:; font-src 'self' data: https://cdnjs.cloudflare.com; connect-src 'self' https://odysseexp.com https://www.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.instagram.com https://*.instagram.com https://graph.instagram.com https://*.cdninstagram.com https://www.youtube.com https://*.youtube.com; frame-src 'self' https://www.instagram.com https://*.instagram.com https://www.facebook.com https://*.facebook.com https://www.youtube.com https://*.youtube.com https://www.youtube-nocookie.com https://*.youtube-nocookie.com https://player.vimeo.com https://*.vimeo.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self';";
+    $csp_policy = "default-src 'self'; script-src 'self' 'nonce-{$nonce}' https://www.googletagmanager.com https://www.instagram.com https://*.instagram.com https://platform.instagram.com https://*.cdninstagram.com https://connect.facebook.net https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.instagram.com https://*.cdninstagram.com; img-src 'self' data: https:; font-src 'self' data: https://cdnjs.cloudflare.com; connect-src 'self'{$local_connect} https://www.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.instagram.com https://*.instagram.com https://graph.instagram.com https://*.cdninstagram.com https://www.youtube.com https://*.youtube.com; frame-src 'self' https://www.instagram.com https://*.instagram.com https://www.facebook.com https://*.facebook.com https://www.youtube.com https://*.youtube.com https://www.youtube-nocookie.com https://*.youtube-nocookie.com https://player.vimeo.com https://*.vimeo.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self';";
     
     if ( ! $is_localhost ) {
         $csp_policy .= " upgrade-insecure-requests;";
     }
 
-    // Content Security Policy com nonce (elimina unsafe-inline e unsafe-eval para scripts)
-    // Inclui domínios do Google Analytics/GTM para quando for ativado
     header( "Content-Security-Policy: " . $csp_policy );
 
-    // HTTP Strict Transport Security (2 anos + preload) - Apenas em produção
     if ( ! $is_localhost ) {
         header( 'Strict-Transport-Security: max-age=63072000; includeSubDomains; preload' );
     }
 
-    // Cross-Origin Opener Policy (permite popups para WhatsApp)
     header( 'Cross-Origin-Opener-Policy: same-origin-allow-popups' );
 
-    // Permissions Policy atualizado 2026 (bloqueia browsing-topics e attribution-reporting)
     header( "Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=(), browsing-topics=(), attribution-reporting=()" );
 }
 
-// ==============================================
-// ENQUEUE SCRIPTS COM LOCALIZAÇÃO
-// ==============================================
 function odyssee_scripts() {
-    // Versão fixa para permitir cache efetivo do browser
-    $theme_version = wp_get_theme()->get( 'Version' ) ?: '1.0.0';
     
-    // CSS principal (minificado em produção)
+    $theme_version = time();
+
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
-    
-    // Fonts (self-hosted) - carregar folha de fontes custom
+
     wp_enqueue_style( 'odyssee-fonts', get_template_directory_uri() . '/assets/css/fonts.css', array(), $theme_version );
 
-    // FontAwesome (CDN) - carrega ícones do CDN oficial do Font Awesome
     wp_enqueue_style( 'fontawesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', array(), '6.4.0' );
 
-    // JS principal
     wp_enqueue_script( 'odyssee-app', get_template_directory_uri() . '/assets/js/app.js', array(), $theme_version, true );
-    
-    // Passar nonce e outras dados seguros para JS (usado em fetches/AJAX)
+
     wp_localize_script( 'odyssee-app', 'odysseeSecure', array(
         'nonce' => wp_create_nonce( 'odyssee_nonce' ),
         'ajaxurl' => admin_url( 'admin-ajax.php' ),
         'restUrl' => rest_url(),
     ) );
 
-    // Passar preços do admin para o JS (sobreescreve hardcoded)
     $precos_salvos = get_option( 'odyssee_precos', array() );
     $unitarios_salvos = get_option( 'odyssee_precos_unitarios', array() );
     if ( ! empty( $precos_salvos ) || ! empty( $unitarios_salvos ) ) {
@@ -100,39 +69,32 @@ function odyssee_scripts() {
         ) );
     }
 
-    // Passar produtos personalizados do admin para o JS
     $produtos_custom = get_option( 'odyssee_produtos_custom', array() );
     if ( ! empty( $produtos_custom ) && is_array( $produtos_custom ) ) {
         wp_localize_script( 'odyssee-app', 'odysseeProdutos', $produtos_custom );
     }
 
-    // Passar sobrescritas de serviços existentes (nome, descrição, thumbnail)
     $overrides = get_option( 'odyssee_servicos_overrides', array() );
     if ( ! empty( $overrides ) && is_array( $overrides ) ) {
         wp_localize_script( 'odyssee-app', 'odysseeOverrides', $overrides );
     }
 
-    // Passar posts iniciais do servidor para carregamento e renderização instantânea (0ms de espera)
     wp_localize_script( 'odyssee-app', 'odysseeInitialPosts', odyssee_get_initial_posts() );
-    
-    // Script para placeholders da página principal
+
     wp_enqueue_script( 'odyssee-placeholders', get_template_directory_uri() . '/assets/js/placeholders.js', array(), $theme_version, true );
-    
-    // Script para banners temáticos de categorias
+
     wp_enqueue_script( 'odyssee-category-banners', get_template_directory_uri() . '/assets/js/category-banners.js', array(), $theme_version, true );
 
-    // Banner de Cookies LGPD
     wp_enqueue_style( 'odyssee-cookie-banner', get_template_directory_uri() . '/assets/css/cookie-banner.css', array(), $theme_version );
     wp_enqueue_script( 'odyssee-cookie-banner', get_template_directory_uri() . '/assets/js/cookie-banner.js', array(), $theme_version, true );
+
+    if ( is_front_page() || is_home() ) {
+        wp_enqueue_script( 'odyssee-orbit-hero', get_template_directory_uri() . '/assets/js/orbit-hero.js', array(), $theme_version, true );
+    }
 }
 
-// ==============================================
-// EMBEDS DO INSTAGRAM: Injetar embed.js com nonce CSP
-// Necessário porque o script externo do Instagram não passa
-// pelo wp_script_attributes e seria bloqueado pela CSP
-// ==============================================
 add_action( 'wp_footer', function() {
-    // Verifica se é um post singular com conteúdo
+    
     if ( ! is_singular() ) return;
 
     global $post;
@@ -140,7 +102,6 @@ add_action( 'wp_footer', function() {
 
     $content = $post->post_content;
 
-    // Detecta qualquer variação de embed do Instagram (URLs, domínios reduzidos instagr.am, classes de blocos, etc.)
     $has_instagram = ( stripos( $content, 'instagram.com' ) !== false )
                   || ( stripos( $content, 'instagr.am' ) !== false )
                   || ( stripos( $content, 'instagram-media' ) !== false )
@@ -149,10 +110,8 @@ add_action( 'wp_footer', function() {
 
     if ( ! $has_instagram ) return;
 
-    // Gera o nonce CSP para este script externo
     $nonce = odyssee_generate_csp_nonce();
 
-    // Injeta o script do Instagram com nonce e processador dinâmico instgrm.Embeds.process()
     ?>
     <script async nonce="<?php echo esc_attr( $nonce ); ?>" src="//www.instagram.com/embed.js" onload="if(window.instgrm&&window.instgrm.Embeds){window.instgrm.Embeds.process();}"></script>
     <script nonce="<?php echo esc_attr( $nonce ); ?>">
@@ -175,24 +134,19 @@ add_action( 'wp_footer', function() {
     <?php
 }, 20 );
 
-// Hooks principais do tema
 add_action( 'wp_enqueue_scripts', 'odyssee_scripts' );
 add_action( 'send_headers', 'odyssee_security_headers' );
 add_theme_support( 'title-tag' );
 add_theme_support( 'post-thumbnails' );
 
-// ==============================================
-// SEO: Meta Description, Open Graph, Twitter Cards
-// ==============================================
 function odyssee_seo_meta_tags() {
     $site_name   = 'Odyssee — Creative Experience';
-    $default_img = 'https://odysseexp.com/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp';
+    $default_img = 'http://localhost:8881/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp';
     $site_url    = home_url();
     $locale      = 'pt_BR';
 
     $req_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
-    // Determinar título, descrição e imagem por página
     if ( is_front_page() ) {
         $title = 'Odyssee — Creative Experience | Design, Vídeo, Motion & Ilustração';
         $desc  = 'Portfólio e serviços de Design Gráfico, Edição de Vídeo, Motion Graphics e Ilustração Digital. Experiência criativa de alto nível por Renato Harley Paiva.';
@@ -239,10 +193,8 @@ function odyssee_seo_meta_tags() {
 
     $desc = mb_substr( $desc, 0, 160 );
 
-    // Meta description
     echo '<meta name="description" content="' . esc_attr( $desc ) . '">' . "\n";
 
-    // Open Graph
     echo '<meta property="og:type" content="' . esc_attr( $type ) . '">' . "\n";
     echo '<meta property="og:title" content="' . esc_attr( $title ) . '">' . "\n";
     echo '<meta property="og:description" content="' . esc_attr( $desc ) . '">' . "\n";
@@ -251,24 +203,18 @@ function odyssee_seo_meta_tags() {
     echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '">' . "\n";
     echo '<meta property="og:locale" content="' . esc_attr( $locale ) . '">' . "\n";
 
-    // Twitter Cards
     echo '<meta name="twitter:card" content="summary_large_image">' . "\n";
     echo '<meta name="twitter:title" content="' . esc_attr( $title ) . '">' . "\n";
     echo '<meta name="twitter:description" content="' . esc_attr( $desc ) . '">' . "\n";
     echo '<meta name="twitter:image" content="' . esc_url( $image ) . '">' . "\n";
 
-    // Canonical URL
     echo '<link rel="canonical" href="' . esc_url( $url ) . '">' . "\n";
 }
 add_action( 'wp_head', 'odyssee_seo_meta_tags', 1 );
 
-// ==============================================
-// SEO: Filtro de Título da Aba do Navegador (<title>)
-// ==============================================
 function odyssee_custom_document_title( $title ) {
     $req_uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
 
-    // Página "Todos os Posts"
     if ( is_home() || is_archive() || is_page( 'posts' ) || is_page( 'todos-os-posts' ) || ( strpos( $req_uri, '/posts' ) !== false && ! is_singular( 'post' ) ) ) {
         return 'Todos os Posts — Odyssee Experience';
     }
@@ -306,19 +252,15 @@ add_filter( 'document_title_parts', function( $title_parts ) {
     return $title_parts;
 }, 999 );
 
-// ==============================================
-// SEO: JSON-LD Structured Data (Schema.org)
-// ==============================================
 function odyssee_jsonld_schema() {
     $site_url = home_url();
 
-    // Schema Organization (todas as páginas)
     $organization = array(
         '@context' => 'https://schema.org',
         '@type'    => 'ProfessionalService',
         'name'     => 'Odyssee — Creative Experience',
         'url'      => $site_url,
-        'logo'     => 'https://odysseexp.com/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp',
+        'logo'     => 'http://localhost:8881/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp',
         'description' => 'Serviços profissionais de Design Gráfico, Edição de Vídeo, Motion Graphics e Ilustração Digital.',
         'founder'  => array(
             '@type' => 'Person',
@@ -338,7 +280,6 @@ function odyssee_jsonld_schema() {
     $nonce = odyssee_generate_csp_nonce();
     echo '<script type="application/ld+json" nonce="' . esc_attr( $nonce ) . '">' . wp_json_encode( $organization, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
 
-    // Schema Article (posts individuais)
     if ( is_singular( 'post' ) ) {
         $article = array(
             '@context'      => 'https://schema.org',
@@ -355,7 +296,7 @@ function odyssee_jsonld_schema() {
                 'name'  => 'Odyssee — Creative Experience',
                 'logo'  => array(
                     '@type' => 'ImageObject',
-                    'url'   => 'https://odysseexp.com/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp',
+                    'url'   => 'http://localhost:8881/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp',
                 ),
             ),
             'mainEntityOfPage' => get_permalink(),
@@ -366,7 +307,6 @@ function odyssee_jsonld_schema() {
         echo '<script type="application/ld+json" nonce="' . esc_attr( $nonce ) . '">' . wp_json_encode( $article, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
     }
 
-    // Schema FAQPage (página FAQ)
     if ( is_page( 'faq' ) || is_page_template( 'faq.php' ) ) {
         $faq_items = array(
             array( 'q' => 'Quais são os prazos para entrega?', 'a' => 'Vídeos curtos até 2 dias úteis, vídeos longos até 5 dias úteis. Design gráfico no mesmo dia para até 5 posts. Ilustrações de 1 a 7 dias conforme complexidade. Motion pode levar até um mês.' ),
@@ -395,36 +335,25 @@ function odyssee_jsonld_schema() {
 }
 add_action( 'wp_head', 'odyssee_jsonld_schema', 2 );
 
-// ==============================================
-// SEGURANÇA WAF: Headers adicionais de proteção
-// ==============================================
 function odyssee_waf_headers() {
     if ( is_admin() ) {
         return;
     }
 
-    // X-Content-Type-Options: impede MIME-sniffing
     header( 'X-Content-Type-Options: nosniff' );
 
-    // X-Frame-Options: impede clickjacking (complementa frame-ancestors no CSP)
     header( 'X-Frame-Options: SAMEORIGIN' );
 
-    // Referrer-Policy: envia origin apenas para cross-origin
     header( 'Referrer-Policy: strict-origin-when-cross-origin' );
 
-    // X-XSS-Protection: filtro XSS do navegador (legacy, ainda útil para IE)
     header( 'X-XSS-Protection: 1; mode=block' );
 
-    // Cross-Origin-Embedder-Policy (permite imagens externas)
     header( 'Cross-Origin-Resource-Policy: same-site' );
 }
 add_action( 'send_headers', 'odyssee_waf_headers' );
 
-// ==============================================
-// PERFORMANCE: Otimizações de carregamento
-// ==============================================
 function odyssee_performance_tweaks() {
-    // Remover emojis do WordPress (JS + CSS desnecessários)
+    
     remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
     remove_action( 'wp_print_styles', 'print_emoji_styles' );
     remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
@@ -433,7 +362,6 @@ function odyssee_performance_tweaks() {
     remove_filter( 'comment_text_rss', 'wp_staticize_emoji' );
     remove_filter( 'wp_mail', 'wp_staticize_emoji_for_email' );
 
-    // Remover links desnecessários do <head>
     remove_action( 'wp_head', 'rsd_link' );
     remove_action( 'wp_head', 'wlwmanifest_link' );
     remove_action( 'wp_head', 'wp_shortlink_wp_head' );
@@ -444,7 +372,6 @@ function odyssee_performance_tweaks() {
 }
 add_action( 'init', 'odyssee_performance_tweaks' );
 
-// Preconnect para recursos críticos de terceiros
 function odyssee_resource_hints( $urls, $relation_type ) {
     if ( 'preconnect' === $relation_type ) {
         $urls[] = array( 'href' => 'https://cdnjs.cloudflare.com', 'crossorigin' => true );
@@ -453,28 +380,6 @@ function odyssee_resource_hints( $urls, $relation_type ) {
 }
 add_filter( 'wp_resource_hints', 'odyssee_resource_hints', 10, 2 );
 
-// ==============================================
-// GOOGLE ANALYTICS (GA4) — Descomente e insira seu ID
-// ==============================================
-// function odyssee_google_analytics() {
-//     $ga_id = 'G-XXXXXXXXXX'; // Substitua pelo seu Measurement ID
-//     $nonce = odyssee_generate_csp_nonce();
-//     echo '<script async src="https://www.googletagmanager.com/gtag/js?id=' . esc_attr( $ga_id ) . '" nonce="' . esc_attr( $nonce ) . '"></script>' . "\n";
-//     echo '<script nonce="' . esc_attr( $nonce ) . '">window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","' . esc_js( $ga_id ) . '");</script>' . "\n";
-// }
-// add_action( 'wp_head', 'odyssee_google_analytics', 0 );
-
-// ==============================================
-// GOOGLE SEARCH CONSOLE — Descomente e insira seu código
-// ==============================================
-// function odyssee_search_console() {
-//     echo '<meta name="google-site-verification" content="SEU_CODIGO_AQUI">' . "\n";
-// }
-// add_action( 'wp_head', 'odyssee_search_console', 0 );
-
-// ==============================================
-// SEGURANÇA: Injetar CSP nonce nos scripts do WordPress
-// ==============================================
 add_filter( 'wp_script_attributes', function( $attributes ) {
     $attributes['nonce'] = odyssee_generate_csp_nonce();
     return $attributes;
@@ -485,25 +390,19 @@ add_filter( 'wp_inline_script_attributes', function( $attributes ) {
     return $attributes;
 } );
 
-// ==============================================
-// SEGURANÇA: Hardening geral do WordPress
-// ==============================================
 add_filter( 'xmlrpc_enabled', '__return_false' );
 remove_action( 'wp_head', 'wp_generator' );
 
-// Desativar edição de arquivos pelo painel (caso não esteja no wp-config.php)
 if ( ! defined( 'DISALLOW_FILE_EDIT' ) ) {
     define( 'DISALLOW_FILE_EDIT', true );
 }
 
-// Remover header X-Pingback e fechar pings
 add_action( 'wp_headers', function( $headers ) {
     unset( $headers['X-Pingback'] );
     return $headers;
 } );
 add_filter( 'pings_open', '__return_false', 10, 2 );
 
-// Remover versão do WP das URLs de scripts e estilos para dificultar fingerprinting
 function odyssee_remove_wp_version_strings( $src ) {
     global $wp_version;
     parse_str( (string) parse_url( $src, PHP_URL_QUERY ), $query );
@@ -515,8 +414,6 @@ function odyssee_remove_wp_version_strings( $src ) {
 add_filter( 'style_loader_src', 'odyssee_remove_wp_version_strings' );
 add_filter( 'script_loader_src', 'odyssee_remove_wp_version_strings' );
 
-
-// Bloquear enumeração de usuários via REST API
 add_filter( 'rest_endpoints', function( $endpoints ) {
     if ( ! is_user_logged_in() ) {
         unset( $endpoints['/wp/v2/users'] );
@@ -525,25 +422,20 @@ add_filter( 'rest_endpoints', function( $endpoints ) {
     return $endpoints;
 } );
 
-// ==============================================
-// REST API - Registrar custom field com segurança
-// ==============================================
 add_action( 'rest_api_init', function() {
     register_rest_field( 'post', 'post_title_en', array(
         'get_callback' => function( $post ) {
-            // Sanitizar a saída
+            
             return sanitize_text_field( get_post_meta( $post['id'], 'post_title_en', true ) );
         },
         'update_callback' => function( $value, $post ) {
-            // Verificar permissões
+            
             if ( ! current_user_can( 'edit_post', $post->ID ) ) {
                 return new WP_Error( 'odyssee_forbidden', 'Você não tem permissão para editar este post.', array( 'status' => 403 ) );
             }
-            
-            // Sanitizar entrada
+
             $sanitized_value = sanitize_text_field( $value );
-            
-            // Atualizar com validação
+
             return update_post_meta( $post->ID, 'post_title_en', $sanitized_value );
         },
         'schema' => array(
@@ -554,36 +446,21 @@ add_action( 'rest_api_init', function() {
     ) );
 } );
 
-// ==============================================
-// PAINEL ADMIN: Avisos de Serviços
-// ==============================================
-
-/**
- * Registra a página de admin "Avisos de Serviços"
- * no menu do WordPress em Aparência > Avisos de Serviços.
- */
 function odyssee_avisos_admin_menu() {
     add_menu_page(
-        'Avisos de Serviços',          // Título da página
-        'Avisos de Serviços',          // Texto no menu
-        'manage_options',              // Permissão necessária
-        'odyssee-avisos-servicos',     // Slug da página
-        'odyssee_avisos_admin_page',    // Callback que renderiza
-        'dashicons-megaphone',         // Ícone
-        27                             // Posição no menu
+        'Avisos de Serviços',          
+        'Avisos de Serviços',          
+        'manage_options',              
+        'odyssee-avisos-servicos',     
+        'odyssee_avisos_admin_page',    
+        'dashicons-megaphone',         
+        27                             
     );
 }
 add_action( 'admin_menu', 'odyssee_avisos_admin_menu' );
 
-/**
- * Registra as opções (settings) dos avisos no WordPress.
- * Cada categoria de serviço possui duas opções:
- *   - odyssee_aviso_{chave}       → texto do aviso (sanitize_textarea_field)
- *   - odyssee_aviso_{chave}_ativo  → on/off (absint: 0 ou 1)
- * Categorias: geral, design, video, motion, ilustracao.
- */
 function odyssee_avisos_settings_init() {
-    // Registrar cada opção com sanitização
+    
     register_setting( 'odyssee_avisos_group', 'odyssee_aviso_geral', array(
         'type'              => 'string',
         'sanitize_callback' => 'sanitize_textarea_field',
@@ -637,17 +514,11 @@ function odyssee_avisos_settings_init() {
 }
 add_action( 'admin_init', 'odyssee_avisos_settings_init' );
 
-/**
- * Renderiza a página de admin dos avisos de serviços.
- * Exibe um formulário com checkbox (ativar/desativar) e textarea
- * para cada categoria, usando a API de Settings do WordPress.
- */
 function odyssee_avisos_admin_page() {
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
     }
 
-    // Mostra mensagem de sucesso ao salvar
     if ( isset( $_GET['settings-updated'] ) ) {
         add_settings_error( 'odyssee_avisos_messages', 'odyssee_avisos_updated', 'Avisos atualizados com sucesso!', 'updated' );
     }
@@ -707,13 +578,6 @@ function odyssee_avisos_admin_page() {
     <?php
 }
 
-/**
- * Função helper: retorna o HTML de um aviso se estiver ativo.
- * Usada nos templates para exibir avisos no front-end.
- *
- * @param string $key  Chave da categoria (geral, design, video, motion, ilustracao)
- * @return string      HTML do aviso ou string vazia
- */
 function odyssee_get_aviso_html( $key ) {
     $ativo = get_option( 'odyssee_aviso_' . $key . '_ativo', 0 );
     if ( ! $ativo ) {
@@ -732,19 +596,10 @@ function odyssee_get_aviso_html( $key ) {
     </div>';
 }
 
-// ==============================================
-// PAINEL ADMIN: Preços e Descontos
-// ==============================================
-
-/**
- * Definição de todos os serviços e seus preços padrão.
- * Usado tanto na página admin quanto nos defaults do JS.
- */
 function odyssee_get_price_definitions() {
-    // Estrutura: section_key => { label, items => { item_key => { label, default } } }
-    // Cada item_key corresponde ao ID do serviço usado no JS (allPrices[item_key])
+
     return array(
-        // --- Design Gráfico: Serviços individuais ---
+        
         'design_servicos' => array(
             'label' => 'Design Gráfico — Serviços',
             'items' => array(
@@ -762,7 +617,7 @@ function odyssee_get_price_definitions() {
                 'adesivos'       => array( 'label' => 'Arte para Adesivos',              'default' => 19.00 ),
             ),
         ),
-        // --- Design Gráfico: Pacotes promocionais ---
+        
         'design_pacotes' => array(
             'label' => 'Design Gráfico — Pacotes',
             'items' => array(
@@ -773,7 +628,7 @@ function odyssee_get_price_definitions() {
                 'carrosselpackage'     => array( 'label' => 'Pacote Carrosséis',  'default' => 449.00 ),
             ),
         ),
-        // --- Edição de Vídeo: Serviços individuais ---
+        
         'video_servicos' => array(
             'label' => 'Edição de Vídeo — Serviços',
             'items' => array(
@@ -782,7 +637,7 @@ function odyssee_get_price_definitions() {
                 'thumbnail'   => array( 'label' => 'Thumbnail',    'default' => 20.00 ),
             ),
         ),
-        // --- Edição de Vídeo: Pacotes promocionais ---
+        
         'video_pacotes' => array(
             'label' => 'Edição de Vídeo — Pacotes',
             'items' => array(
@@ -795,7 +650,7 @@ function odyssee_get_price_definitions() {
                 'dez_thumbnails'      => array( 'label' => 'Dez Thumbnails',          'default' => 169.00 ),
             ),
         ),
-        // --- Motion Graphics: Serviços individuais ---
+        
         'motion_servicos' => array(
             'label' => 'Motion Graphics',
             'items' => array(
@@ -807,7 +662,7 @@ function odyssee_get_price_definitions() {
                 'motionbanner'   => array( 'label' => 'Banner Animado',     'default' => 300.00 ),
             ),
         ),
-        // --- Ilustração Digital: Serviços individuais ---
+        
         'ilustracao_servicos' => array(
             'label' => 'Ilustração Digital',
             'items' => array(
@@ -827,9 +682,6 @@ function odyssee_get_price_definitions() {
     );
 }
 
-/**
- * Preços unitários usados para cálculo de desconto nos pacotes.
- */
 function odyssee_get_unit_price_definitions() {
     return array(
         'design_post'      => array( 'label' => 'Post (unitário)',        'default' => 20.00 ),
@@ -841,9 +693,6 @@ function odyssee_get_unit_price_definitions() {
     );
 }
 
-/**
- * Registra a página de admin "Preços e Descontos"
- */
 function odyssee_precos_admin_menu() {
     add_menu_page(
         'Preços e Descontos',
@@ -857,28 +706,20 @@ function odyssee_precos_admin_menu() {
 }
 add_action( 'admin_menu', 'odyssee_precos_admin_menu' );
 
-/**
- * Registra as 3 opções de preços no WordPress:
- *   - odyssee_precos             → preços de serviços/pacotes (array id => valor)
- *   - odyssee_precos_unitarios   → preços unitários para cálculo de desconto
- *   - odyssee_servicos_overrides → sobrescritas de nome/desc/thumb/info por serviço
- */
 function odyssee_precos_settings_init() {
-    // Preços de serviços e pacotes
+    
     register_setting( 'odyssee_precos_group', 'odyssee_precos', array(
         'type'              => 'array',
         'sanitize_callback' => 'odyssee_sanitize_precos',
         'default'           => array(),
     ) );
 
-    // Preços unitários (base para cálculo de economia nos pacotes)
     register_setting( 'odyssee_precos_group', 'odyssee_precos_unitarios', array(
         'type'              => 'array',
         'sanitize_callback' => 'odyssee_sanitize_precos',
         'default'           => array(),
     ) );
 
-    // Sobrescritas dos serviços existentes (nome, descrição, thumbnail, informativo)
     register_setting( 'odyssee_precos_group', 'odyssee_servicos_overrides', array(
         'type'              => 'array',
         'sanitize_callback' => 'odyssee_sanitize_overrides',
@@ -887,10 +728,6 @@ function odyssee_precos_settings_init() {
 }
 add_action( 'admin_init', 'odyssee_precos_settings_init' );
 
-/**
- * Sanitiza sobrescritas de serviços existentes (nome, descrição, thumbnail).
- * Campos vazios são ignorados (usará o valor padrão do JS).
- */
 function odyssee_sanitize_overrides( $input ) {
     if ( ! is_array( $input ) ) {
         return array();
@@ -927,10 +764,6 @@ function odyssee_sanitize_overrides( $input ) {
     return $clean;
 }
 
-/**
- * Sanitiza o array de preços — aceita apenas valores numéricos > 0.
- * Campos vazios são ignorados (usará o preço padrão do JS).
- */
 function odyssee_sanitize_precos( $input ) {
     if ( ! is_array( $input ) ) {
         return array();
@@ -938,7 +771,7 @@ function odyssee_sanitize_precos( $input ) {
     $clean = array();
     foreach ( $input as $key => $val ) {
         $key = sanitize_key( $key );
-        // Pular campos vazios — manter o preço padrão do JS
+        
         if ( $val === '' || $val === null ) {
             continue;
         }
@@ -950,12 +783,6 @@ function odyssee_sanitize_precos( $input ) {
     return $clean;
 }
 
-/**
- * Renderiza a página admin de preços e descontos.
- * Exibe tabelas com todos os serviços agrupados por categoria,
- * permitindo sobrescrever preços padrão definidos no JS.
- * Também exibe preços unitários usados para calcular economia nos pacotes.
- */
 function odyssee_precos_admin_page() {
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
@@ -1245,13 +1072,6 @@ function odyssee_precos_admin_page() {
     <?php
 }
 
-// ==============================================
-// PAINEL ADMIN: Gerenciar Produtos (CRUD)
-// ==============================================
-
-/**
- * Categorias disponíveis para os produtos.
- */
 function odyssee_get_categorias_produto() {
     return array(
         'design-grafico'   => 'Design Gráfico',
@@ -1261,9 +1081,6 @@ function odyssee_get_categorias_produto() {
     );
 }
 
-/**
- * Registra a página de admin "Gerenciar Produtos"
- */
 function odyssee_produtos_admin_menu() {
     add_menu_page(
         'Gerenciar Produtos',
@@ -1277,9 +1094,6 @@ function odyssee_produtos_admin_menu() {
 }
 add_action( 'admin_menu', 'odyssee_produtos_admin_menu' );
 
-/**
- * Registra a opção que armazena os produtos.
- */
 function odyssee_produtos_settings_init() {
     register_setting( 'odyssee_produtos_group', 'odyssee_produtos_custom', array(
         'type'              => 'array',
@@ -1289,12 +1103,6 @@ function odyssee_produtos_settings_init() {
 }
 add_action( 'admin_init', 'odyssee_produtos_settings_init' );
 
-/**
- * Sanitiza o array de produtos customizados.
- * Valida e limpa todos os campos: id, nome, categoria, tipo, descricao,
- * informativo, itens, thumbnail e preco. Produtos sem nome são descartados.
- * O campo 'tipo' aceita apenas 'servico' ou 'pacote'.
- */
 function odyssee_sanitize_produtos( $input ) {
     if ( ! is_array( $input ) ) {
         return array();
@@ -1306,7 +1114,7 @@ function odyssee_sanitize_produtos( $input ) {
         }
         $nome = isset( $produto['nome'] ) ? sanitize_text_field( $produto['nome'] ) : '';
         if ( empty( $nome ) ) {
-            continue; // Ignora produtos sem nome
+            continue; 
         }
         $tipo_val = isset( $produto['tipo'] ) ? sanitize_key( $produto['tipo'] ) : 'servico';
         if ( ! in_array( $tipo_val, array( 'servico', 'pacote' ), true ) ) {
@@ -1327,20 +1135,11 @@ function odyssee_sanitize_produtos( $input ) {
     return $clean;
 }
 
-/**
- * Processa ações de adicionar/remover/editar produto via POST.
- * Ações reconhecidas (via name do submit):
- *   - odyssee_add_produto    → adiciona novo produto ao array
- *   - odyssee_remove_produto → remove produto pelo ID
- *   - odyssee_save_produtos  → salva edições em massa dos produtos existentes
- * Todas as ações exigem nonce válido e permissão manage_options.
- */
 function odyssee_produtos_handle_actions() {
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
     }
 
-    // Adicionar produto
     if ( isset( $_POST['odyssee_add_produto'] ) && check_admin_referer( 'odyssee_produto_action', 'odyssee_produto_nonce' ) ) {
         $produtos = get_option( 'odyssee_produtos_custom', array() );
         if ( ! is_array( $produtos ) ) {
@@ -1370,7 +1169,6 @@ function odyssee_produtos_handle_actions() {
         }
     }
 
-    // Remover produto
     if ( isset( $_POST['odyssee_remove_produto'] ) && check_admin_referer( 'odyssee_produto_action', 'odyssee_produto_nonce' ) ) {
         $remove_id = isset( $_POST['remove_id'] ) ? sanitize_key( $_POST['remove_id'] ) : '';
         if ( ! empty( $remove_id ) ) {
@@ -1381,13 +1179,12 @@ function odyssee_produtos_handle_actions() {
             $produtos = array_filter( $produtos, function( $p ) use ( $remove_id ) {
                 return isset( $p['id'] ) && $p['id'] !== $remove_id;
             } );
-            $produtos = array_values( $produtos ); // Reindexa
+            $produtos = array_values( $produtos ); 
             update_option( 'odyssee_produtos_custom', $produtos );
             add_settings_error( 'odyssee_produtos_messages', 'removed', 'Produto removido com sucesso!', 'updated' );
         }
     }
 
-    // Editar produto
     if ( isset( $_POST['odyssee_save_produtos'] ) && check_admin_referer( 'odyssee_produto_action', 'odyssee_produto_nonce' ) ) {
         $dados = isset( $_POST['produtos'] ) ? $_POST['produtos'] : array();
         if ( is_array( $dados ) ) {
@@ -1419,9 +1216,6 @@ function odyssee_produtos_handle_actions() {
 }
 add_action( 'admin_init', 'odyssee_produtos_handle_actions' );
 
-/**
- * Renderiza a página admin de gerenciamento de produtos.
- */
 function odyssee_produtos_admin_page() {
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
@@ -1435,23 +1229,20 @@ function odyssee_produtos_admin_page() {
     }
     $categorias = odyssee_get_categorias_produto();
 
-    // Serviços já existentes no site (espelhando os arrays do app.js)
-    // Cada entrada contém: id (chave única), nome, descricao, thumbnail e tipo (servico|pacote)
-    // Esses dados são usados como placeholder nos campos de edição da tabela admin
     $servicos_existentes = array(
         'design-grafico' => array(
-            array( 'id' => 'design_post',          'nome' => 'Post',                           'descricao' => 'Arte individual para post em redes sociais (Instagram, Facebook, LinkedIn).', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'design_storie',        'nome' => 'Storie',                         'descricao' => 'Arte individual para stories em redes sociais (Instagram, WhatsApp).', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services-1.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'design_carrossel',     'nome' => 'Carrossel',                      'descricao' => 'Arte para carrossel contínuo ou informativo para redes sociais.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services-2.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'logotipologo',         'nome' => 'Logotipo e Logo',               'descricao' => 'Uma logo única, criativa e estrategicamente feita para captar seu público alvo.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/09/Artboard-3-1-e1757565255458.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'bannersocial',         'nome' => 'Banner para redes sociais',      'descricao' => 'Banner para YouTube, Facebook, site, etc.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/07/Screenshot-2025-06-30-184152.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'cartao_visitas',       'nome' => 'Cartão de Visitas',              'descricao' => 'Design profissional para seu cartão de visitas.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'flyer',                'nome' => 'Flyer',                           'descricao' => 'Arte criativa para seu flyer promocional.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-2.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'convites',             'nome' => 'Convites',                        'descricao' => 'Design elegante para seus convites.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-5.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'banner',               'nome' => 'Banner (impresso)',               'descricao' => 'Arte para banners de qualquer tamanho.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-4.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'botton',               'nome' => 'Arte para Botton',                'descricao' => 'Arte simples para botton personalizado.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-1.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'adesivos',             'nome' => 'Arte para Adesivos',              'descricao' => 'Design para adesivos personalizados.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-3.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'visualid',             'nome' => 'Identidade Visual',               'descricao' => 'Manual de identidade completa, mockups, brindes e mais!', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/05/Untitled-1-11.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'design_post',          'nome' => 'Post',                           'descricao' => 'Arte individual para post em redes sociais (Instagram, Facebook, LinkedIn).', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'design_storie',        'nome' => 'Storie',                         'descricao' => 'Arte individual para stories em redes sociais (Instagram, WhatsApp).', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-1.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'design_carrossel',     'nome' => 'Carrossel',                      'descricao' => 'Arte para carrossel contínuo ou informativo para redes sociais.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-2.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'logotipologo',         'nome' => 'Logotipo e Logo',               'descricao' => 'Uma logo única, criativa e estrategicamente feita para captar seu público alvo.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/09/Artboard-3-1-e1757565255458.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'bannersocial',         'nome' => 'Banner para redes sociais',      'descricao' => 'Banner para YouTube, Facebook, site, etc.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/07/Screenshot-2025-06-30-184152.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'cartao_visitas',       'nome' => 'Cartão de Visitas',              'descricao' => 'Design profissional para seu cartão de visitas.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'flyer',                'nome' => 'Flyer',                           'descricao' => 'Arte criativa para seu flyer promocional.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-2.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'convites',             'nome' => 'Convites',                        'descricao' => 'Design elegante para seus convites.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-5.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'banner',               'nome' => 'Banner (impresso)',               'descricao' => 'Arte para banners de qualquer tamanho.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-4.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'botton',               'nome' => 'Arte para Botton',                'descricao' => 'Arte simples para botton personalizado.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-1.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'adesivos',             'nome' => 'Arte para Adesivos',              'descricao' => 'Design para adesivos personalizados.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-3.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'visualid',             'nome' => 'Identidade Visual',               'descricao' => 'Manual de identidade completa, mockups, brindes e mais!', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/05/Untitled-1-11.webp', 'tipo' => 'servico' ),
             array( 'id' => 'designmegapackage',    'nome' => 'Mega Pacote Design',        'descricao' => '10 posts + 10 stories + 10 carrosséis', 'thumbnail' => '', 'tipo' => 'pacote' ),
             array( 'id' => 'designpremiumpackage', 'nome' => 'Pacote Premium Design',     'descricao' => '5 posts + 5 stories + 5 carrosséis', 'thumbnail' => '', 'tipo' => 'pacote' ),
             array( 'id' => 'postpackage',          'nome' => 'Pacote Posts',               'descricao' => '5 posts', 'thumbnail' => '', 'tipo' => 'pacote' ),
@@ -1459,9 +1250,9 @@ function odyssee_produtos_admin_page() {
             array( 'id' => 'carrosselpackage',     'nome' => 'Pacote Carrosséis',          'descricao' => '5 carrosséis', 'thumbnail' => '', 'tipo' => 'pacote' ),
         ),
         'edicao-de-video' => array(
-            array( 'id' => 'video_longo',          'nome' => 'Vídeo Longo',               'descricao' => 'Um vídeo longo, perfeito para YouTube.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'video_curto',          'nome' => 'Vídeo Curto',               'descricao' => 'Um vídeo curto, ideal para redes sociais.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services-1.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'thumbnail',            'nome' => 'Thumbnail',                  'descricao' => 'Thumbnail personalizada para seu vídeo.', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services-2.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'video_longo',          'nome' => 'Vídeo Longo',               'descricao' => 'Um vídeo longo, perfeito para YouTube.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'video_curto',          'nome' => 'Vídeo Curto',               'descricao' => 'Um vídeo curto, ideal para redes sociais.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-1.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'thumbnail',            'nome' => 'Thumbnail',                  'descricao' => 'Thumbnail personalizada para seu vídeo.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-2.webp', 'tipo' => 'servico' ),
             array( 'id' => 'mega_pacote',          'nome' => 'Mega Pacote Vídeo',          'descricao' => '5 longos + 10 curtos + 15 thumbnails', 'thumbnail' => '', 'tipo' => 'pacote' ),
             array( 'id' => 'pacote_premium_a',     'nome' => 'Pacote Premium A',           'descricao' => '5 vídeos longos + 5 thumbnails', 'thumbnail' => '', 'tipo' => 'pacote' ),
             array( 'id' => 'pacote_premium_b',     'nome' => 'Pacote Premium B',           'descricao' => '5 vídeos curtos + 5 thumbnails', 'thumbnail' => '', 'tipo' => 'pacote' ),
@@ -1471,40 +1262,39 @@ function odyssee_produtos_admin_page() {
             array( 'id' => 'dez_thumbnails',       'nome' => 'Dez Thumbnails',              'descricao' => '10 thumbnails', 'thumbnail' => '', 'tipo' => 'pacote' ),
         ),
         'motion' => array(
-            array( 'id' => 'intro_animada',  'nome' => 'Intro Animada',      'descricao' => 'Uma intro simples e criativa com elementos 2D', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/FalaAiWillcomsom-ezgif.com-optimize.gif', 'tipo' => 'servico' ),
-            array( 'id' => 'artmotion',      'nome' => 'Arte Animada',       'descricao' => 'Sua arte animada com elementos 2D', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/06/harley-animated-.gif', 'tipo' => 'servico' ),
-            array( 'id' => 'logomotion',     'nome' => 'Logo Animado',       'descricao' => 'Logo animado para vídeos e apresentações', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'motionmoldura',  'nome' => 'Moldura Animada',    'descricao' => 'Moldura animada para transmissões ao vivo', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'waitscreen',     'nome' => 'Tela de Espera',     'descricao' => 'Animação em looping para telas de espera', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'motionbanner',   'nome' => 'Banner Animado',     'descricao' => 'O banner da sua marca animado', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'intro_animada',  'nome' => 'Intro Animada',      'descricao' => 'Uma intro simples e criativa com elementos 2D', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/FalaAiWillcomsom-ezgif.com-optimize.gif', 'tipo' => 'servico' ),
+            array( 'id' => 'artmotion',      'nome' => 'Arte Animada',       'descricao' => 'Sua arte animada com elementos 2D', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/06/harley-animated-.gif', 'tipo' => 'servico' ),
+            array( 'id' => 'logomotion',     'nome' => 'Logo Animado',       'descricao' => 'Logo animado para vídeos e apresentações', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'motionmoldura',  'nome' => 'Moldura Animada',    'descricao' => 'Moldura animada para transmissões ao vivo', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'waitscreen',     'nome' => 'Tela de Espera',     'descricao' => 'Animação em looping para telas de espera', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'motionbanner',   'nome' => 'Banner Animado',     'descricao' => 'O banner da sua marca animado', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
         ),
         'ilustracao' => array(
-            array( 'id' => 'fanart_anime',             'nome' => 'Arte Estilo Anime',         'descricao' => 'Arte digital no estilo anime', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_14.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'fanart_cartoon',           'nome' => 'Arte Estilo Cartoon',       'descricao' => 'Arte digital no estilo cartoon', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_13.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'fanart_chibi',             'nome' => 'Arte Estilo Chibi',         'descricao' => 'Arte digital no estilo chibi', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_15.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'fanart_pixelart',          'nome' => 'Arte Estilo Pixel Art',     'descricao' => 'Arte digital no estilo pixel art', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_12.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'fanart_vetorial',          'nome' => 'Arte Estilo Vetorial',      'descricao' => 'Arte digital no estilo vetorial', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/05/Jinx-Powder-Vector-lightroom-scaled-e1747298364610.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'personagem_rpg',           'nome' => 'Personagem Token RPG',      'descricao' => 'Arte para RPG no estilo token', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'ilustracao_perfil',        'nome' => 'Ilustração Perfil/Busto',   'descricao' => 'Arte de perfil nos diversos estilos', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_11.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'ilustracao_corpo_inteiro', 'nome' => 'Ilustração Corpo Inteiro',  'descricao' => 'Arte de corpo inteiro nos diversos estilos', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_8.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'esboco_rapido',            'nome' => 'Esboço Rápido',             'descricao' => 'Um esboço rápido e simples', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_10.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'storyboard',               'nome' => 'Storyboard',                'descricao' => 'Storyboard cena a cena', 'thumbnail' => 'https://odysseexp.com/wp-content/uploads/2026/01/art-card-services_9.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_anime',             'nome' => 'Arte Estilo Anime',         'descricao' => 'Arte digital no estilo anime', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_14.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_cartoon',           'nome' => 'Arte Estilo Cartoon',       'descricao' => 'Arte digital no estilo cartoon', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_13.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_chibi',             'nome' => 'Arte Estilo Chibi',         'descricao' => 'Arte digital no estilo chibi', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_15.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_pixelart',          'nome' => 'Arte Estilo Pixel Art',     'descricao' => 'Arte digital no estilo pixel art', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_12.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_vetorial',          'nome' => 'Arte Estilo Vetorial',      'descricao' => 'Arte digital no estilo vetorial', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/05/Jinx-Powder-Vector-lightroom-scaled-e1747298364610.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'personagem_rpg',           'nome' => 'Personagem Token RPG',      'descricao' => 'Arte para RPG no estilo token', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'ilustracao_perfil',        'nome' => 'Ilustração Perfil/Busto',   'descricao' => 'Arte de perfil nos diversos estilos', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_11.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'ilustracao_corpo_inteiro', 'nome' => 'Ilustração Corpo Inteiro',  'descricao' => 'Arte de corpo inteiro nos diversos estilos', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_8.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'esboco_rapido',            'nome' => 'Esboço Rápido',             'descricao' => 'Um esboço rápido e simples', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_10.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'storyboard',               'nome' => 'Storyboard',                'descricao' => 'Storyboard cena a cena', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_9.webp', 'tipo' => 'servico' ),
             array( 'id' => 'cenario_digital',          'nome' => 'Cenário Digital',           'descricao' => 'Cenário digital completo', 'thumbnail' => '', 'tipo' => 'servico' ),
         ),
     );
 
-    // Preços salvos para exibir ao lado dos serviços existentes
     $precos_salvos = get_option( 'odyssee_precos', array() );
     if ( ! is_array( $precos_salvos ) ) {
         $precos_salvos = array();
     }
-    // Sobrescritas salvas (nome, descrição, thumbnail, ordem, oculto)
+    
     $overrides_salvos = get_option( 'odyssee_servicos_overrides', array() );
     if ( ! is_array( $overrides_salvos ) ) {
         $overrides_salvos = array();
     }
     $definitions = odyssee_get_price_definitions();
-    // Montar mapa de preços padrão
+    
     $precos_default = array();
     foreach ( $definitions as $section ) {
         foreach ( $section['items'] as $key => $item ) {
@@ -1517,7 +1307,6 @@ function odyssee_produtos_admin_page() {
         <h1><span class="dashicons dashicons-store" style="font-size: 1.3em; margin-right: 8px;"></span>Gerenciar Produtos — Odyssee</h1>
         <p>Veja todos os serviços do site, edite nome, descrição, capa, ordem de exibição e alterne visibilidade (ocultar/excluir). Deixe um campo vazio para usar o valor padrão.</p>
 
-        <!-- SEÇÃO: Serviços já existentes no site (edição completa + ordenação + exclusão) -->
         <div style="background: #fff; border: 1px solid #c3c4c7; padding: 20px; margin: 20px 0; border-radius: 4px;">
             <h2 style="margin-top: 0;"><span class="dashicons dashicons-admin-links" style="color: #2271b1;"></span> Serviços Existentes no Site</h2>
             <p class="description">Edite qualquer campo dos serviços existentes, reordene clicando nos botões ▲ / ▼ e alterne a visibilidade para ocultar/excluir qualquer serviço da página do site.</p>
@@ -1528,7 +1317,6 @@ function odyssee_produtos_admin_page() {
                 <?php foreach ( $servicos_existentes as $cat_slug => $servicos ) :
                     $cat_label = isset( $categorias[ $cat_slug ] ) ? $categorias[ $cat_slug ] : $cat_slug;
 
-                    // Ordenar os serviços pela ordem salva antes de exibir a tabela
                     usort( $servicos, function( $a, $b ) use ( $overrides_salvos ) {
                         $id_a = $a['id'];
                         $id_b = $b['id'];
@@ -1697,7 +1485,6 @@ function odyssee_produtos_admin_page() {
 
         <hr style="margin: 30px 0;">
 
-        <!-- FORMULÁRIO: Adicionar novo produto -->
         <div style="background: #fff; border: 1px solid #c3c4c7; border-left: 4px solid #2271b1; padding: 20px; margin: 20px 0; border-radius: 4px;">
             <h2 style="margin-top: 0;"><span class="dashicons dashicons-plus" style="color: #2271b1;"></span> Adicionar Novo Produto Personalizado</h2>
             <p class="description">Produtos adicionados aqui aparecem automaticamente na página de serviços, na categoria escolhida, com o botão de contratar pelo WhatsApp.</p>
@@ -1749,7 +1536,7 @@ function odyssee_produtos_admin_page() {
                     <tr>
                         <th><label for="novo_thumbnail">URL da Thumbnail</label></th>
                         <td>
-                            <input type="url" name="novo_thumbnail" id="novo_thumbnail" class="large-text" placeholder="https://odysseexp.com/wp-content/uploads/...">
+                            <input type="url" name="novo_thumbnail" id="novo_thumbnail" class="large-text" placeholder="http://localhost:8881/wp-content/uploads/...">
                             <p class="description">Cole a URL da imagem. Use a Biblioteca de Mídia do WP para fazer upload e copiar a URL.</p>
                         </td>
                     </tr>
@@ -1763,7 +1550,7 @@ function odyssee_produtos_admin_page() {
         </div>
 
         <?php if ( ! empty( $produtos ) ) : ?>
-        <!-- LISTA: Produtos personalizados cadastrados -->
+        
         <div style="background: #fff; border: 1px solid #c3c4c7; border-left: 4px solid #00a32a; padding: 20px; margin: 20px 0; border-radius: 4px;">
             <h2 style="margin-top: 0;"><span class="dashicons dashicons-list-view" style="color: #00a32a;"></span> Produtos Personalizados (<?php echo count( $produtos ); ?>)</h2>
             <form method="post">
@@ -1835,7 +1622,6 @@ function odyssee_produtos_admin_page() {
                 </div>
             </form>
 
-            <!-- Botões de remover (forms separados para cada um) -->
             <h3 style="margin-top: 24px;">Remover Produtos Personalizados</h3>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                 <?php foreach ( $produtos as $prod ) : ?>
@@ -1855,9 +1641,6 @@ function odyssee_produtos_admin_page() {
     <?php
 }
 
-// ==============================================
-// FUNÇÃO AUXILIAR: Obter posts iniciais pré-carregados (0ms latency)
-// ==============================================
 function odyssee_get_initial_posts() {
     $args = array(
         'post_type'              => 'post',

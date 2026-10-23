@@ -1,39 +1,30 @@
-/**
- * CV Page Module - Gerencia tradução e tema da página Sobre Mim
- * Carregado apenas nas páginas: page-sobre-mim.php
- */
 
-// Mapeamento de imagens por tema (light/dark) e cor
+
 const profileImages = {
-    'light-blue': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-the-sky.webp',
-    'light-purple': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-purpur.webp',
-    'light-red': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-crimson.webp',
-    'light-yellow': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-oak.webp',
-    'light-green': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-greenfroglight.webp',
-    'dark-blue': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-nightsky.webp',
-    'dark-purple': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-netherportal.webp',
-    'dark-red': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-redstone.webp',
-    'dark-yellow': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-honeycomb.webp',
-    'dark-green': 'https://odysseexp.com/wp-content/uploads/2025/11/harley-grass-alpha.webp'
+    'light-blue': 'http://localhost:8881/wp-content/uploads/2025/11/harley-the-sky.webp',
+    'light-purple': 'http://localhost:8881/wp-content/uploads/2025/11/harley-purpur.webp',
+    'light-red': 'http://localhost:8881/wp-content/uploads/2025/11/harley-crimson.webp',
+    'light-yellow': 'http://localhost:8881/wp-content/uploads/2025/11/harley-oak.webp',
+    'light-green': 'http://localhost:8881/wp-content/uploads/2025/11/harley-greenfroglight.webp',
+    'dark-blue': 'http://localhost:8881/wp-content/uploads/2025/11/harley-nightsky.webp',
+    'dark-purple': 'http://localhost:8881/wp-content/uploads/2025/11/harley-netherportal.webp',
+    'dark-red': 'http://localhost:8881/wp-content/uploads/2025/11/harley-redstone.webp',
+    'dark-yellow': 'http://localhost:8881/wp-content/uploads/2025/11/harley-honeycomb.webp',
+    'dark-green': 'http://localhost:8881/wp-content/uploads/2025/11/harley-grass-alpha.webp'
 };
 
-/**
- * Atualiza a imagem de perfil baseada no tema e cor atual
- */
 function updateProfileImage() {
     const body = document.body;
     const profileImg = document.getElementById('profile-image');
     
     if (!profileImg) return;
-    
-    // Detectar tema (light ou dark)
+
     let theme = 'light';
     if (body.classList.contains('theme-dark')) {
         theme = 'dark';
     }
-    
-    // Detectar cor
-    let color = 'blue'; // padrão
+
+    let color = 'blue'; 
     const colors = ['blue', 'purple', 'red', 'yellow', 'green'];
     for (const c of colors) {
         if (body.classList.contains(`color-${c}`)) {
@@ -41,26 +32,21 @@ function updateProfileImage() {
             break;
         }
     }
-    
-    // Combinar tema + cor
+
     const key = `${theme}-${color}`;
-    
-    // Atualizar imagem
+
     if (profileImages[key]) {
         profileImg.src = profileImages[key];
     }
 }
 
-// Traduções completas da página Sobre Mim (PT-BR e EN-US)
-// Chaves correspondem aos atributos data-key dos elementos HTML
 const cvTranslations = {
     pt: {
         'cv-title': 'Designer Gráfico - Ilustrador Digital - Editor de Vídeo',
         'profile-image-alt': 'Renato "Harley" Paiva',
         'cv-intro-1': 'Tenho 24 anos, sou designer gráfico graduado. Atuo principalmente nas áreas de design gráfico, edição de vídeo, ilustração digital e motion design.',
         'cv-intro-2': 'Trabalho bem em equipe, presencialmente ou remotamente. Consigo atender bem a propostas de briefing, lido bem com diferentes tipos de identidade visual e segmentos.',
-        
-        // Experiência
+
         'cv-experience-title': 'Experiência profissional',
 
         'exp-odysseexp-title': 'Designer Gráfico, Editor de Vídeo e Ilustrador Digital | Autônomo',
@@ -134,7 +120,6 @@ const cvTranslations = {
         'exp-blackco-2': 'Elaboração de tema.',
         'exp-blackco-3': 'Criação de artes para carrosséis no Instagram.',
 
-        // Formação
         'cv-education-title': 'Formação e cursos',
         'edu-caution-title': 'Curso - Caution Pontocom',
         'edu-caution-1': 'Curso de informática e inglês',
@@ -142,8 +127,7 @@ const cvTranslations = {
         'edu-unicid-title': 'Faculdade - UNICID',
         'edu-unicid-1': 'CST em Design Gráfico',
         'edu-unicid-2': '4 semestres',
-        
-        // Habilidades
+
         'cv-skills-title': 'Idiomas e outras habilidades',
         'lang-reading-title': 'Idiomas - Escrita e Leitura',
         'lang-pt-native': 'Português Brasileiro - Nativo',
@@ -165,12 +149,11 @@ const cvTranslations = {
         'software-programming-title': 'Programação e suas linguagens',
         'software-os-title': 'Sistemas Operacionais',
         'cv-expectativa-title': 'O que almejo',
-        
-        // Níveis
+
         'level-advanced': 'Avançado',
         'level-intermediate': 'Intermediário',
         'level-basic': 'Básico',
-        // Citação de rodapé
+        
         'cv-quote': '"Intelligence is the ability to avoid doing work, yet getting the work done."',
         'cv-quote-author': '~Linus Torvalds'
     },
@@ -179,8 +162,7 @@ const cvTranslations = {
         'profile-image-alt': 'Portrait of Renato Harley Paiva',
         'cv-intro-1': "I'm 24 years old, a graduate graphic designer. I work mainly in the areas of graphic design, video editing, digital illustration and motion design.",
         'cv-intro-2': 'I work well in teams, on-site or remotely. I can handle briefing proposals well, and deal with different types of visual identity and segments.',
-        
-        // Experience
+
         'cv-experience-title': 'Professional Experience',
 
         'exp-odysseexp-title': 'Graphic Designer, Video Editor and Digital Illustrator | Freelance',
@@ -254,7 +236,6 @@ const cvTranslations = {
         'exp-blackco-2': 'Theme development.',
         'exp-blackco-3': 'Creation of artwork for Instagram carousels.',
 
-        // Education
         'cv-education-title': 'Education and Courses',
         'edu-caution-title': 'Course - Caution Pontocom',
         'edu-caution-1': 'Computer science and English course',
@@ -262,8 +243,7 @@ const cvTranslations = {
         'edu-unicid-title': 'College - UNICID',
         'edu-unicid-1': 'Associate Degree in Graphic Design',
         'edu-unicid-2': '4 semesters',
-        
-        // Skills
+
         'cv-skills-title': 'Languages and Other Skills',
         'lang-reading-title': 'Languages - Writing and Reading',
         'lang-pt-native': 'Brazilian Portuguese - Native',
@@ -285,25 +265,18 @@ const cvTranslations = {
         'software-programming-title': 'Programming and Languages',
         'software-os-title': 'Operating Systems',
         'cv-expectativa-title': 'What I Aim For',
-        
-        // Levels
+
         'level-advanced': 'Advanced',
         'level-intermediate': 'Intermediate',
         'level-basic': 'Basic',
-        // Footer quote
+        
         'cv-quote': '"Intelligence is the ability to avoid doing work, yet getting the work done."',
         'cv-quote-author': '~Linus Torvalds'
     }
 };
 
-/**
- * Traduz todos os elementos da página CV que possuem data-key.
- * Também traduz os níveis de habilidade em software
- * (Avançado ↔ Advanced, Intermediário ↔ Intermediate, Básico ↔ Basic)
- * e atualiza o atributo alt da imagem de perfil para acessibilidade.
- */
 function translateCVPage() {
-    // Lê o idioma TODA VEZ (não usa variável global)
+    
     const currentLang = (window.safeStorage && window.safeStorage.getItem('userLang')) || localStorage.getItem('userLang') || 'pt';
     
     console.log('[CV-PAGE] Traduzindo para idioma:', currentLang);
@@ -315,13 +288,11 @@ function translateCVPage() {
         }
     });
 
-    // Atualiza alt da imagem de perfil (acessibilidade)
     const profileImg = document.getElementById('profile-image');
     if (profileImg && cvTranslations[currentLang] && cvTranslations[currentLang]['profile-image-alt']) {
         profileImg.alt = cvTranslations[currentLang]['profile-image-alt'];
     }
-    
-    // Traduz os niveis de habilidade (Avancado, Intermediario, Basico)
+
     document.querySelectorAll('.cv-software-item span').forEach(span => {
         const text = span.textContent.trim();
         if (text === 'Avançado' || text === 'Advanced') {
@@ -334,19 +305,11 @@ function translateCVPage() {
     });
 }
 
-/**
- * Inicializa a página CV:
- * 1. Atualiza foto de perfil conforme tema/cor
- * 2. Traduz textos para o idioma salvo
- * 3. Escuta eventos de mudança de idioma (storage e custom event)
- * 4. Observa mutações de classe no body para sincronizar a foto
- */
 function initCVPage() {
     console.log('[CV-PAGE] Inicializando página...');
     updateProfileImage();
     translateCVPage();
-    
-    // Atualiza traducao quando idioma muda em outra aba
+
     window.addEventListener('storage', (e) => {
         if (e.key === 'userLang') {
             console.log('[CV-PAGE] storage event - traduzindo');
@@ -354,7 +317,6 @@ function initCVPage() {
         }
     });
 
-    // Atualiza traducao quando app.js dispara evento local
     window.addEventListener('odyssee-storage', (e) => {
         if (e.detail && e.detail.key === 'userLang') {
             console.log('[CV-PAGE] odyssee-storage event - traduzindo');
@@ -362,7 +324,6 @@ function initCVPage() {
         }
     });
 
-    // Sincroniza imagem quando o tema/cor mudar
     const observerTheme = new MutationObserver(updateProfileImage);
     observerTheme.observe(document.body, { 
         attributes: true, 
@@ -370,10 +331,9 @@ function initCVPage() {
     });
 }
 
-// Executa ao carregar o DOM
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initCVPage);
 } else {
-    // Se DOM já carregou, executa imediatamente
+    
     initCVPage();
 }

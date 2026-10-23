@@ -1,18 +1,13 @@
 <?php get_header(); ?>
 
-<!-- ==== POST INDIVIDUAL ====
-     Exibe título, meta, imagem destacada e conteúdo completo.
-     Usa o loop padrão do WordPress (have_posts / the_post).
--->
-
 <main class="main-content single-post-container">
-    <!-- Loop principal do post -->
+    
     <?php
     if (have_posts()) {
         while (have_posts()) {
             the_post();
     ?>
-            <!-- Conteudo completo do post -->
+            
             <article class="single-post-content">
                 <div class="single-post-header">
                     <h1 class="single-post-title"><?php the_title(); ?></h1>
@@ -34,7 +29,6 @@
                     <?php the_content(); ?>
                 </div>
 
-                <!-- Acao de retorno para listagem -->
                 <div class="single-post-footer">
                     <a href="<?php echo esc_url(home_url('/posts')); ?>" class="btn-back">&larr; Voltar aos Posts</a>
                 </div>
