@@ -3813,8 +3813,8 @@ body.theme-dark #onboarding-container .theme-picker #btn-dark {
     will-change: transform !important;
 }
 .hero-symbol {
-    width: 340px !important;
-    max-width: min(85vw, 360px) !important;
+    width: 300px !important;
+    max-width: min(85vw, 300px) !important;
     height: auto !important;
     display: block !important;
     animation: none !important;
