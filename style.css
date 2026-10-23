@@ -3782,14 +3782,16 @@ body.theme-dark #onboarding-container .theme-picker #btn-dark {
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    width: 720px !important;
-    max-width: 94vw !important;
-    height: 420px !important;
+    width: 960px !important;
+    max-width: 98vw !important;
+    height: 540px !important;
     border-radius: 50% !important;
-    background: radial-gradient(ellipse at center, var(--bg-page) 0%, transparent 72%) !important;
-    filter: blur(32px) !important;
-    -webkit-filter: blur(32px) !important;
-    opacity: 0.45 !important;
+    background: radial-gradient(ellipse at center, var(--bg-page) 0%, transparent 75%) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.95) 30%, transparent 80%) !important;
+    -webkit-mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.95) 30%, transparent 80%) !important;
+    opacity: 0.8 !important;
     pointer-events: none !important;
     z-index: -1 !important;
 }

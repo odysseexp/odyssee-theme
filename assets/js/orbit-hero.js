@@ -128,13 +128,17 @@
 
             vec3 col;
             if (uBlur > 0.008) {
-                float b = uBlur * 0.024;
-                vec3 acc = texture(uMap, uv).rgb * 2.0;
+                float b = uBlur * 0.032;
+                vec3 acc = texture(uMap, uv).rgb * 2.2;
                 acc += texture(uMap, clamp(uv + vec2(b, b), vec2(0.0), vec2(1.0))).rgb;
                 acc += texture(uMap, clamp(uv + vec2(-b, b), vec2(0.0), vec2(1.0))).rgb;
                 acc += texture(uMap, clamp(uv + vec2(b, -b), vec2(0.0), vec2(1.0))).rgb;
                 acc += texture(uMap, clamp(uv + vec2(-b, -b), vec2(0.0), vec2(1.0))).rgb;
-                col = acc * 0.1666667;
+                acc += texture(uMap, clamp(uv + vec2(b * 1.4, 0.0), vec2(0.0), vec2(1.0))).rgb;
+                acc += texture(uMap, clamp(uv + vec2(-b * 1.4, 0.0), vec2(0.0), vec2(1.0))).rgb;
+                acc += texture(uMap, clamp(uv + vec2(0.0, b * 1.4), vec2(0.0), vec2(1.0))).rgb;
+                acc += texture(uMap, clamp(uv + vec2(0.0, -b * 1.4), vec2(0.0), vec2(1.0))).rgb;
+                col = acc * 0.098039;
             } else if (uAber > 0.0006) {
                 col = vec3(
                     texture(uMap, clamp(uv + shift, vec2(0.0), vec2(1.0))).r,
@@ -308,14 +312,14 @@
 
         const isMobile = window.innerWidth < 768;
         const ringConfigs = isMobile ? [
-            { rx: 160, ry: 85, speed: 0.0032, count: 3 },
-            { rx: 240, ry: 135, speed: -0.0024, count: 4 },
-            { rx: 320, ry: 180, speed: 0.0019, count: 5 }
+            { rx: 160, ry: 85, speed: 0.0030, count: 2 },
+            { rx: 260, ry: 135, speed: -0.0022, count: 4 },
+            { rx: 370, ry: 190, speed: 0.0016, count: 6 }
         ] : [
-            { rx: 270, ry: 130, speed: 0.0020, count: 4 },
-            { rx: 440, ry: 210, speed: -0.0015, count: 6 },
-            { rx: 610, ry: 285, speed: 0.0011, count: 7 },
-            { rx: 780, ry: 360, speed: -0.0008, count: 7 }
+            { rx: 290, ry: 135, speed: 0.0019, count: 2 },
+            { rx: 480, ry: 220, speed: -0.0014, count: 5 },
+            { rx: 700, ry: 315, speed: 0.0011, count: 8 },
+            { rx: 920, ry: 405, speed: -0.0008, count: 9 }
         ];
 
         const ringsSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -570,7 +574,9 @@
                 let posY = sinA * currentRy;
 
                 const normalizedDepth = (sinA + 1) / 2; 
-                const baseScale = (0.76 + (normalizedDepth * 0.44)) * zoomScale;
+                const ringBase = 0.58 + (card.ringIndex / Math.max(1, ringConfigs.length - 1)) * 0.56;
+                const depthFactor = 0.88 + (normalizedDepth * 0.24);
+                const baseScale = ringBase * depthFactor * zoomScale;
                 const boostScaleFactor = 1.0 + (card.boostK * 0.45);
                 card.scale = baseScale * boostScaleFactor;
 
@@ -639,8 +645,8 @@
                 const boostZ = card.boostK * 160.0;
                 card.z = orbitZ + hoverZ + boostZ;
 
-                const centerRx = 560;
-                const centerRy = 300;
+                const centerRx = 780;
+                const centerRy = 380;
                 const normX = posX / centerRx;
                 const normY = posY / centerRy;
                 const distFromCenter = Math.sqrt(normX * normX + normY * normY);
@@ -651,7 +657,7 @@
                     const centerFactor = 1.0 - distFromCenter;
                     const smoothFactor = centerFactor * centerFactor * (3.0 - 2.0 * centerFactor);
                     fadeCenter = smoothFactor;
-                    cardBlur = smoothFactor * 1.0;
+                    cardBlur = smoothFactor * 1.35;
                 }
 
                 const baseAlpha = 0.65 + (normalizedDepth * 0.35);
