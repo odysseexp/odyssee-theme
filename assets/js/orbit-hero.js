@@ -574,8 +574,11 @@
                 const boostScaleFactor = 1.0 + (card.boostK * 0.45);
                 card.scale = baseScale * boostScaleFactor;
 
+                const cleanFactor = Math.max(0.0, 1.0 - card.boostK);
+                card.cleanFactor = cleanFactor;
+
                 let warp = 0;
-                let aber = 0.002;
+                let aber = 0.002 * cleanFactor;
                 let localMouseX = -99;
                 let localMouseY = -99;
                 let isHover = false;
@@ -601,16 +604,16 @@
 
                     if (dist < fieldPx) {
                         const factor = Math.exp(-distSq / (fieldPx * fieldPx));
-                        const tug = (tugPx * factor) / Math.max(1, dist);
+                        const tug = ((tugPx * factor) / Math.max(1, dist)) * cleanFactor;
                         posX += dx * tug;
                         posY += dy * tug;
 
-                        warp = mouseWarpPx * factor;
-                        aber = 0.003 + (0.032 * factor);
+                        warp = mouseWarpPx * factor * cleanFactor;
+                        aber = (0.003 + (0.032 * factor)) * cleanFactor;
                     }
 
-                    localMouseX = (mouseX - posX) / cardW;
-                    localMouseY = (mouseY - posY) / cardH;
+                    localMouseX = ((mouseX - posX) / cardW) * cleanFactor;
+                    localMouseY = ((mouseY - posY) / cardH) * cleanFactor;
                 }
 
                 if (card.isBoosted && isMouseActive && !isHover) {
@@ -686,7 +689,7 @@
                 gl.uniformMatrix4fv(uModelLoc, false, new Float32Array(modelMat));
                 gl.uniform2f(uSizeLoc, card.width, card.height);
                 gl.uniform1f(uRadiusLoc, card.radius);
-                gl.uniform1f(uCurveLoc, 24.0);
+                gl.uniform1f(uCurveLoc, 24.0 * (card.cleanFactor !== undefined ? card.cleanFactor : 1.0));
                 gl.uniform1f(uWarpLoc, card.warp);
                 gl.uniform2f(uMouseLoc, card.localMouseX, card.localMouseY);
                 gl.uniform1f(uAberLoc, card.aber);
