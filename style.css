@@ -21,6 +21,11 @@ Version: 2.0.0
     --color-accent-glow: rgba(139, 92, 246, 0.32);
     --color-accent-border: rgba(139, 92, 246, 0.45);
     --color-accent-subtle: rgba(139, 92, 246, 0.12);
+    --nebula-1: #9333ea;
+    --nebula-2: #c026d3;
+    --nebula-3: #7c3aed;
+    --nebula-4: #d946ef;
+    --nebula-5: #a21caf;
 }
 body.theme-light {
     --bg-page: #f8fafc;
@@ -50,6 +55,11 @@ body.color-purple {
     --color-accent-glow: rgba(139, 92, 246, 0.35);
     --color-accent-border: rgba(139, 92, 246, 0.5);
     --color-accent-subtle: rgba(139, 92, 246, 0.14);
+    --nebula-1: #9333ea;
+    --nebula-2: #c026d3;
+    --nebula-3: #7c3aed;
+    --nebula-4: #d946ef;
+    --nebula-5: #a21caf;
 }
 body.color-red {
     --color-accent: #ef4444;
@@ -57,6 +67,11 @@ body.color-red {
     --color-accent-glow: rgba(239, 68, 68, 0.35);
     --color-accent-border: rgba(239, 68, 68, 0.5);
     --color-accent-subtle: rgba(239, 68, 68, 0.14);
+    --nebula-1: #e11d48;
+    --nebula-2: #db2777;
+    --nebula-3: #f43f5e;
+    --nebula-4: #e11463;
+    --nebula-5: #be123c;
 }
 body.color-blue,
 body.color-green,
@@ -66,6 +81,11 @@ body.color-yellow {
     --color-accent-glow: rgba(139, 92, 246, 0.35);
     --color-accent-border: rgba(139, 92, 246, 0.5);
     --color-accent-subtle: rgba(139, 92, 246, 0.14);
+    --nebula-1: #9333ea;
+    --nebula-2: #c026d3;
+    --nebula-3: #7c3aed;
+    --nebula-4: #d946ef;
+    --nebula-5: #a21caf;
 }
 body.theme-dark h2,
 body.theme-dark h3,
@@ -147,7 +167,7 @@ body.modo-onboarding .onboarding-aurora {
     filter: blur(80px)
 }
 .onboarding-aurora .g1 {
-    background: radial-gradient(circle at center, var(--color-accent) 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-1) 0, transparent 50%) no-repeat;
     width: 80%;
     height: 80%;
     top: calc(50% - 40%);
@@ -156,7 +176,7 @@ body.modo-onboarding .onboarding-aurora {
     opacity: 0.6
 }
 .onboarding-aurora .g2 {
-    background: radial-gradient(circle at center, #8b5cf6 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-2) 0, transparent 50%) no-repeat;
     width: 80%;
     height: 80%;
     top: calc(50% - 40%);
@@ -166,7 +186,7 @@ body.modo-onboarding .onboarding-aurora {
     opacity: 0.65;
 }
 .onboarding-aurora .g3 {
-    background: radial-gradient(circle at center, var(--color-accent) 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-3) 0, transparent 50%) no-repeat;
     width: 80%;
     height: 80%;
     top: calc(50% - 40% + 200px);
@@ -176,7 +196,7 @@ body.modo-onboarding .onboarding-aurora {
     opacity: 0.4
 }
 .onboarding-aurora .g4 {
-    background: radial-gradient(circle at center, var(--color-subtitle) 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-4) 0, transparent 50%) no-repeat;
     width: 60%;
     height: 60%;
     top: calc(50% - 30%);
@@ -186,14 +206,14 @@ body.modo-onboarding .onboarding-aurora {
     opacity: 0.35
 }
 .onboarding-aurora .g5 {
-    background: radial-gradient(circle at center, var(--color-accent) 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-5) 0, transparent 50%) no-repeat;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
     transform-origin: center;
     animation: moveInCircle 20s ease infinite;
-    opacity: 0.2;
+    opacity: 0.25;
     mix-blend-mode: screen
 }
 #onboarding-container {
@@ -752,7 +772,7 @@ body.theme-dark .theme-picker button {
 }
 .gradients-container .g1 {
     position: absolute;
-    background: radial-gradient(circle at center, var(--color-accent) 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-1) 0, transparent 50%) no-repeat;
     width: 80%;
     height: 80%;
     top: calc(50% - 40%);
@@ -761,7 +781,7 @@ body.theme-dark .theme-picker button {
 }
 .gradients-container .g2 {
     position: absolute;
-    background: radial-gradient(circle at center, #8b5cf6 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-2) 0, transparent 50%) no-repeat;
     width: 80%;
     height: 80%;
     top: calc(50% - 40%);
@@ -772,7 +792,7 @@ body.theme-dark .theme-picker button {
 }
 .gradients-container .g3 {
     position: absolute;
-    background: radial-gradient(circle at center, var(--color-accent) 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-3) 0, transparent 50%) no-repeat;
     width: 80%;
     height: 80%;
     top: calc(50% - 40% + 200px);
@@ -783,7 +803,7 @@ body.theme-dark .theme-picker button {
 }
 .gradients-container .g4 {
     position: absolute;
-    background: radial-gradient(circle at center, var(--color-subtitle) 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-4) 0, transparent 50%) no-repeat;
     width: 60%;
     height: 60%;
     top: calc(50% - 30%);
@@ -794,14 +814,14 @@ body.theme-dark .theme-picker button {
 }
 .gradients-container .g5 {
     position: absolute;
-    background: radial-gradient(circle at center, var(--bg-card) 0, transparent 50%) no-repeat;
+    background: radial-gradient(circle at center, var(--nebula-5) 0, transparent 50%) no-repeat;
     width: 150%;
     height: 150%;
     top: -25%;
     left: -25%;
     transform-origin: center;
     animation: moveInCircle 20s ease infinite;
-    opacity: 0.3;
+    opacity: 0.35;
     mix-blend-mode: overlay
 }
 .hero-section,
@@ -844,7 +864,7 @@ body.theme-dark .theme-picker button {
     transform: scale(1.01);
 }
 .category-banner-wrapper {
-    background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.08) 0%, rgba(11, 15, 23, 0.35) 75%);
+    background: radial-gradient(ellipse at center, var(--color-accent-subtle) 0%, rgba(11, 15, 23, 0.35) 75%);
     border: 1px solid rgba(255, 255, 255, 0.06);
     overflow: hidden;
     backdrop-filter: blur(10px);
@@ -852,19 +872,19 @@ body.theme-dark .theme-picker button {
 }
 .category-banner-wrapper:hover {
     transform: translateY(-3px) scale(1.008);
-    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.4), 0 0 30px rgba(168, 85, 247, 0.15);
-    border-color: rgba(168, 85, 247, 0.28);
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.4), 0 0 30px var(--color-accent-glow);
+    border-color: var(--color-accent-border);
 }
 [data-theme="light"] .category-banner-wrapper,
 body.theme-light .category-banner-wrapper {
-    background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.06) 0%, rgba(248, 250, 252, 0.6) 75%);
+    background: radial-gradient(ellipse at center, var(--color-accent-subtle) 0%, rgba(248, 250, 252, 0.6) 75%);
     border: 1px solid rgba(0, 0, 0, 0.07);
     box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.06);
 }
 [data-theme="light"] .category-banner-wrapper:hover,
 body.theme-light .category-banner-wrapper:hover {
-    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.1), 0 0 25px rgba(168, 85, 247, 0.12);
-    border-color: rgba(168, 85, 247, 0.25);
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.1), 0 0 25px var(--color-accent-glow);
+    border-color: var(--color-accent-border);
 }
 .dg-banner-svg {
     width: 100%;
@@ -899,12 +919,12 @@ body.theme-light .dg-banner-svg {
 .dg-item:hover {
     transform: scale(1.12) translateY(-5px) !important;
     color: #ffffff !important;
-    filter: drop-shadow(0 0 14px rgba(168, 85, 247, 0.85)) drop-shadow(0 0 4px currentColor);
+    filter: drop-shadow(0 0 14px var(--color-accent-glow)) drop-shadow(0 0 4px currentColor);
 }
 [data-theme="light"] .dg-item:hover,
 body.theme-light .dg-item:hover {
     color: #0f172a !important;
-    filter: drop-shadow(0 6px 14px rgba(168, 85, 247, 0.45));
+    filter: drop-shadow(0 6px 14px var(--color-accent-glow));
 }
 .dg-float-1 {
     animation: dgFloatOne 6.5s ease-in-out infinite alternate;
@@ -3930,14 +3950,14 @@ body.theme-dark #onboarding-container .theme-picker #btn-dark {
     height: auto !important;
     display: block !important;
     animation: none !important;
-    filter: drop-shadow(0 12px 36px rgba(139, 92, 246, 0.42)) !important;
+    filter: drop-shadow(0 12px 36px var(--color-accent-glow)) !important;
     transition: filter 0.4s ease !important;
     pointer-events: auto !important;
     user-select: none !important;
     -webkit-user-drag: none !important;
 }
 .hero-logo-container:hover .hero-symbol {
-    filter: drop-shadow(0 16px 48px rgba(168, 85, 247, 0.65)) drop-shadow(0 0 24px rgba(236, 72, 153, 0.4)) !important;
+    filter: drop-shadow(0 16px 48px var(--color-accent-glow)) drop-shadow(0 0 24px var(--color-accent-subtle)) !important;
 }
 @media (max-width: 768px) {
     .artcraft-orbit-container,
