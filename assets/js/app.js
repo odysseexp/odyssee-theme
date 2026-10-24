@@ -2071,10 +2071,46 @@ function initBannerParallax() {
     });
 }
 
+function initCategoryBannerAnimations() {
+    const banners = document.querySelectorAll('.category-banner-wrapper');
+    if (!banners.length) return;
+
+    if (!('IntersectionObserver' in window)) {
+        banners.forEach(b => {
+            const svg = b.querySelector('.dg-banner-svg');
+            if (svg) svg.classList.add('dg-in-view');
+        });
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const svg = entry.target.querySelector('.dg-banner-svg');
+            if (!svg) return;
+            if (entry.isIntersecting) {
+                svg.classList.remove('dg-exiting');
+                svg.classList.add('dg-in-view');
+            } else {
+                if (svg.classList.contains('dg-in-view')) {
+                    svg.classList.remove('dg-in-view');
+                    svg.classList.add('dg-exiting');
+                }
+            }
+        });
+    }, {
+        root: null,
+        rootMargin: '0px 0px 0px 0px',
+        threshold: 0.03
+    });
+
+    banners.forEach(b => observer.observe(b));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
     initHeroTilt();
     initBannerParallax();
+    initCategoryBannerAnimations();
 
     fetchRealPosts().then(() => {
         initUI();
@@ -2088,4 +2124,5 @@ window.addEventListener('load', () => {
     initUI();
     initHeroTilt();
     initBannerParallax();
+    initCategoryBannerAnimations();
 });
