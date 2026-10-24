@@ -44,7 +44,7 @@ function odyssee_security_headers() {
 
 function odyssee_scripts() {
     
-    $theme_version = '2.0.9';
+    $theme_version = '2.1.0';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
@@ -976,7 +976,6 @@ function odyssee_precos_admin_page() {
         function getUnitPriceValue(key) {
             const ids = unitFieldIds[key] || [];
 
-            // 1. Tenta valor digitado pelo usuário em tempo real no campo de serviços ou unitário
             for (let i = 0; i < ids.length; i++) {
                 const field = document.getElementById(ids[i]);
                 if (field && field.value !== '' && field.value !== null) {
@@ -985,7 +984,6 @@ function odyssee_precos_admin_page() {
                 }
             }
 
-            // 2. Tenta placeholder do campo (preço padrão do formulário)
             for (let i = 0; i < ids.length; i++) {
                 const field = document.getElementById(ids[i]);
                 if (field && field.placeholder !== '' && field.placeholder !== null) {
@@ -995,7 +993,6 @@ function odyssee_precos_admin_page() {
                 }
             }
 
-            // 3. Fallback
             return defaultUnitPrices[key] || 0;
         }
 
@@ -1054,13 +1051,11 @@ function odyssee_precos_admin_page() {
         document.addEventListener('DOMContentLoaded', function() {
             updateCalculations();
 
-            // Eventos de alteração de preços unitários ou pacotes
             document.querySelectorAll('input[id^="odyssee_unit_"], input[id^="odyssee_preco_"]').forEach(input => {
                 input.addEventListener('input', updateCalculations);
                 input.addEventListener('change', updateCalculations);
             });
 
-            // Clique nos botões de sugestão rápida
             document.addEventListener('click', function(e) {
                 const btn = e.target.closest('.btn-suggest');
                 if (!btn) return;
@@ -1444,7 +1439,6 @@ function odyssee_produtos_admin_page() {
 
         <script>
         jQuery(document).ready(function($) {
-            // Mover linha para cima
             $(document).on('click', '.btn-move-up', function(e) {
                 e.preventDefault();
                 var row = $(this).closest('tr');
@@ -1455,7 +1449,6 @@ function odyssee_produtos_admin_page() {
                 }
             });
 
-            // Mover linha para baixo
             $(document).on('click', '.btn-move-down', function(e) {
                 e.preventDefault();
                 var row = $(this).closest('tr');
@@ -1466,7 +1459,6 @@ function odyssee_produtos_admin_page() {
                 }
             });
 
-            // Alternar Oculto/Excluído
             $(document).on('click', '.btn-toggle-oculto', function(e) {
                 e.preventDefault();
                 var btn = $(this);

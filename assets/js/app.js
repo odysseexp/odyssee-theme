@@ -2075,35 +2075,51 @@ function initCategoryBannerAnimations() {
     const banners = document.querySelectorAll('.category-banner-wrapper');
     if (!banners.length) return;
 
-    if (!('IntersectionObserver' in window)) {
+    let ticking = false;
+
+    function checkVisibility() {
+        const vh = window.innerHeight || document.documentElement.clientHeight;
         banners.forEach(b => {
             const svg = b.querySelector('.dg-banner-svg');
-            if (svg) svg.classList.add('dg-in-view');
-        });
-        return;
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const svg = entry.target.querySelector('.dg-banner-svg');
             if (!svg) return;
-            if (entry.isIntersecting) {
+            const rect = b.getBoundingClientRect();
+            
+            const isCompletelyOutOfView = rect.bottom < -30 || rect.top > vh + 30;
+            const isExitingTop = rect.bottom > 0 && rect.bottom < vh * 0.16;
+            const isExitingBottom = rect.top < vh && rect.top > vh * 0.88;
+            const isNearExit = isExitingTop || isExitingBottom;
+
+            if (isCompletelyOutOfView) {
+                svg.classList.remove('dg-in-view');
                 svg.classList.remove('dg-exiting');
-                svg.classList.add('dg-in-view');
-            } else {
+            } else if (isNearExit) {
                 if (svg.classList.contains('dg-in-view')) {
                     svg.classList.remove('dg-in-view');
                     svg.classList.add('dg-exiting');
                 }
+            } else {
+                svg.classList.remove('dg-exiting');
+                svg.classList.add('dg-in-view');
             }
         });
-    }, {
-        root: null,
-        rootMargin: '0px 0px 0px 0px',
-        threshold: 0.03
-    });
+        ticking = false;
+    }
 
-    banners.forEach(b => observer.observe(b));
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            requestAnimationFrame(checkVisibility);
+            ticking = true;
+        }
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+        if (!ticking) {
+            requestAnimationFrame(checkVisibility);
+            ticking = true;
+        }
+    }, { passive: true });
+
+    checkVisibility();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
