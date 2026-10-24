@@ -92,7 +92,9 @@ if ( ! empty( $orbit_items ) ) {
         <section id="design-grafico" class="category-section">
             <h2 class="section-title" data-key="design-grafico">Design Gráfico</h2>
 
-            <img src="" class="category-banner" id="banner-design-grafico" alt="Design Gráfico" data-category="design-grafico">
+            <div class="category-banner-wrapper" id="banner-design-grafico" data-category="design-grafico">
+                <?php get_template_part( 'template-parts/banner', 'design-grafico' ); ?>
+            </div>
             
          <div class="portfolio-showcase">
              <div class="carousel-wrapper" id="carousel-design-grafico"></div>

@@ -2040,9 +2040,41 @@ function initHeroTilt() {
     }
 }
 
+function initBannerParallax() {
+    const banner = document.querySelector('.category-banner-wrapper');
+    if (!banner) return;
+    let ticking = false;
+    banner.addEventListener('mousemove', (e) => {
+        if (!ticking) {
+            requestAnimationFrame(() => {
+                const rect = banner.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width - 0.5) * 12;
+                const y = ((e.clientY - rect.top) / rect.height - 0.5) * 8;
+                const svg = banner.querySelector('.dg-banner-svg');
+                if (svg) {
+                    svg.style.transform = `perspective(1000px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg)`;
+                }
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+    banner.addEventListener('mouseleave', () => {
+        const svg = banner.querySelector('.dg-banner-svg');
+        if (svg) {
+            svg.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+            svg.style.transform = '';
+            setTimeout(() => {
+                if (svg) svg.style.transition = '';
+            }, 600);
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
     initHeroTilt();
+    initBannerParallax();
 
     fetchRealPosts().then(() => {
         initUI();
@@ -2055,4 +2087,5 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('load', () => {
     initUI();
     initHeroTilt();
+    initBannerParallax();
 });

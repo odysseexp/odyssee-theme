@@ -44,7 +44,7 @@ function odyssee_security_headers() {
 
 function odyssee_scripts() {
     
-    $theme_version = '2.0.6';
+    $theme_version = '2.0.7';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 

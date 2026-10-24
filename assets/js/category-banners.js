@@ -2,18 +2,6 @@
 (function () {
     
     const categoryBanners = {
-        'design-grafico': {
-            'theme-dark color-red': 'http://localhost:8881/wp-content/uploads/2025/12/banner-dg_1.webp',
-            'theme-dark color-blue': 'http://localhost:8881/wp-content/uploads/2025/12/banner-dg_5.webp',
-            'theme-dark color-green': 'http://localhost:8881/wp-content/uploads/2025/12/banner-dg_3.webp',
-            'theme-dark color-yellow': 'http://localhost:8881/wp-content/uploads/2026/05/banner-dg_2.webp',
-            'theme-dark color-purple': 'http://localhost:8881/wp-content/uploads/2025/12/banner-dg_4.webp',
-            'theme-light color-red': 'http://localhost:8881/wp-content/uploads/2026/05/banner-dg_6.webp',
-            'theme-light color-yellow': 'http://localhost:8881/wp-content/uploads/2026/05/banner-dg_7.webp',
-            'theme-light color-green': 'http://localhost:8881/wp-content/uploads/2026/05/banner-dg_8.webp',
-            'theme-light color-purple': 'http://localhost:8881/wp-content/uploads/2026/05/banner-dg_9.webp',
-            'theme-light color-blue': 'http://localhost:8881/wp-content/uploads/2026/05/banner-dg_10.webp'
-        },
         'edicao-video': {
             'theme-dark color-red': 'http://localhost:8881/wp-content/uploads/2025/12/banner-dg_11.webp',
             'theme-dark color-yellow': 'http://localhost:8881/wp-content/uploads/2026/05/banner-dg_12.webp',
