@@ -384,7 +384,7 @@ let allPosts = (typeof odysseeInitialPosts !== 'undefined' && Array.isArray(odys
     })(); 
 
 const wpConfig = {
-    baseUrl: 'http://localhost:8881',
+    baseUrl: (typeof window !== 'undefined' ? window.location.origin : ''),
     postsPerPage: 100,
     cacheExpire: 5 * 60 * 1000
 };
@@ -749,18 +749,18 @@ function renderCustomProducts() {
 }
 
 const designServices = [
-    { id: 'design_post', icon: 'fas fa-file-image', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services.webp', title: 'Post', desc: 'Arte individual para post em redes sociais (Instagram, Facebook, LinkedIn).' },
-    { id: 'design_storie', icon: 'fas fa-bolt', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-1.webp', title: 'Storie', desc: 'Arte individual para stories em redes sociais (Instagram, WhatsApp).' },
-    { id: 'design_carrossel', icon: 'fas fa-images', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-2.webp', title: 'Carrossel', desc: 'Arte para carrossel contínuo ou informativo para redes sociais.' },
-    { id: 'logotipologo', icon: 'fas fa-id-card', image: 'http://localhost:8881/wp-content/uploads/2025/09/Artboard-3-1-e1757565255458.webp', title: 'Logotipo e Logo', desc: 'Uma logo única, criativa e estrategicamente feita para captar seu público alvo.' },
-    { id: 'bannersocial', icon: 'fas fa-scroll', image: 'http://localhost:8881/wp-content/uploads/2025/07/Screenshot-2025-06-30-184152.webp', title: 'Banner para redes sociais', desc: 'Banner para YouTube, Facebook, site, etc.' },
-    { id: 'cartao_visitas', icon: 'fas fa-palette', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services.webp', title: 'Cartão de Visitas', desc: 'Design profissional para seu cartão de visitas.' },
-    { id: 'flyer', icon: 'fas fa-newspaper', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-2.webp', title: 'Flyer', desc: 'Arte criativa para seu flyer promocional.' },
-    { id: 'convites', icon: 'fas fa-envelope-open-text', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-5.webp', title: 'Convites', desc: 'Design elegante para seus convites.' },
-    { id: 'banner', icon: 'fas fa-scroll', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-4.webp', title: 'Banner', desc: 'Arte para banners de qualquer tamanho (impresso).' },
-    { id: 'botton', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-1.webp', title: 'Arte para Botton', desc: 'Arte simples para botton personalizado.' },
-    { id: 'adesivos', icon: 'fas fa-sticky-note', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-3.webp', title: 'Arte para Adesivos', desc: 'Design para adesivos personalizados.' },
-    { id: 'visualid', icon: 'fas fa-palette', image: 'http://localhost:8881/wp-content/uploads/2025/05/Untitled-1-11.webp', title: 'Identidade Visual', desc: 'Manual de identidade completa, mockups, brindes e mais!' },
+    { id: 'design_post', icon: 'fas fa-file-image', image: '/wp-content/uploads/2026/01/art-card-services.webp', title: 'Post', desc: 'Arte individual para post em redes sociais (Instagram, Facebook, LinkedIn).' },
+    { id: 'design_storie', icon: 'fas fa-bolt', image: '/wp-content/uploads/2026/01/art-card-services-1.webp', title: 'Storie', desc: 'Arte individual para stories em redes sociais (Instagram, WhatsApp).' },
+    { id: 'design_carrossel', icon: 'fas fa-images', image: '/wp-content/uploads/2026/01/art-card-services-2.webp', title: 'Carrossel', desc: 'Arte para carrossel contínuo ou informativo para redes sociais.' },
+    { id: 'logotipologo', icon: 'fas fa-id-card', image: '/wp-content/uploads/2025/09/Artboard-3-1-e1757565255458.webp', title: 'Logotipo e Logo', desc: 'Uma logo única, criativa e estrategicamente feita para captar seu público alvo.' },
+    { id: 'bannersocial', icon: 'fas fa-scroll', image: '/wp-content/uploads/2025/07/Screenshot-2025-06-30-184152.webp', title: 'Banner para redes sociais', desc: 'Banner para YouTube, Facebook, site, etc.' },
+    { id: 'cartao_visitas', icon: 'fas fa-palette', image: '/wp-content/uploads/2025/12/art-card-services.webp', title: 'Cartão de Visitas', desc: 'Design profissional para seu cartão de visitas.' },
+    { id: 'flyer', icon: 'fas fa-newspaper', image: '/wp-content/uploads/2025/12/art-card-services-2.webp', title: 'Flyer', desc: 'Arte criativa para seu flyer promocional.' },
+    { id: 'convites', icon: 'fas fa-envelope-open-text', image: '/wp-content/uploads/2025/12/art-card-services-5.webp', title: 'Convites', desc: 'Design elegante para seus convites.' },
+    { id: 'banner', icon: 'fas fa-scroll', image: '/wp-content/uploads/2025/12/art-card-services-4.webp', title: 'Banner', desc: 'Arte para banners de qualquer tamanho (impresso).' },
+    { id: 'botton', image: '/wp-content/uploads/2025/12/art-card-services-1.webp', title: 'Arte para Botton', desc: 'Arte simples para botton personalizado.' },
+    { id: 'adesivos', icon: 'fas fa-sticky-note', image: '/wp-content/uploads/2025/12/art-card-services-3.webp', title: 'Arte para Adesivos', desc: 'Design para adesivos personalizados.' },
+    { id: 'visualid', icon: 'fas fa-palette', image: '/wp-content/uploads/2025/05/Untitled-1-11.webp', title: 'Identidade Visual', desc: 'Manual de identidade completa, mockups, brindes e mais!' },
 ];
 
 const designPackages = [
@@ -772,9 +772,9 @@ const designPackages = [
 ];
 
 const videoServices = [
-    { id: 'video_longo', icon: 'fas fa-film', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services.webp', title: 'Vídeo Longo', desc: 'Um vídeo longo, perfeito para YouTube e outras plataformas.' },
-    { id: 'video_curto', icon: 'fas fa-mobile-alt', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-1.webp', title: 'Vídeo Curto', desc: 'Um vídeo curto, ideal para redes sociais verticais e anúncios.' },
-    { id: 'thumbnail', icon: 'fas fa-image', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-2.webp', title: 'Thumbnail', desc: 'Thumbnail personalizada para seu vídeo.' },
+    { id: 'video_longo', icon: 'fas fa-film', image: '/wp-content/uploads/2026/01/art-card-services.webp', title: 'Vídeo Longo', desc: 'Um vídeo longo, perfeito para YouTube e outras plataformas.' },
+    { id: 'video_curto', icon: 'fas fa-mobile-alt', image: '/wp-content/uploads/2026/01/art-card-services-1.webp', title: 'Vídeo Curto', desc: 'Um vídeo curto, ideal para redes sociais verticais e anúncios.' },
+    { id: 'thumbnail', icon: 'fas fa-image', image: '/wp-content/uploads/2026/01/art-card-services-2.webp', title: 'Thumbnail', desc: 'Thumbnail personalizada para seu vídeo.' },
 ];
 
 const videoPackages = [
@@ -788,25 +788,25 @@ const videoPackages = [
 ];
 
 const motionGraphicsServices = [
-    { id: 'intro_animada', icon: 'fas fa-play-circle fa-bounce', image: 'http://localhost:8881/wp-content/uploads/2026/01/FalaAiWillcomsom-ezgif.com-optimize.gif', title: 'Intro Animada', desc: 'Uma intro simples e criativa com elementos 2D' },
-    { id: 'artmotion', icon: 'fas fa-scroll', image: 'http://localhost:8881/wp-content/uploads/2025/06/harley-animated-.gif', title: 'Arte Animada', desc: 'Sua arte animada com elementos 2D' },
-    { id: 'logomotion', icon: 'fas fa-scroll', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Logo/logotipo Animado', desc: 'Logo animado para vídeos e apresentações' },
-    { id: 'motionmoldura', icon: 'fas fa-expand fa-fade', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Moldura Animada', desc: 'Moldura animada para vídeos e transmissões ao vivo' },
-    { id: 'waitscreen', icon: 'fas fa-spinner fa-spin', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Tela de Espera', desc: 'Animação em looping para telas de espera' },
-    { id: 'motionbanner', icon: 'fas fa-newspaper', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Banner animado', desc: 'O banner da sua marca animado para chamar atenção' },
+    { id: 'intro_animada', icon: 'fas fa-play-circle fa-bounce', image: '/wp-content/uploads/2026/01/FalaAiWillcomsom-ezgif.com-optimize.gif', title: 'Intro Animada', desc: 'Uma intro simples e criativa com elementos 2D' },
+    { id: 'artmotion', icon: 'fas fa-scroll', image: '/wp-content/uploads/2025/06/harley-animated-.gif', title: 'Arte Animada', desc: 'Sua arte animada com elementos 2D' },
+    { id: 'logomotion', icon: 'fas fa-scroll', image: '/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Logo/logotipo Animado', desc: 'Logo animado para vídeos e apresentações' },
+    { id: 'motionmoldura', icon: 'fas fa-expand fa-fade', image: '/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Moldura Animada', desc: 'Moldura animada para vídeos e transmissões ao vivo' },
+    { id: 'waitscreen', icon: 'fas fa-spinner fa-spin', image: '/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Tela de Espera', desc: 'Animação em looping para telas de espera' },
+    { id: 'motionbanner', icon: 'fas fa-newspaper', image: '/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Banner animado', desc: 'O banner da sua marca animado para chamar atenção' },
 ];
 
 const ilustracaoDigitalServices = [
-    { id: 'fanart_anime', icon: 'fas fa-female', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_14.webp', title: 'Arte Estilo Anime', desc: 'Arte digital de personagem no estilo anime personalizada para você' },
-    { id: 'fanart_cartoon', icon: 'fas fa-walking', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_13.webp', title: 'Arte Estilo Cartoon', desc: 'Arte digital de personagem no estilo cartoon personalizada para você' },
-    { id: 'fanart_chibi', icon: 'fab fa-github-alt', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_15.webp', title: 'Arte Estilo Chibi', desc: 'Arte digital de personagem no estilo chibi personalizada para você' },
-    { id: 'fanart_pixelart', icon: 'fas fa-pixel', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_12.webp', title: 'Arte Estilo Pixel Art', desc: 'Arte digital de personagem no estilo pixel art personalizada para você' },
-    { id: 'fanart_vetorial', icon: 'fas fa-vector-square', image: 'http://localhost:8881/wp-content/uploads/2025/05/Jinx-Powder-Vector-lightroom-scaled-e1747298364610.webp', title: 'Arte Estilo Vetorial', desc: 'Arte digital de personagem no estilo vetorial personalizada para você' },
-    { id: 'personagem_rpg', icon: 'fas fa-dice-d20', image: 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Personagem token RPG', desc: 'Arte de personagem para RPG no estilo token de tabuleiro.' },
-    { id: 'ilustracao_perfil', icon: 'fas fa-id-badge', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_11.webp', title: 'Ilustração de perfil/busto', desc: 'Arte digital de perfil nos estilos cartoon, anime, chibi e pixel art' },
-    { id: 'ilustracao_corpo_inteiro', icon: 'fas fa-user', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_8.webp', title: 'Ilustração corpo inteiro', desc: 'Arte digital de corpo inteiro nos estilos cartoon, anime, chibi e pixel art' },
-    { id: 'esboco_rapido', icon: '\tfar fa-id-badge', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_10.webp', title: 'Esboço Rápido', desc: 'Um esboço rápido e simples de sua ideia ou personagem' },
-    { id: 'storyboard', icon: 'fas fa-landmark', image: 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_9.webp', title: 'Storyboard', desc: 'Storyboard cena a cena para seu projeto' },
+    { id: 'fanart_anime', icon: 'fas fa-female', image: '/wp-content/uploads/2026/01/art-card-services_14.webp', title: 'Arte Estilo Anime', desc: 'Arte digital de personagem no estilo anime personalizada para você' },
+    { id: 'fanart_cartoon', icon: 'fas fa-walking', image: '/wp-content/uploads/2026/01/art-card-services_13.webp', title: 'Arte Estilo Cartoon', desc: 'Arte digital de personagem no estilo cartoon personalizada para você' },
+    { id: 'fanart_chibi', icon: 'fab fa-github-alt', image: '/wp-content/uploads/2026/01/art-card-services_15.webp', title: 'Arte Estilo Chibi', desc: 'Arte digital de personagem no estilo chibi personalizada para você' },
+    { id: 'fanart_pixelart', icon: 'fas fa-pixel', image: '/wp-content/uploads/2026/01/art-card-services_12.webp', title: 'Arte Estilo Pixel Art', desc: 'Arte digital de personagem no estilo pixel art personalizada para você' },
+    { id: 'fanart_vetorial', icon: 'fas fa-vector-square', image: '/wp-content/uploads/2025/05/Jinx-Powder-Vector-lightroom-scaled-e1747298364610.webp', title: 'Arte Estilo Vetorial', desc: 'Arte digital de personagem no estilo vetorial personalizada para você' },
+    { id: 'personagem_rpg', icon: 'fas fa-dice-d20', image: '/wp-content/uploads/2025/12/art-card-services-motion.webp', title: 'Personagem token RPG', desc: 'Arte de personagem para RPG no estilo token de tabuleiro.' },
+    { id: 'ilustracao_perfil', icon: 'fas fa-id-badge', image: '/wp-content/uploads/2026/01/art-card-services_11.webp', title: 'Ilustração de perfil/busto', desc: 'Arte digital de perfil nos estilos cartoon, anime, chibi e pixel art' },
+    { id: 'ilustracao_corpo_inteiro', icon: 'fas fa-user', image: '/wp-content/uploads/2026/01/art-card-services_8.webp', title: 'Ilustração corpo inteiro', desc: 'Arte digital de corpo inteiro nos estilos cartoon, anime, chibi e pixel art' },
+    { id: 'esboco_rapido', icon: '\tfar fa-id-badge', image: '/wp-content/uploads/2026/01/art-card-services_10.webp', title: 'Esboço Rápido', desc: 'Um esboço rápido e simples de sua ideia ou personagem' },
+    { id: 'storyboard', icon: 'fas fa-landmark', image: '/wp-content/uploads/2026/01/art-card-services_9.webp', title: 'Storyboard', desc: 'Storyboard cena a cena para seu projeto' },
 ];
 
 if (typeof odysseeOverrides !== 'undefined') {
@@ -1126,7 +1126,7 @@ function renderilustracaoConfigurador() {
                         } else {
                             title = 'Arte Animada';
                             desc = 'Adiciona animação à sua ilustração (tipo motion)';
-                            image = 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp';
+                            image = '/wp-content/uploads/2025/12/art-card-services-motion.webp';
                         }
                     } else {
                         title = serviceData.title;

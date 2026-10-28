@@ -1,16 +1,16 @@
 
 
 const profileImages = {
-    'light-blue': 'http://localhost:8881/wp-content/uploads/2025/11/harley-the-sky.webp',
-    'light-purple': 'http://localhost:8881/wp-content/uploads/2025/11/harley-purpur.webp',
-    'light-red': 'http://localhost:8881/wp-content/uploads/2025/11/harley-crimson.webp',
-    'light-yellow': 'http://localhost:8881/wp-content/uploads/2025/11/harley-oak.webp',
-    'light-green': 'http://localhost:8881/wp-content/uploads/2025/11/harley-greenfroglight.webp',
-    'dark-blue': 'http://localhost:8881/wp-content/uploads/2025/11/harley-nightsky.webp',
-    'dark-purple': 'http://localhost:8881/wp-content/uploads/2025/11/harley-netherportal.webp',
-    'dark-red': 'http://localhost:8881/wp-content/uploads/2025/11/harley-redstone.webp',
-    'dark-yellow': 'http://localhost:8881/wp-content/uploads/2025/11/harley-honeycomb.webp',
-    'dark-green': 'http://localhost:8881/wp-content/uploads/2025/11/harley-grass-alpha.webp'
+    'light-blue': '/wp-content/uploads/2025/11/harley-the-sky.webp',
+    'light-purple': '/wp-content/uploads/2025/11/harley-purpur.webp',
+    'light-red': '/wp-content/uploads/2025/11/harley-crimson.webp',
+    'light-yellow': '/wp-content/uploads/2025/11/harley-oak.webp',
+    'light-green': '/wp-content/uploads/2025/11/harley-greenfroglight.webp',
+    'dark-blue': '/wp-content/uploads/2025/11/harley-nightsky.webp',
+    'dark-purple': '/wp-content/uploads/2025/11/harley-netherportal.webp',
+    'dark-red': '/wp-content/uploads/2025/11/harley-redstone.webp',
+    'dark-yellow': '/wp-content/uploads/2025/11/harley-honeycomb.webp',
+    'dark-green': '/wp-content/uploads/2025/11/harley-grass-alpha.webp'
 };
 
 function updateProfileImage() {

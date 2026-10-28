@@ -44,7 +44,7 @@ function odyssee_security_headers() {
 
 function odyssee_scripts() {
     
-    $theme_version = '26.10.0';
+    $theme_version = '26.10.1';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
@@ -150,7 +150,7 @@ add_theme_support( 'post-thumbnails' );
 
 function odyssee_seo_meta_tags() {
     $site_name   = 'Odyssee — Creative Experience';
-    $default_img = 'http://localhost:8881/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp';
+    $default_img = home_url( '/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp' );
     $site_url    = home_url();
     $locale      = 'pt_BR';
 
@@ -269,7 +269,7 @@ function odyssee_jsonld_schema() {
         '@type'    => 'ProfessionalService',
         'name'     => 'Odyssee — Creative Experience',
         'url'      => $site_url,
-        'logo'     => 'http://localhost:8881/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp',
+        'logo'     => home_url( '/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp' ),
         'description' => 'Serviços profissionais de Design Gráfico, Edição de Vídeo, Motion Graphics e Ilustração Digital.',
         'founder'  => array(
             '@type' => 'Person',
@@ -305,7 +305,7 @@ function odyssee_jsonld_schema() {
                 'name'  => 'Odyssee — Creative Experience',
                 'logo'  => array(
                     '@type' => 'ImageObject',
-                    'url'   => 'http://localhost:8881/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp',
+                    'url'   => home_url( '/wp-content/uploads/2025/08/logo-colorful-reduced-scaled-e1756493913129.webp' ),
                 ),
             ),
             'mainEntityOfPage' => get_permalink(),
@@ -1235,18 +1235,18 @@ function odyssee_produtos_admin_page() {
 
     $servicos_existentes = array(
         'design-grafico' => array(
-            array( 'id' => 'design_post',          'nome' => 'Post',                           'descricao' => 'Arte individual para post em redes sociais (Instagram, Facebook, LinkedIn).', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'design_storie',        'nome' => 'Storie',                         'descricao' => 'Arte individual para stories em redes sociais (Instagram, WhatsApp).', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-1.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'design_carrossel',     'nome' => 'Carrossel',                      'descricao' => 'Arte para carrossel contínuo ou informativo para redes sociais.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-2.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'logotipologo',         'nome' => 'Logotipo e Logo',               'descricao' => 'Uma logo única, criativa e estrategicamente feita para captar seu público alvo.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/09/Artboard-3-1-e1757565255458.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'bannersocial',         'nome' => 'Banner para redes sociais',      'descricao' => 'Banner para YouTube, Facebook, site, etc.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/07/Screenshot-2025-06-30-184152.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'cartao_visitas',       'nome' => 'Cartão de Visitas',              'descricao' => 'Design profissional para seu cartão de visitas.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'flyer',                'nome' => 'Flyer',                           'descricao' => 'Arte criativa para seu flyer promocional.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-2.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'convites',             'nome' => 'Convites',                        'descricao' => 'Design elegante para seus convites.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-5.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'banner',               'nome' => 'Banner (impresso)',               'descricao' => 'Arte para banners de qualquer tamanho.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-4.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'botton',               'nome' => 'Arte para Botton',                'descricao' => 'Arte simples para botton personalizado.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-1.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'adesivos',             'nome' => 'Arte para Adesivos',              'descricao' => 'Design para adesivos personalizados.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-3.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'visualid',             'nome' => 'Identidade Visual',               'descricao' => 'Manual de identidade completa, mockups, brindes e mais!', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/05/Untitled-1-11.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'design_post',          'nome' => 'Post',                           'descricao' => 'Arte individual para post em redes sociais (Instagram, Facebook, LinkedIn).', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'design_storie',        'nome' => 'Storie',                         'descricao' => 'Arte individual para stories em redes sociais (Instagram, WhatsApp).', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services-1.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'design_carrossel',     'nome' => 'Carrossel',                      'descricao' => 'Arte para carrossel contínuo ou informativo para redes sociais.', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services-2.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'logotipologo',         'nome' => 'Logotipo e Logo',               'descricao' => 'Uma logo única, criativa e estrategicamente feita para captar seu público alvo.', 'thumbnail' => '/wp-content/uploads/2025/09/Artboard-3-1-e1757565255458.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'bannersocial',         'nome' => 'Banner para redes sociais',      'descricao' => 'Banner para YouTube, Facebook, site, etc.', 'thumbnail' => '/wp-content/uploads/2025/07/Screenshot-2025-06-30-184152.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'cartao_visitas',       'nome' => 'Cartão de Visitas',              'descricao' => 'Design profissional para seu cartão de visitas.', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'flyer',                'nome' => 'Flyer',                           'descricao' => 'Arte criativa para seu flyer promocional.', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-2.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'convites',             'nome' => 'Convites',                        'descricao' => 'Design elegante para seus convites.', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-5.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'banner',               'nome' => 'Banner (impresso)',               'descricao' => 'Arte para banners de qualquer tamanho.', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-4.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'botton',               'nome' => 'Arte para Botton',                'descricao' => 'Arte simples para botton personalizado.', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-1.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'adesivos',             'nome' => 'Arte para Adesivos',              'descricao' => 'Design para adesivos personalizados.', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-3.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'visualid',             'nome' => 'Identidade Visual',               'descricao' => 'Manual de identidade completa, mockups, brindes e mais!', 'thumbnail' => '/wp-content/uploads/2025/05/Untitled-1-11.webp', 'tipo' => 'servico' ),
             array( 'id' => 'designmegapackage',    'nome' => 'Mega Pacote Design',        'descricao' => '10 posts + 10 stories + 10 carrosséis', 'thumbnail' => '', 'tipo' => 'pacote' ),
             array( 'id' => 'designpremiumpackage', 'nome' => 'Pacote Premium Design',     'descricao' => '5 posts + 5 stories + 5 carrosséis', 'thumbnail' => '', 'tipo' => 'pacote' ),
             array( 'id' => 'postpackage',          'nome' => 'Pacote Posts',               'descricao' => '5 posts', 'thumbnail' => '', 'tipo' => 'pacote' ),
@@ -1254,9 +1254,9 @@ function odyssee_produtos_admin_page() {
             array( 'id' => 'carrosselpackage',     'nome' => 'Pacote Carrosséis',          'descricao' => '5 carrosséis', 'thumbnail' => '', 'tipo' => 'pacote' ),
         ),
         'edicao-de-video' => array(
-            array( 'id' => 'video_longo',          'nome' => 'Vídeo Longo',               'descricao' => 'Um vídeo longo, perfeito para YouTube.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'video_curto',          'nome' => 'Vídeo Curto',               'descricao' => 'Um vídeo curto, ideal para redes sociais.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-1.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'thumbnail',            'nome' => 'Thumbnail',                  'descricao' => 'Thumbnail personalizada para seu vídeo.', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services-2.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'video_longo',          'nome' => 'Vídeo Longo',               'descricao' => 'Um vídeo longo, perfeito para YouTube.', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'video_curto',          'nome' => 'Vídeo Curto',               'descricao' => 'Um vídeo curto, ideal para redes sociais.', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services-1.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'thumbnail',            'nome' => 'Thumbnail',                  'descricao' => 'Thumbnail personalizada para seu vídeo.', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services-2.webp', 'tipo' => 'servico' ),
             array( 'id' => 'mega_pacote',          'nome' => 'Mega Pacote Vídeo',          'descricao' => '5 longos + 10 curtos + 15 thumbnails', 'thumbnail' => '', 'tipo' => 'pacote' ),
             array( 'id' => 'pacote_premium_a',     'nome' => 'Pacote Premium A',           'descricao' => '5 vídeos longos + 5 thumbnails', 'thumbnail' => '', 'tipo' => 'pacote' ),
             array( 'id' => 'pacote_premium_b',     'nome' => 'Pacote Premium B',           'descricao' => '5 vídeos curtos + 5 thumbnails', 'thumbnail' => '', 'tipo' => 'pacote' ),
@@ -1266,24 +1266,24 @@ function odyssee_produtos_admin_page() {
             array( 'id' => 'dez_thumbnails',       'nome' => 'Dez Thumbnails',              'descricao' => '10 thumbnails', 'thumbnail' => '', 'tipo' => 'pacote' ),
         ),
         'motion' => array(
-            array( 'id' => 'intro_animada',  'nome' => 'Intro Animada',      'descricao' => 'Uma intro simples e criativa com elementos 2D', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/FalaAiWillcomsom-ezgif.com-optimize.gif', 'tipo' => 'servico' ),
-            array( 'id' => 'artmotion',      'nome' => 'Arte Animada',       'descricao' => 'Sua arte animada com elementos 2D', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/06/harley-animated-.gif', 'tipo' => 'servico' ),
-            array( 'id' => 'logomotion',     'nome' => 'Logo Animado',       'descricao' => 'Logo animado para vídeos e apresentações', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'motionmoldura',  'nome' => 'Moldura Animada',    'descricao' => 'Moldura animada para transmissões ao vivo', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'waitscreen',     'nome' => 'Tela de Espera',     'descricao' => 'Animação em looping para telas de espera', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'motionbanner',   'nome' => 'Banner Animado',     'descricao' => 'O banner da sua marca animado', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'intro_animada',  'nome' => 'Intro Animada',      'descricao' => 'Uma intro simples e criativa com elementos 2D', 'thumbnail' => '/wp-content/uploads/2026/01/FalaAiWillcomsom-ezgif.com-optimize.gif', 'tipo' => 'servico' ),
+            array( 'id' => 'artmotion',      'nome' => 'Arte Animada',       'descricao' => 'Sua arte animada com elementos 2D', 'thumbnail' => '/wp-content/uploads/2025/06/harley-animated-.gif', 'tipo' => 'servico' ),
+            array( 'id' => 'logomotion',     'nome' => 'Logo Animado',       'descricao' => 'Logo animado para vídeos e apresentações', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'motionmoldura',  'nome' => 'Moldura Animada',    'descricao' => 'Moldura animada para transmissões ao vivo', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'waitscreen',     'nome' => 'Tela de Espera',     'descricao' => 'Animação em looping para telas de espera', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'motionbanner',   'nome' => 'Banner Animado',     'descricao' => 'O banner da sua marca animado', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
         ),
         'ilustracao' => array(
-            array( 'id' => 'fanart_anime',             'nome' => 'Arte Estilo Anime',         'descricao' => 'Arte digital no estilo anime', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_14.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'fanart_cartoon',           'nome' => 'Arte Estilo Cartoon',       'descricao' => 'Arte digital no estilo cartoon', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_13.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'fanart_chibi',             'nome' => 'Arte Estilo Chibi',         'descricao' => 'Arte digital no estilo chibi', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_15.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'fanart_pixelart',          'nome' => 'Arte Estilo Pixel Art',     'descricao' => 'Arte digital no estilo pixel art', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_12.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'fanart_vetorial',          'nome' => 'Arte Estilo Vetorial',      'descricao' => 'Arte digital no estilo vetorial', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/05/Jinx-Powder-Vector-lightroom-scaled-e1747298364610.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'personagem_rpg',           'nome' => 'Personagem Token RPG',      'descricao' => 'Arte para RPG no estilo token', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'ilustracao_perfil',        'nome' => 'Ilustração Perfil/Busto',   'descricao' => 'Arte de perfil nos diversos estilos', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_11.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'ilustracao_corpo_inteiro', 'nome' => 'Ilustração Corpo Inteiro',  'descricao' => 'Arte de corpo inteiro nos diversos estilos', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_8.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'esboco_rapido',            'nome' => 'Esboço Rápido',             'descricao' => 'Um esboço rápido e simples', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_10.webp', 'tipo' => 'servico' ),
-            array( 'id' => 'storyboard',               'nome' => 'Storyboard',                'descricao' => 'Storyboard cena a cena', 'thumbnail' => 'http://localhost:8881/wp-content/uploads/2026/01/art-card-services_9.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_anime',             'nome' => 'Arte Estilo Anime',         'descricao' => 'Arte digital no estilo anime', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services_14.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_cartoon',           'nome' => 'Arte Estilo Cartoon',       'descricao' => 'Arte digital no estilo cartoon', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services_13.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_chibi',             'nome' => 'Arte Estilo Chibi',         'descricao' => 'Arte digital no estilo chibi', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services_15.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_pixelart',          'nome' => 'Arte Estilo Pixel Art',     'descricao' => 'Arte digital no estilo pixel art', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services_12.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'fanart_vetorial',          'nome' => 'Arte Estilo Vetorial',      'descricao' => 'Arte digital no estilo vetorial', 'thumbnail' => '/wp-content/uploads/2025/05/Jinx-Powder-Vector-lightroom-scaled-e1747298364610.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'personagem_rpg',           'nome' => 'Personagem Token RPG',      'descricao' => 'Arte para RPG no estilo token', 'thumbnail' => '/wp-content/uploads/2025/12/art-card-services-motion.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'ilustracao_perfil',        'nome' => 'Ilustração Perfil/Busto',   'descricao' => 'Arte de perfil nos diversos estilos', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services_11.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'ilustracao_corpo_inteiro', 'nome' => 'Ilustração Corpo Inteiro',  'descricao' => 'Arte de corpo inteiro nos diversos estilos', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services_8.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'esboco_rapido',            'nome' => 'Esboço Rápido',             'descricao' => 'Um esboço rápido e simples', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services_10.webp', 'tipo' => 'servico' ),
+            array( 'id' => 'storyboard',               'nome' => 'Storyboard',                'descricao' => 'Storyboard cena a cena', 'thumbnail' => '/wp-content/uploads/2026/01/art-card-services_9.webp', 'tipo' => 'servico' ),
             array( 'id' => 'cenario_digital',          'nome' => 'Cenário Digital',           'descricao' => 'Cenário digital completo', 'thumbnail' => '', 'tipo' => 'servico' ),
         ),
     );
@@ -1537,7 +1537,7 @@ function odyssee_produtos_admin_page() {
                     <tr>
                         <th><label for="novo_thumbnail">URL da Thumbnail</label></th>
                         <td>
-                            <input type="url" name="novo_thumbnail" id="novo_thumbnail" class="large-text" placeholder="http://localhost:8881/wp-content/uploads/...">
+                            <input type="url" name="novo_thumbnail" id="novo_thumbnail" class="large-text" placeholder="/wp-content/uploads/...">
                             <p class="description">Cole a URL da imagem. Use a Biblioteca de Mídia do WP para fazer upload e copiar a URL.</p>
                         </td>
                     </tr>
