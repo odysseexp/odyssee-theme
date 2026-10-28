@@ -69,8 +69,8 @@
                         <svg class="icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
                     </button>
                 </div>
-                <p style="font-size: 0.88rem; color: var(--color-subtitle); margin: 0.5rem 0 0.8rem; opacity: 0.85;">Cor em destaque (botões e detalhes):</p>
-                <div class="color-picker-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 260px; margin: 0 auto;">
+                <p class="onboarding-color-title" data-key="cor-destaque-onboarding">Cor em destaque (botões e detalhes):</p>
+                <div class="color-picker-grid">
                     <button class="color-option-btn" data-color="purple">
                         <span class="color-dot purple"></span>
                         <span class="color-name" data-key="cor-roxo">Roxo</span>
