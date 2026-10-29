@@ -1,6 +1,6 @@
 <?php
 /**
- * Odyssee Visual Studio — Elementor-Style Non-Destructive Theme Customizer
+ * Odyssee Visual Studio — Elementor-Style Full Engine & Non-Destructive Theme Customizer
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -21,6 +21,8 @@ function odyssee_vb_get_data() {
     return wp_parse_args( $data, array(
         'elements'   => array(),
         'blocks'     => array(),
+        'domMoves'   => array(),
+        'clones'     => array(),
         'globalVars' => array(
             'all'   => array(),
             'dark'  => array(),
@@ -106,7 +108,7 @@ function odyssee_vb_customizer_launch_banner() {
         var banner = $(
             '<li style="padding:14px;background:linear-gradient(135deg,#131926,#1e1b4b);border-bottom:2px solid #8b5cf6;list-style:none;">' +
                 '<div style="color:#f8fafc;font-weight:700;font-size:13px;margin-bottom:6px;">⚡ Odyssee Visual Studio (Estilo Elementor)</div>' +
-                '<p style="color:#cbd5e1;font-size:11.5px;margin:0 0 10px 0;line-height:1.45;">Edite elementos ao vivo, adicione animações, efeitos de Glow Neon e Blend Modes (Add, Subtract, Lighten, Saturation, Color) sem quebrar o tema.</p>' +
+                '<p style="color:#cbd5e1;font-size:11.5px;margin:0 0 10px 0;line-height:1.45;">Arraste e mova qualquer elemento ao vivo, redimensione, edite todas as propriedades, adicione animações, efeitos de Glow Neon e Blend Modes sem quebrar o tema.</p>' +
                 '<a href="<?php echo esc_url( $studio_url ); ?>" class="button button-primary" style="width:100%;text-align:center;background:linear-gradient(135deg,#8b5cf6,#d946ef);border:none;font-weight:700;height:34px;line-height:34px;">Abrir Odyssee Studio Visual &rarr;</a>' +
             '</li>'
         );
@@ -138,14 +140,14 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
         'odyssee-vb-admin',
         get_template_directory_uri() . '/inc/visual-builder-admin.css',
         array(),
-        '26.10.3'
+        '26.10.4'
     );
 
     wp_enqueue_script(
         'odyssee-vb-admin',
         get_template_directory_uri() . '/inc/visual-builder-admin.js',
         array( 'jquery' ),
-        '26.10.3',
+        '26.10.4',
         true
     );
 
@@ -167,6 +169,8 @@ function odyssee_vb_enqueue_frontend_assets() {
 
     $has_data = ! empty( $data['elements'] )
              || ! empty( $data['blocks'] )
+             || ! empty( $data['domMoves'] )
+             || ! empty( $data['clones'] )
              || ! empty( $data['customCss'] )
              || ! empty( $data['globalVars']['all'] )
              || ! empty( $data['globalVars']['dark'] )
@@ -184,14 +188,14 @@ function odyssee_vb_enqueue_frontend_assets() {
         'odyssee-vb-frontend',
         get_template_directory_uri() . '/assets/css/visual-builder-frontend.css',
         array( 'odyssee-style' ),
-        '26.10.3'
+        '26.10.4'
     );
 
     wp_enqueue_script(
         'odyssee-vb-frontend',
         get_template_directory_uri() . '/assets/js/visual-builder-frontend.js',
         array( 'vanilla-tilt' ),
-        '26.10.3',
+        '26.10.4',
         true
     );
 
@@ -214,7 +218,6 @@ function odyssee_vb_print_svg_filters() {
     ?>
     <svg id="odyssee-vb-svg-filters" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true">
         <defs>
-            <!-- Filtro para Efeito de Subtração / Inversão de Canal -->
             <filter id="odyssee-svg-subtract" color-interpolation-filters="sRGB">
                 <feComponentTransfer>
                     <feFuncR type="table" tableValues="1 0.15 0" />
@@ -222,7 +225,6 @@ function odyssee_vb_print_svg_filters() {
                     <feFuncB type="table" tableValues="1 0.25 0" />
                 </feComponentTransfer>
             </filter>
-            <!-- Filtro para Efeito de Adição Luminosa (Add / Linear Dodge Boost) -->
             <filter id="odyssee-svg-add" color-interpolation-filters="sRGB">
                 <feComponentTransfer>
                     <feFuncR type="linear" slope="1.35" intercept="0.06" />
@@ -256,6 +258,8 @@ function odyssee_vb_ajax_save() {
     $clean = array(
         'elements'   => isset( $decoded['elements'] ) && is_array( $decoded['elements'] ) ? $decoded['elements'] : array(),
         'blocks'     => isset( $decoded['blocks'] ) && is_array( $decoded['blocks'] ) ? $decoded['blocks'] : array(),
+        'domMoves'   => isset( $decoded['domMoves'] ) && is_array( $decoded['domMoves'] ) ? $decoded['domMoves'] : array(),
+        'clones'     => isset( $decoded['clones'] ) && is_array( $decoded['clones'] ) ? $decoded['clones'] : array(),
         'globalVars' => isset( $decoded['globalVars'] ) && is_array( $decoded['globalVars'] ) ? $decoded['globalVars'] : array( 'all' => array(), 'dark' => array(), 'light' => array() ),
         'customCss'  => isset( $decoded['customCss'] ) ? wp_strip_all_tags( (string) $decoded['customCss'] ) : '',
     );
@@ -360,7 +364,7 @@ function odyssee_vb_render_admin_page() {
                     <i class="fas fa-door-open"></i> Onboarding
                 </button>
 
-                <button type="button" id="ovb-toggle-interactive" class="ovb-icon-btn" style="border:1px solid rgba(255,255,255,0.1);" title="Alternar entre Modo Seleção e Navegação Livre">
+                <button type="button" id="ovb-toggle-interactive" class="ovb-icon-btn" style="border:1px solid rgba(255,255,255,0.1);" title="Alternar entre Modo Seleção/Arrastar e Navegação Livre">
                     <i class="fas fa-mouse-pointer"></i> Navegar Livre
                 </button>
             </div>
@@ -389,7 +393,7 @@ function odyssee_vb_render_admin_page() {
                 <div class="ovb-selected-banner">
                     <div class="ovb-selected-info">
                         <span class="ovb-selected-label" id="ovb-sel-label">Nenhum elemento selecionado</span>
-                        <span class="ovb-selected-selector" id="ovb-sel-selector">Clique em qualquer item do site ao lado →</span>
+                        <span class="ovb-selected-selector" id="ovb-sel-selector">Clique e arraste qualquer item do site ao lado →</span>
                     </div>
                     <div class="ovb-selected-actions">
                         <button type="button" id="ovb-btn-select-parent" class="ovb-mini-btn" title="Selecionar Elemento Pai (Subir nível)">
@@ -427,12 +431,12 @@ function odyssee_vb_render_admin_page() {
                 <!-- 4 Main Elementor-Like Tabs -->
                 <div class="ovb-tabs">
                     <button type="button" class="ovb-tab-btn" data-tab="tab-content">
-                        <i class="fas fa-plus-square"></i>
-                        <span>Conteúdo</span>
+                        <i class="fas fa-sliders-h"></i>
+                        <span>Propriedades</span>
                     </button>
                     <button type="button" class="ovb-tab-btn active" data-tab="tab-style">
-                        <i class="fas fa-paint-brush"></i>
-                        <span>Estilo</span>
+                        <i class="fas fa-arrows-alt"></i>
+                        <span>Mover & Estilo</span>
                     </button>
                     <button type="button" class="ovb-tab-btn" data-tab="tab-effects">
                         <i class="fas fa-wand-magic-sparkles"></i>
@@ -440,7 +444,7 @@ function odyssee_vb_render_admin_page() {
                     </button>
                     <button type="button" class="ovb-tab-btn" data-tab="tab-layers">
                         <i class="fas fa-layer-group"></i>
-                        <span>Camadas</span>
+                        <span>Elementos Base</span>
                     </button>
                 </div>
 
@@ -448,30 +452,35 @@ function odyssee_vb_render_admin_page() {
                 <div class="ovb-panels">
 
                     <!-- ==========================================
-                         TAB 1: CONTEÚDO & INSERIR BLOCOS
+                         TAB 1: PROPRIEDADES NATIVAS, CONTEÚDO & INSERIR BLOCOS
                          ========================================== -->
                     <div class="ovb-tab-panel" id="tab-content">
                         <div class="ovb-section">
                             <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-pen"></i> Editar Conteúdo do Elemento</span>
+                                <span class="ovb-sec-title"><i class="fas fa-pen"></i> Textos, Imagens & Links do Elemento</span>
                                 <i class="fas fa-chevron-down ovb-chevron"></i>
                             </div>
                             <div class="ovb-section-body">
                                 <div class="ovb-field">
-                                    <label class="ovb-label">Seletor CSS Alvo</label>
+                                    <label class="ovb-label">Seletor CSS do Elemento</label>
                                     <div class="ovb-field-row">
                                         <input type="text" id="ovb-custom-selector-input" class="ovb-input" placeholder="Ex: .hero-slogan">
-                                        <button type="button" id="ovb-btn-apply-selector" class="ovb-mini-btn">Ir</button>
+                                        <button type="button" id="ovb-btn-apply-selector" class="ovb-mini-btn">Selecionar</button>
                                     </div>
                                 </div>
 
                                 <div class="ovb-field">
-                                    <label class="ovb-label">Texto do Elemento (se for texto simples)</label>
-                                    <textarea id="ovb-content-text" class="ovb-textarea" rows="2" placeholder="Deixe vazio para manter o original"></textarea>
+                                    <label class="ovb-label">🇧🇷 Texto (Português)</label>
+                                    <textarea id="ovb-content-text" class="ovb-textarea" rows="2" placeholder="Texto do elemento em Português"></textarea>
                                 </div>
 
                                 <div class="ovb-field">
-                                    <label class="ovb-label">URL da Imagem (se for &lt;img&gt;)</label>
+                                    <label class="ovb-label">🇺🇸 Texto Traduzido (Inglês — opcional)</label>
+                                    <textarea id="ovb-content-text-en" class="ovb-textarea" rows="2" placeholder="Texto em Inglês quando o visitante mudar idioma"></textarea>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">🖼️ URL da Imagem Padrão (se for &lt;img&gt;)</label>
                                     <div class="ovb-field-row">
                                         <input type="text" id="ovb-content-src" class="ovb-input" placeholder="/wp-content/uploads/...">
                                         <button type="button" class="ovb-mini-btn ovb-media-btn" data-target="#ovb-content-src">Mídia</button>
@@ -479,7 +488,23 @@ function odyssee_vb_render_admin_page() {
                                 </div>
 
                                 <div class="ovb-field">
-                                    <label class="ovb-label">Link de Destino (se for &lt;a&gt;)</label>
+                                    <label class="ovb-label">🌙 Imagem específica no Tema Escuro (opcional)</label>
+                                    <div class="ovb-field-row">
+                                        <input type="text" id="ovb-content-src-dark" class="ovb-input" placeholder="/wp-content/uploads/...">
+                                        <button type="button" class="ovb-mini-btn ovb-media-btn" data-target="#ovb-content-src-dark">Mídia</button>
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">☀️ Imagem específica no Tema Claro (opcional)</label>
+                                    <div class="ovb-field-row">
+                                        <input type="text" id="ovb-content-src-light" class="ovb-input" placeholder="/wp-content/uploads/...">
+                                        <button type="button" class="ovb-mini-btn ovb-media-btn" data-target="#ovb-content-src-light">Mídia</button>
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">🔗 Link de Destino (se for &lt;a&gt;)</label>
                                     <input type="text" id="ovb-content-href" class="ovb-input" placeholder="https://...">
                                 </div>
 
@@ -492,6 +517,23 @@ function odyssee_vb_render_admin_page() {
                                     <button type="button" id="ovb-btn-delete-block" class="ovb-action-btn ovb-danger-btn" style="margin-top:8px;">
                                         <i class="fas fa-trash"></i> Excluir Este Bloco Inserido
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ALL HTML / SVG ATTRIBUTES INSPECTOR -->
+                        <div class="ovb-section">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-tags"></i> Todos os Atributos HTML / SVG</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <p style="font-size:11px;color:#94a3b8;margin:0 0 6px 0;">Edite qualquer atributo nativo do elemento (ex: <code>data-tilt-max</code>, <code>viewBox</code>, <code>fill</code>, <code>class</code>):</p>
+                                <div id="ovb-attrs-list"></div>
+                                <div class="ovb-field-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.07);">
+                                    <input type="text" id="ovb-new-attr-name" class="ovb-input" placeholder="Atributo (ex: title)" style="width:42%;">
+                                    <input type="text" id="ovb-new-attr-val" class="ovb-input" placeholder="Valor" style="flex:1;">
+                                    <button type="button" id="ovb-btn-add-attr" class="ovb-mini-btn">＋</button>
                                 </div>
                             </div>
                         </div>
@@ -552,21 +594,106 @@ function odyssee_vb_render_admin_page() {
                     </div>
 
                     <!-- ==========================================
-                         TAB 2: ESTILO (ELEMENTOR CLASSIC CONTROLS)
+                         TAB 2: MOVER, LAYOUT & ESTILO COMPLETO
                          ========================================== -->
                     <div class="ovb-tab-panel active" id="tab-style">
-                        <!-- TIPOGRAFIA -->
+
+                        <!-- 1. MOVER ELEMENTO, ESCALA & ORDEM NA PÁGINA -->
                         <div class="ovb-section">
                             <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-font"></i> Tipografia & Texto</span>
+                                <span class="ovb-sec-title"><i class="fas fa-arrows-alt"></i> Mover, Posição Livre (X/Y) & Ordem</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <p style="font-size:11px;color:#a78bfa;margin:0;line-height:1.4;">
+                                    💡 <strong>Dica:</strong> Você pode clicar e <strong>arrastar qualquer elemento diretamente com o mouse no preview</strong> ao lado, ou ajustar milimetricamente abaixo:
+                                </p>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Posição Horizontal Livre — Eixo X (px)</label>
+                                    <div class="ovb-slider-wrap">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="translateX" data-unit="px" min="-800" max="800" step="1" data-default="0">
+                                        <input type="text" class="ovb-num-input" data-ovb-prop="translateX" placeholder="0px">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Posição Vertical Livre — Eixo Y (px)</label>
+                                    <div class="ovb-slider-wrap">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="translateY" data-unit="px" min="-800" max="800" step="1" data-default="0">
+                                        <input type="text" class="ovb-num-input" data-ovb-prop="translateY" placeholder="0px">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Escala / Tamanho Proporcional (Scale)</label>
+                                    <div class="ovb-slider-wrap">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="scale" min="0.1" max="3" step="0.02" data-default="1">
+                                        <input type="number" step="0.02" class="ovb-num-input" data-ovb-prop="scale" placeholder="1">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Rotação / Giro (°)</label>
+                                    <div class="ovb-slider-wrap">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="rotate" data-unit="deg" min="-180" max="180" step="1" data-default="0">
+                                        <input type="text" class="ovb-num-input" data-ovb-prop="rotate" placeholder="0deg">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field-row" style="gap:6px;margin-top:4px;">
+                                    <button type="button" id="ovb-btn-dom-up" class="ovb-mini-btn" style="flex:1;" title="Mover este elemento para cima na ordem do HTML">
+                                        ▲ Subir Ordem
+                                    </button>
+                                    <button type="button" id="ovb-btn-dom-down" class="ovb-mini-btn" style="flex:1;" title="Mover este elemento para baixo na ordem do HTML">
+                                        ▼ Descer Ordem
+                                    </button>
+                                    <button type="button" id="ovb-btn-center-xy" class="ovb-mini-btn" style="flex:1;" title="Zerar deslocamento X e Y">
+                                        🎯 Zerar X/Y
+                                    </button>
+                                </div>
+
+                                <div class="ovb-field-row" style="gap:6px;margin-top:4px;">
+                                    <button type="button" id="ovb-btn-duplicate-el" class="ovb-action-btn" style="flex:1;">
+                                        <i class="fas fa-copy"></i> Duplicar Elemento
+                                    </button>
+                                    <label class="ovb-mini-btn" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:6px 10px;">
+                                        <input type="checkbox" data-ovb-prop="hidden">
+                                        <span>👁️ Ocultar</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. TIPOGRAFIA & VETOR SVG -->
+                        <div class="ovb-section">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-font"></i> Tipografia, Cores & Vetor SVG</span>
                                 <i class="fas fa-chevron-down ovb-chevron"></i>
                             </div>
                             <div class="ovb-section-body">
                                 <div class="ovb-field">
-                                    <label class="ovb-label">Cor do Texto</label>
+                                    <label class="ovb-label">Cor Principal / Texto (color / currentColor)</label>
                                     <div class="ovb-color-wrap">
                                         <input type="color" class="ovb-color-picker" data-ovb-prop="color" value="#f8fafc">
                                         <input type="text" class="ovb-input" data-ovb-prop="color" placeholder="Ex: #ffffff ou var(--color-title)">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Preenchimento SVG (fill)</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-color-picker" data-ovb-prop="fill" value="#8b5cf6">
+                                            <input type="text" class="ovb-input" data-ovb-prop="fill" placeholder="currentColor">
+                                        </div>
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Traçado SVG (stroke)</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-color-picker" data-ovb-prop="stroke" value="#d946ef">
+                                            <input type="text" class="ovb-input" data-ovb-prop="stroke" placeholder="none">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -596,7 +723,7 @@ function odyssee_vb_render_admin_page() {
                                 <div class="ovb-field">
                                     <label class="ovb-label">Tamanho da Fonte</label>
                                     <div class="ovb-slider-wrap">
-                                        <input type="range" class="ovb-range" data-ovb-range-for="fontSize" data-unit="px" min="10" max="110" step="1" data-default="16">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="fontSize" data-unit="px" min="10" max="120" step="1" data-default="16">
                                         <input type="text" class="ovb-num-input" data-ovb-prop="fontSize" placeholder="px/rem">
                                     </div>
                                 </div>
@@ -651,62 +778,95 @@ function odyssee_vb_render_admin_page() {
                             </div>
                         </div>
 
-                        <!-- FUNDO & GLASSMORPHISM -->
+                        <!-- 3. LAYOUT, FLEXBOX, DIMENSÕES & ESPAÇAMENTO -->
                         <div class="ovb-section">
                             <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-fill-drip"></i> Fundo & Glassmorphism</span>
+                                <span class="ovb-sec-title"><i class="fas fa-expand-arrows-alt"></i> Dimensões, Flexbox & Espaçamento</span>
                                 <i class="fas fa-chevron-down ovb-chevron"></i>
                             </div>
                             <div class="ovb-section-body">
-                                <div class="ovb-field">
-                                    <label class="ovb-label">Cor de Fundo</label>
-                                    <div class="ovb-color-wrap">
-                                        <input type="color" class="ovb-color-picker" data-ovb-prop="backgroundColor" value="#131926">
-                                        <input type="text" class="ovb-input" data-ovb-prop="backgroundColor" placeholder="Ex: rgba(19,25,38,0.75)">
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Largura (Width)</label>
+                                        <input type="text" class="ovb-input" data-ovb-prop="width" placeholder="auto / px / %">
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Altura (Height)</label>
+                                        <input type="text" class="ovb-input" data-ovb-prop="height" placeholder="auto / px">
                                     </div>
                                 </div>
 
-                                <div class="ovb-field">
-                                    <label class="ovb-label">
-                                        <span>Fundo em Gradiente</span>
-                                        <input type="checkbox" data-ovb-prop="bgGradientEnabled">
-                                    </label>
-                                    <div class="ovb-field-row">
-                                        <input type="color" class="ovb-color-picker" data-ovb-prop="bgGradientColor1" value="#8b5cf6">
-                                        <input type="color" class="ovb-color-picker" data-ovb-prop="bgGradientColor2" value="#ec4899">
-                                        <select class="ovb-select" data-ovb-prop="bgGradientType" style="width:85px;">
-                                            <option value="linear">Linear</option>
-                                            <option value="radial">Radial</option>
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Largura Máx.</label>
+                                        <input type="text" class="ovb-input" data-ovb-prop="maxWidth" placeholder="none / px">
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Altura Mín.</label>
+                                        <input type="text" class="ovb-input" data-ovb-prop="minHeight" placeholder="0px">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Display</label>
+                                        <select class="ovb-select" data-ovb-prop="display">
+                                            <option value="">Padrão</option>
+                                            <option value="block">Block</option>
+                                            <option value="flex">Flex</option>
+                                            <option value="inline-flex">Inline-Flex</option>
+                                            <option value="grid">Grid</option>
+                                            <option value="inline-block">Inline-Block</option>
+                                            <option value="none">None (Oculto)</option>
                                         </select>
-                                        <input type="number" class="ovb-num-input" data-ovb-prop="bgGradientAngle" placeholder="135°">
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Direção Flex</label>
+                                        <select class="ovb-select" data-ovb-prop="flexDirection">
+                                            <option value="">Padrão</option>
+                                            <option value="row">Linha (Row)</option>
+                                            <option value="column">Coluna (Column)</option>
+                                            <option value="row-reverse">Linha Inversa</option>
+                                            <option value="column-reverse">Coluna Inversa</option>
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div class="ovb-field">
-                                    <label class="ovb-label">Imagem de Fundo</label>
-                                    <div class="ovb-field-row">
-                                        <input type="text" id="ovb-bg-image-input" class="ovb-input" data-ovb-prop="bgImage" placeholder="URL da imagem">
-                                        <button type="button" class="ovb-mini-btn ovb-media-btn" data-target="#ovb-bg-image-input">Mídia</button>
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Justify Content</label>
+                                        <select class="ovb-select" data-ovb-prop="justifyContent">
+                                            <option value="">Padrão</option>
+                                            <option value="flex-start">Início (Start)</option>
+                                            <option value="center">Centro</option>
+                                            <option value="flex-end">Fim (End)</option>
+                                            <option value="space-between">Space Between</option>
+                                            <option value="space-around">Space Around</option>
+                                        </select>
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Align Items</label>
+                                        <select class="ovb-select" data-ovb-prop="alignItems">
+                                            <option value="">Padrão</option>
+                                            <option value="stretch">Stretch</option>
+                                            <option value="flex-start">Início (Start)</option>
+                                            <option value="center">Centro</option>
+                                            <option value="flex-end">Fim (End)</option>
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div class="ovb-field">
-                                    <label class="ovb-label">Backdrop Blur (Efeito Vidro / Glassmorphism)</label>
-                                    <div class="ovb-slider-wrap">
-                                        <input type="range" class="ovb-range" data-ovb-range-for="backdropBlur" min="0" max="40" step="1" data-default="0">
-                                        <input type="number" class="ovb-num-input" data-ovb-prop="backdropBlur" placeholder="0px">
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Gap (Espaço entre itens)</label>
+                                        <input type="text" class="ovb-input" data-ovb-prop="gap" placeholder="Ex: 16px">
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Z-Index (Camada)</label>
+                                        <input type="number" class="ovb-input" data-ovb-prop="zIndex" placeholder="Auto">
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- ESPAÇAMENTO & DIMENSÕES -->
-                        <div class="ovb-section">
-                            <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-expand-arrows-alt"></i> Espaçamento & Dimensões</span>
-                                <i class="fas fa-chevron-down ovb-chevron"></i>
-                            </div>
-                            <div class="ovb-section-body">
                                 <div class="ovb-field">
                                     <label class="ovb-label">Margem Externa (Margin)</label>
                                     <div class="ovb-box-grid">
@@ -750,38 +910,56 @@ function odyssee_vb_render_admin_page() {
                                         </div>
                                     </div>
                                 </div>
-
-                                <div class="ovb-field-row">
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Largura (Width)</label>
-                                        <input type="text" class="ovb-input" data-ovb-prop="width" placeholder="Ex: 100%, 400px">
-                                    </div>
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Largura Máx.</label>
-                                        <input type="text" class="ovb-input" data-ovb-prop="maxWidth" placeholder="Ex: 1200px">
-                                    </div>
-                                </div>
-
-                                <div class="ovb-field-row">
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Altura Mín.</label>
-                                        <input type="text" class="ovb-input" data-ovb-prop="minHeight" placeholder="Ex: 300px">
-                                    </div>
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Z-Index (Camada)</label>
-                                        <input type="number" class="ovb-input" data-ovb-prop="zIndex" placeholder="Auto">
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
-                        <!-- BORDAS -->
+                        <!-- 4. FUNDO, GLASSMORPHISM & BORDAS -->
                         <div class="ovb-section">
                             <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-vector-square"></i> Bordas & Arredondamento</span>
+                                <span class="ovb-sec-title"><i class="fas fa-fill-drip"></i> Fundo, Glassmorphism & Bordas</span>
                                 <i class="fas fa-chevron-down ovb-chevron"></i>
                             </div>
                             <div class="ovb-section-body">
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Cor de Fundo</label>
+                                    <div class="ovb-color-wrap">
+                                        <input type="color" class="ovb-color-picker" data-ovb-prop="backgroundColor" value="#131926">
+                                        <input type="text" class="ovb-input" data-ovb-prop="backgroundColor" placeholder="Ex: rgba(19,25,38,0.75)">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">
+                                        <span>Fundo em Gradiente</span>
+                                        <input type="checkbox" data-ovb-prop="bgGradientEnabled">
+                                    </label>
+                                    <div class="ovb-field-row">
+                                        <input type="color" class="ovb-color-picker" data-ovb-prop="bgGradientColor1" value="#8b5cf6">
+                                        <input type="color" class="ovb-color-picker" data-ovb-prop="bgGradientColor2" value="#ec4899">
+                                        <select class="ovb-select" data-ovb-prop="bgGradientType" style="width:85px;">
+                                            <option value="linear">Linear</option>
+                                            <option value="radial">Radial</option>
+                                        </select>
+                                        <input type="number" class="ovb-num-input" data-ovb-prop="bgGradientAngle" placeholder="135°">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Imagem de Fundo</label>
+                                    <div class="ovb-field-row">
+                                        <input type="text" id="ovb-bg-image-input" class="ovb-input" data-ovb-prop="bgImage" placeholder="URL da imagem">
+                                        <button type="button" class="ovb-mini-btn ovb-media-btn" data-target="#ovb-bg-image-input">Mídia</button>
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Backdrop Blur (Glassmorphism)</label>
+                                    <div class="ovb-slider-wrap">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="backdropBlur" min="0" max="40" step="1" data-default="0">
+                                        <input type="number" class="ovb-num-input" data-ovb-prop="backdropBlur" placeholder="0px">
+                                    </div>
+                                </div>
+
                                 <div class="ovb-field-row">
                                     <div class="ovb-field" style="flex:1;">
                                         <label class="ovb-label">Estilo da Borda</label>
@@ -796,7 +974,7 @@ function odyssee_vb_render_admin_page() {
                                     </div>
                                     <div class="ovb-field" style="flex:1;">
                                         <label class="ovb-label">Espessura</label>
-                                        <input type="text" class="ovb-input" data-ovb-prop="borderWidth" placeholder="Ex: 1px, 2px">
+                                        <input type="text" class="ovb-input" data-ovb-prop="borderWidth" placeholder="Ex: 1px">
                                     </div>
                                 </div>
 
@@ -814,6 +992,23 @@ function odyssee_vb_render_admin_page() {
                                         <input type="range" class="ovb-range" data-ovb-range-for="borderRadius" data-unit="px" min="0" max="100" step="1" data-default="0">
                                         <input type="text" class="ovb-num-input" data-ovb-prop="borderRadius" placeholder="0px">
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. INSPETOR COMPLETO DE PROPRIEDADES CSS COMPUTADAS -->
+                        <div class="ovb-section collapsed">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-microscope"></i> Inspetor de Todas as Propriedades CSS</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <p style="font-size:11px;color:#94a3b8;margin:0 0 6px 0;">Veja os estilos computados atuais do elemento ou adicione qualquer propriedade CSS diretamente:</p>
+                                <div id="ovb-computed-inspector-list"></div>
+                                <div class="ovb-field-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.07);">
+                                    <input type="text" id="ovb-new-css-prop" class="ovb-input" placeholder="Propriedade (ex: aspect-ratio)" style="width:48%;">
+                                    <input type="text" id="ovb-new-css-val" class="ovb-input" placeholder="Valor (ex: 16/9)" style="flex:1;">
+                                    <button type="button" id="ovb-btn-add-raw-css" class="ovb-mini-btn">＋</button>
                                 </div>
                             </div>
                         </div>
@@ -1134,10 +1329,10 @@ function odyssee_vb_render_admin_page() {
                             </div>
                         </div>
 
-                        <!-- 4. FILTROS CSS & TRANSFORMAÇÕES -->
+                        <!-- 4. FILTROS CSS -->
                         <div class="ovb-section collapsed">
                             <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-sliders-h"></i> Filtros de Cor & Transformação 2D/3D</span>
+                                <span class="ovb-sec-title"><i class="fas fa-adjust"></i> Filtros de Cor, Opacidade & 3D</span>
                                 <i class="fas fa-chevron-down ovb-chevron"></i>
                             </div>
                             <div class="ovb-section-body">
@@ -1191,23 +1386,12 @@ function odyssee_vb_render_admin_page() {
 
                                 <div class="ovb-field-row">
                                     <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Escala (Scale)</label>
-                                        <input type="number" step="0.05" class="ovb-input" data-ovb-prop="scale" placeholder="1">
+                                        <label class="ovb-label">Rotação 3D X (°)</label>
+                                        <input type="number" class="ovb-input" data-ovb-prop="rotateX" placeholder="0">
                                     </div>
                                     <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Rotação Z (°)</label>
-                                        <input type="number" class="ovb-input" data-ovb-prop="rotate" placeholder="0">
-                                    </div>
-                                </div>
-
-                                <div class="ovb-field-row">
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Deslocar X</label>
-                                        <input type="text" class="ovb-input" data-ovb-prop="translateX" placeholder="0px">
-                                    </div>
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Deslocar Y</label>
-                                        <input type="text" class="ovb-input" data-ovb-prop="translateY" placeholder="0px">
+                                        <label class="ovb-label">Rotação 3D Y (°)</label>
+                                        <input type="number" class="ovb-input" data-ovb-prop="rotateY" placeholder="0">
                                     </div>
                                 </div>
                             </div>
@@ -1229,28 +1413,29 @@ function odyssee_vb_render_admin_page() {
                     </div>
 
                     <!-- ==========================================
-                         TAB 4: CAMADAS, CORES GLOBAIS & BACKUP
+                         TAB 4: TODOS OS ELEMENTOS BASE DO SITE, CORES GLOBAIS & BACKUP
                          ========================================== -->
                     <div class="ovb-tab-panel" id="tab-layers">
+                        <!-- FULL BASE ELEMENTS TREE -->
+                        <div class="ovb-section">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-sitemap"></i> Todos os Elementos Base da Página</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <input type="text" id="ovb-tree-search" class="ovb-input" placeholder="🔍 Filtrar elemento (ex: logo, banner, svg, g1, slogan)..." style="margin-bottom:8px;">
+                                <div id="ovb-navigator-tree" class="ovb-tree-list"></div>
+                            </div>
+                        </div>
+
                         <!-- MODIFIED ELEMENTS -->
                         <div class="ovb-section">
                             <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-magic"></i> Elementos Personalizados Ativos</span>
+                                <span class="ovb-sec-title"><i class="fas fa-magic"></i> Elementos Modificados Ativos</span>
                                 <i class="fas fa-chevron-down ovb-chevron"></i>
                             </div>
                             <div class="ovb-section-body">
                                 <div id="ovb-modified-list" class="ovb-tree-list"></div>
-                            </div>
-                        </div>
-
-                        <!-- PAGE STRUCTURE TREE -->
-                        <div class="ovb-section">
-                            <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-sitemap"></i> Navegador de Estrutura da Página</span>
-                                <i class="fas fa-chevron-down ovb-chevron"></i>
-                            </div>
-                            <div class="ovb-section-body">
-                                <div id="ovb-navigator-tree" class="ovb-tree-list"></div>
                             </div>
                         </div>
 

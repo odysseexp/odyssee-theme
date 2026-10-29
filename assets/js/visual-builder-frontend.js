@@ -1,35 +1,39 @@
 /**
- * Odyssee Visual Studio — Frontend Runtime & Live Canvas Inspector
- * Non-destructive visual layer for Elementor-like customization
+ * Odyssee Visual Studio — Full Engine Runtime & Interactive Canvas Manipulation
+ * Allows moving, resizing, reordering, and editing every property/style of any pre-existing or new element
  */
 (function () {
     'use strict';
 
     const config = window.odysseeVBConfig || {
         isPreview: false,
-        data: { elements: {}, blocks: [], globalVars: {}, customCss: '' }
+        data: { elements: {}, blocks: [], domMoves: [], clones: [], globalVars: {}, customCss: '' }
     };
 
     let builderData = normalizeData(config.data);
     let isInteractiveMode = false; // When true in preview, allows clicking links/buttons normally
+    let dragModeEnabled = true;    // Allows dragging any selected/clicked element on canvas
     let selectedSelector = null;
     let selectedElement = null;
     let hoveredElement = null;
     let scrollObserver = null;
+    let isApplyingDOM = false;
 
     function normalizeData(raw) {
         const d = raw && typeof raw === 'object' ? raw : {};
         return {
-            elements: d.elements && typeof d.elements === 'object' ? d.elements : {},
+            elements: d.elements && typeof d.elements === 'object' && !Array.isArray(d.elements) ? d.elements : {},
             blocks: Array.isArray(d.blocks) ? d.blocks : [],
-            globalVars: d.globalVars && typeof d.globalVars === 'object' ? d.globalVars : {},
+            domMoves: Array.isArray(d.domMoves) ? d.domMoves : [],
+            clones: Array.isArray(d.clones) ? d.clones : [],
+            globalVars: d.globalVars && typeof d.globalVars === 'object' && !Array.isArray(d.globalVars) ? d.globalVars : { all: {}, dark: {}, light: {} },
             customCss: typeof d.customCss === 'string' ? d.customCss : ''
         };
     }
 
     function hexToRgba(hex, alpha) {
         if (!hex) return `rgba(139, 92, 246, ${alpha})`;
-        hex = hex.replace('#', '').trim();
+        hex = String(hex).replace('#', '').trim();
         if (hex.length === 3) {
             hex = hex.split('').map(c => c + c).join('');
         }
@@ -48,6 +52,68 @@
         if (!st || typeof st !== 'object') return '';
         const rules = [];
         const imp = ' !important';
+
+        // Visibility
+        if (st.hidden) {
+            rules.push(`display: none${imp}`);
+        } else if (st.display) {
+            rules.push(`display: ${st.display}${imp}`);
+        }
+
+        // Flexbox & Grid Layout Properties
+        if (st.flexDirection) rules.push(`flex-direction: ${st.flexDirection}${imp}`);
+        if (st.justifyContent) rules.push(`justify-content: ${st.justifyContent}${imp}`);
+        if (st.alignItems) rules.push(`align-items: ${st.alignItems}${imp}`);
+        if (st.flexWrap) rules.push(`flex-wrap: ${st.flexWrap}${imp}`);
+        if (st.gap !== undefined && st.gap !== '') rules.push(`gap: ${st.gap}${imp}`);
+        if (st.gridTemplateColumns) rules.push(`grid-template-columns: ${st.gridTemplateColumns}${imp}`);
+
+        // Positioning & Coordinates
+        if (st.position) rules.push(`position: ${st.position}${imp}`);
+        if (st.top !== undefined && st.top !== '') rules.push(`top: ${st.top}${imp}`);
+        if (st.right !== undefined && st.right !== '') rules.push(`right: ${st.right}${imp}`);
+        if (st.bottom !== undefined && st.bottom !== '') rules.push(`bottom: ${st.bottom}${imp}`);
+        if (st.left !== undefined && st.left !== '') rules.push(`left: ${st.left}${imp}`);
+        if (st.zIndex !== undefined && st.zIndex !== '') rules.push(`z-index: ${st.zIndex}${imp}`);
+        if (st.overflow) rules.push(`overflow: ${st.overflow}${imp}`);
+        if (st.pointerEvents) rules.push(`pointer-events: ${st.pointerEvents}${imp}`);
+        if (st.cursor) rules.push(`cursor: ${st.cursor}${imp}`);
+
+        // Independent Translate / Scale / Rotate (Composes cleanly with existing animations and VanillaTilt!)
+        const tx = st.translateX !== undefined && st.translateX !== '' ? st.translateX : '0px';
+        const ty = st.translateY !== undefined && st.translateY !== '' ? st.translateY : '0px';
+        if (tx !== '0px' || ty !== '0px') {
+            const normTx = /^-?\d+(\.\d+)?$/.test(String(tx)) ? `${tx}px` : tx;
+            const normTy = /^-?\d+(\.\d+)?$/.test(String(ty)) ? `${ty}px` : ty;
+            rules.push(`translate: ${normTx} ${normTy}${imp}`);
+        }
+
+        if (st.scale !== undefined && st.scale !== '' && Number(st.scale) !== 1) {
+            rules.push(`scale: ${st.scale}${imp}`);
+        }
+
+        if (st.rotate !== undefined && st.rotate !== '' && Number(st.rotate) !== 0) {
+            const normRot = /^-?\d+(\.\d+)?$/.test(String(st.rotate)) ? `${st.rotate}deg` : st.rotate;
+            rules.push(`rotate: ${normRot}${imp}`);
+        }
+
+        // Additional 3D / Skew transforms
+        const extraTransforms = [];
+        if (st.rotateX !== undefined && st.rotateX !== '' && Number(st.rotateX) !== 0) {
+            extraTransforms.push(`perspective(900px) rotateX(${st.rotateX}deg)`);
+        }
+        if (st.rotateY !== undefined && st.rotateY !== '' && Number(st.rotateY) !== 0) {
+            extraTransforms.push(`perspective(900px) rotateY(${st.rotateY}deg)`);
+        }
+        if (st.skewX !== undefined && st.skewX !== '' && Number(st.skewX) !== 0) {
+            extraTransforms.push(`skewX(${st.skewX}deg)`);
+        }
+        if (st.skewY !== undefined && st.skewY !== '' && Number(st.skewY) !== 0) {
+            extraTransforms.push(`skewY(${st.skewY}deg)`);
+        }
+        if (extraTransforms.length > 0) {
+            rules.push(`transform: ${extraTransforms.join(' ')}${imp}`);
+        }
 
         // Typography
         if (st.fontFamily) rules.push(`font-family: ${st.fontFamily}${imp}`);
@@ -72,6 +138,11 @@
             rules.push(`color: ${st.color}${imp}`);
         }
 
+        // SVG Vector Properties
+        if (st.fill) rules.push(`fill: ${st.fill}${imp}`);
+        if (st.stroke) rules.push(`stroke: ${st.stroke}${imp}`);
+        if (st.strokeWidth !== undefined && st.strokeWidth !== '') rules.push(`stroke-width: ${st.strokeWidth}${imp}`);
+
         // Background
         if (st.bgGradientEnabled && st.bgGradientColor1 && st.bgGradientColor2) {
             const type = st.bgGradientType === 'radial' ? 'radial-gradient(circle' : `linear-gradient(${st.bgGradientAngle || 135}deg`;
@@ -95,28 +166,33 @@
          'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'].forEach(prop => {
             if (st[prop] !== undefined && st[prop] !== '') {
                 const cssProp = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
-                rules.push(`${cssProp}: ${st[prop]}${imp}`);
+                const val = /^-?\d+(\.\d+)?$/.test(String(st[prop])) ? `${st[prop]}px` : st[prop];
+                rules.push(`${cssProp}: ${val}${imp}`);
             }
         });
 
-        if (st.width) rules.push(`width: ${st.width}${imp}`);
-        if (st.maxWidth) rules.push(`max-width: ${st.maxWidth}${imp}`);
-        if (st.minHeight) rules.push(`min-height: ${st.minHeight}${imp}`);
-        if (st.display) rules.push(`display: ${st.display}${imp}`);
-        if (st.position) rules.push(`position: ${st.position}${imp}`);
-        if (st.zIndex !== undefined && st.zIndex !== '') rules.push(`z-index: ${st.zIndex}${imp}`);
-        if (st.overflow) rules.push(`overflow: ${st.overflow}${imp}`);
+        ['width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight'].forEach(prop => {
+            if (st[prop] !== undefined && st[prop] !== '') {
+                const cssProp = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
+                const val = /^-?\d+(\.\d+)?$/.test(String(st[prop])) ? `${st[prop]}px` : st[prop];
+                rules.push(`${cssProp}: ${val}${imp}`);
+            }
+        });
 
         // Borders
         if (st.borderStyle && st.borderStyle !== 'none') {
             rules.push(`border-style: ${st.borderStyle}${imp}`);
-            if (st.borderWidth) rules.push(`border-width: ${st.borderWidth}${imp}`);
+            if (st.borderWidth) {
+                const bw = /^-?\d+(\.\d+)?$/.test(String(st.borderWidth)) ? `${st.borderWidth}px` : st.borderWidth;
+                rules.push(`border-width: ${bw}${imp}`);
+            }
             if (st.borderColor) rules.push(`border-color: ${st.borderColor}${imp}`);
         } else if (st.borderStyle === 'none') {
             rules.push(`border: none${imp}`);
         }
         if (st.borderRadius !== undefined && st.borderRadius !== '') {
-            rules.push(`border-radius: ${st.borderRadius}${imp}`);
+            const br = /^-?\d+(\.\d+)?$/.test(String(st.borderRadius)) ? `${st.borderRadius}px` : st.borderRadius;
+            rules.push(`border-radius: ${br}${imp}`);
         }
 
         // Opacity
@@ -175,10 +251,10 @@
             const gColor1 = st.glowColor || '#8b5cf6';
             const gColor2 = st.glowColor2 || gColor1;
             const gIntensity = (st.glowIntensity !== undefined && st.glowIntensity !== '' ? Number(st.glowIntensity) : 75) / 100;
-            const gBlur = st.glowBlur !== undefined && st.glowBlur !== '' ? Number(st.glowBlur) : 24;
-            const gSpread = st.glowSpread !== undefined && st.glowSpread !== '' ? Number(st.glowSpread) : 0;
+            const gBlur = st.glowBlur !== undefined && st.glowBlur !== '' ? parseFloat(String(st.glowBlur)) : 24;
+            const gSpread = st.glowSpread !== undefined && st.glowSpread !== '' ? parseFloat(String(st.glowSpread)) : 0;
             const gLayers = Number(st.glowLayers || 2);
-            const gMode = st.glowMode || 'box'; // 'box', 'drop-shadow', 'text', 'inset'
+            const gMode = st.glowMode || 'box';
 
             const rgba1 = hexToRgba(gColor1, gIntensity);
             const rgba2 = hexToRgba(gColor2, Math.min(1, gIntensity * 0.75));
@@ -228,32 +304,12 @@
             rules.push(`box-shadow: ${st.boxShadow}${imp}`);
         }
 
-        if (filters.length > 0) {
-            rules.push(`filter: ${filters.join(' ')}${imp}`);
+        if (st.textShadow && (!st.glowEnabled || st.glowMode !== 'text')) {
+            rules.push(`text-shadow: ${st.textShadow}${imp}`);
         }
 
-        // 2D / 3D Transforms
-        const transforms = [];
-        if (st.translateX || st.translateY) {
-            transforms.push(`translate3d(${st.translateX || '0px'}, ${st.translateY || '0px'}, 0)`);
-        }
-        if (st.scale !== undefined && st.scale !== '' && Number(st.scale) !== 1) {
-            transforms.push(`scale(${st.scale})`);
-        }
-        if (st.rotate !== undefined && st.rotate !== '' && Number(st.rotate) !== 0) {
-            transforms.push(`rotate(${st.rotate}deg)`);
-        }
-        if (st.rotateX !== undefined && st.rotateX !== '' && Number(st.rotateX) !== 0) {
-            transforms.push(`perspective(900px) rotateX(${st.rotateX}deg)`);
-        }
-        if (st.rotateY !== undefined && st.rotateY !== '' && Number(st.rotateY) !== 0) {
-            transforms.push(`perspective(900px) rotateY(${st.rotateY}deg)`);
-        }
-        if (st.skewX !== undefined && st.skewX !== '' && Number(st.skewX) !== 0) {
-            transforms.push(`skewX(${st.skewX}deg)`);
-        }
-        if (transforms.length > 0) {
-            rules.push(`transform: ${transforms.join(' ')}${imp}`);
+        if (filters.length > 0) {
+            rules.push(`filter: ${filters.join(' ')}${imp}`);
         }
 
         // Loop Animation (Continuous)
@@ -264,6 +320,15 @@
             rules.push(`animation: ${st.loopAnim} ${dur} ease-in-out infinite${imp}`);
         }
 
+        // Arbitrary Raw CSS Properties (From the Full Computed Style Inspector)
+        if (st.rawCssProps && typeof st.rawCssProps === 'object') {
+            Object.entries(st.rawCssProps).forEach(([k, v]) => {
+                if (v !== undefined && v !== '') {
+                    rules.push(`${k}: ${v}${imp}`);
+                }
+            });
+        }
+
         if (isHover) {
             rules.push(`transition: all ${st.hoverTransition || '0.32s'} cubic-bezier(0.22, 1, 0.36, 1)${imp}`);
         }
@@ -272,7 +337,7 @@
     }
 
     /**
-     * Compiles all builderData into a single CSS string and updates #odyssee-vb-live-css
+     * Compiles all builderData into a single CSS string and updates #odyssee-vb-compiled-css
      */
     function compileAllCSS(data) {
         const cssParts = [];
@@ -298,17 +363,15 @@
 
         Object.entries(data.elements || {}).forEach(([selector, elConfig]) => {
             if (!elConfig || typeof elConfig !== 'object') return;
-            const themeScope = elConfig.themeScope || 'all'; // 'all', 'dark', 'light'
+            const themeScope = elConfig.themeScope || 'all';
             const prefix = themeScope === 'dark' ? 'body.theme-dark ' : (themeScope === 'light' ? 'body.theme-light ' : '');
             const fullSel = prefix + selector;
 
-            // Desktop Normal
             if (elConfig.styles && elConfig.styles.desktop) {
                 const dCss = compileRuleDeclarations(elConfig.styles.desktop, false);
                 if (dCss) cssParts.push(`${fullSel} { ${dCss}; }`);
             }
 
-            // Desktop Hover
             if (elConfig.styles && elConfig.styles.hover) {
                 const hCss = compileRuleDeclarations(elConfig.styles.hover, true);
                 if (hCss) {
@@ -317,7 +380,6 @@
                 }
             }
 
-            // Theme-specific sub-overrides (dark / light specific styles on the same element)
             if (elConfig.styles && elConfig.styles.dark) {
                 const darkCss = compileRuleDeclarations(elConfig.styles.dark, false);
                 if (darkCss) cssParts.push(`body.theme-dark ${selector} { ${darkCss}; }`);
@@ -327,19 +389,16 @@
                 if (lightCss) cssParts.push(`body.theme-light ${selector} { ${lightCss}; }`);
             }
 
-            // Tablet Responsive
             if (elConfig.styles && elConfig.styles.tablet) {
                 const tCss = compileRuleDeclarations(elConfig.styles.tablet, false);
                 if (tCss) tabletRules.push(`${fullSel} { ${tCss}; }`);
             }
 
-            // Mobile Responsive
             if (elConfig.styles && elConfig.styles.mobile) {
                 const mCss = compileRuleDeclarations(elConfig.styles.mobile, false);
                 if (mCss) mobileRules.push(`${fullSel} { ${mCss}; }`);
             }
 
-            // Element-level Custom CSS (supports `selector` keyword like Elementor!)
             if (elConfig.customCss && elConfig.customCss.trim()) {
                 const parsedCustom = elConfig.customCss.replace(/\bselector\b/g, fullSel);
                 cssParts.push(parsedCustom);
@@ -353,7 +412,6 @@
             cssParts.push(`@media (max-width: 768px) {\n  ${mobileRules.join('\n  ')}\n}`);
         }
 
-        // 3. Global Custom CSS
         if (data.customCss && data.customCss.trim()) {
             cssParts.push(data.customCss);
         }
@@ -361,9 +419,6 @@
         return cssParts.join('\n');
     }
 
-    /**
-     * Injects or updates the live style tag on the page
-     */
     function updateLiveStyleTag() {
         let styleEl = document.getElementById('odyssee-vb-compiled-css');
         if (!styleEl) {
@@ -372,6 +427,51 @@
             document.head.appendChild(styleEl);
         }
         styleEl.textContent = compileAllCSS(builderData);
+    }
+
+    /**
+     * Replays saved DOM structural moves (moving pre-existing elements up/down or into another container)
+     */
+    function applyDOMMoves() {
+        (builderData.domMoves || []).forEach(move => {
+            if (!move || !move.selector || !move.refSelector) return;
+            try {
+                const el = document.querySelector(move.selector);
+                const ref = document.querySelector(move.refSelector);
+                if (!el || !ref || el === ref || el.contains(ref)) return;
+
+                if (move.pos === 'before' && ref.parentNode) {
+                    ref.parentNode.insertBefore(el, ref);
+                } else if (move.pos === 'after' && ref.parentNode) {
+                    ref.parentNode.insertBefore(el, ref.nextSibling);
+                } else if (move.pos === 'prepend') {
+                    ref.insertBefore(el, ref.firstChild);
+                } else if (move.pos === 'append') {
+                    ref.appendChild(el);
+                }
+            } catch (e) {}
+        });
+    }
+
+    /**
+     * Renders cloned pre-existing elements
+     */
+    function renderClonedElements() {
+        document.querySelectorAll('[data-ovb-clone-id]').forEach(el => el.remove());
+
+        (builderData.clones || []).forEach(cl => {
+            if (!cl || !cl.id || !cl.sourceSelector) return;
+            try {
+                const src = document.querySelector(cl.sourceSelector);
+                if (!src || !src.parentNode) return;
+                const copy = src.cloneNode(true);
+                copy.id = cl.id;
+                copy.setAttribute('data-ovb-clone-id', cl.id);
+                copy.removeAttribute('data-ovb-selected');
+                copy.removeAttribute('data-ovb-hover');
+                src.parentNode.insertBefore(copy, src.nextSibling);
+            } catch (e) {}
+        });
     }
 
     /**
@@ -396,7 +496,7 @@
             case 'text': {
                 const p = document.createElement('div');
                 p.className = 'ovb-block-text';
-                p.innerHTML = c.html || '<p>Seu novo bloco de texto criativo. Clique para personalizar fontes, cores, glow e animações.</p>';
+                p.innerHTML = c.html || '<p>Seu novo bloco de texto criativo. Clique e arraste para mover ou personalize fontes, cores, glow e animações.</p>';
                 wrapper.appendChild(p);
                 break;
             }
@@ -477,11 +577,7 @@
         return wrapper;
     }
 
-    /**
-     * Renders custom blocks into the DOM non-destructively
-     */
     function renderCustomBlocks() {
-        // Remove previously rendered custom blocks so we can re-render cleanly
         document.querySelectorAll('.ovb-custom-block[data-ovb-block-id]').forEach(el => el.remove());
 
         (builderData.blocks || []).forEach(block => {
@@ -495,7 +591,7 @@
             if (!target) return;
 
             const blockEl = buildBlockElement(block);
-            const pos = block.position || 'after'; // 'before', 'after', 'prepend', 'append'
+            const pos = block.position || 'after';
 
             if (pos === 'before' && target.parentNode) {
                 target.parentNode.insertBefore(blockEl, target);
@@ -510,151 +606,180 @@
     }
 
     /**
-     * Applies DOM-level features: text overrides, image src, overlay layers, entrance animations, hover presets, 3D tilt
+     * Applies DOM-level features: text overrides (PT/EN), image src (Dark/Light), HTML attributes, overlay layers, entrance animations, hover presets, 3D tilt
      */
     function applyDOMFeatures() {
-        if (!scrollObserver && 'IntersectionObserver' in window) {
-            scrollObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const el = entry.target;
-                    const cfg = el._ovbAnimConfig;
-                    if (!cfg) return;
-                    if (entry.isIntersecting) {
-                        el.classList.remove('ovb-anim-Wait');
-                        el.classList.add('ovb-anim-Triggered');
-                        el.style.setProperty('animation-name', cfg.name, 'important');
-                        el.style.setProperty('animation-duration', cfg.duration || '0.75s', 'important');
-                        el.style.setProperty('animation-delay', cfg.delay || '0s', 'important');
-                        el.style.setProperty('animation-timing-function', cfg.easing || 'cubic-bezier(0.22, 1, 0.36, 1)', 'important');
-                        el.style.setProperty('animation-fill-mode', 'both', 'important');
-                        if (!cfg.repeat) {
-                            scrollObserver.unobserve(el);
+        if (isApplyingDOM) return;
+        isApplyingDOM = true;
+
+        try {
+            if (!scrollObserver && 'IntersectionObserver' in window) {
+                scrollObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        const el = entry.target;
+                        const cfg = el._ovbAnimConfig;
+                        if (!cfg) return;
+                        if (entry.isIntersecting) {
+                            el.classList.remove('ovb-anim-Wait');
+                            el.classList.add('ovb-anim-Triggered');
+                            el.style.setProperty('animation-name', cfg.name, 'important');
+                            el.style.setProperty('animation-duration', cfg.duration || '0.75s', 'important');
+                            el.style.setProperty('animation-delay', cfg.delay || '0s', 'important');
+                            el.style.setProperty('animation-timing-function', cfg.easing || 'cubic-bezier(0.22, 1, 0.36, 1)', 'important');
+                            el.style.setProperty('animation-fill-mode', 'both', 'important');
+                            if (!cfg.repeat) {
+                                scrollObserver.unobserve(el);
+                            }
+                        } else if (cfg.repeat) {
+                            el.classList.remove('ovb-anim-Triggered');
+                            el.style.removeProperty('animation-name');
+                            el.classList.add('ovb-anim-Wait');
                         }
-                    } else if (cfg.repeat) {
-                        el.classList.remove('ovb-anim-Triggered');
-                        el.style.removeProperty('animation-name');
-                        el.classList.add('ovb-anim-Wait');
-                    }
-                });
-            }, { threshold: 0.12 });
-        }
-
-        // Clean up existing overlay layers before re-applying
-        document.querySelectorAll('.ovb-layer-overlay').forEach(el => el.remove());
-
-        Object.entries(builderData.elements || {}).forEach(([selector, elConfig]) => {
-            if (!elConfig || typeof elConfig !== 'object') return;
-            let nodes = [];
-            try {
-                nodes = Array.from(document.querySelectorAll(selector));
-            } catch (e) {
-                return;
+                    });
+                }, { threshold: 0.08 });
             }
 
-            nodes.forEach(el => {
-                // 1. Content Overrides (Non-destructive: store original in data-ovb-orig-*)
-                if (elConfig.content) {
-                    const c = elConfig.content;
-                    if (c.text !== undefined && c.text !== '') {
-                        if (!el.hasAttribute('data-ovb-orig-text')) {
-                            el.setAttribute('data-ovb-orig-text', el.textContent);
-                        }
-                        if (el.children.length === 0) {
-                            el.textContent = c.text;
-                        }
-                    } else if (el.hasAttribute('data-ovb-orig-text')) {
-                        if (el.children.length === 0) {
-                            el.textContent = el.getAttribute('data-ovb-orig-text');
-                        }
-                        el.removeAttribute('data-ovb-orig-text');
-                    }
+            document.querySelectorAll('.ovb-layer-overlay').forEach(el => el.remove());
 
-                    if (c.src !== undefined && c.src !== '' && el.tagName === 'IMG') {
-                        if (!el.hasAttribute('data-ovb-orig-src')) {
-                            el.setAttribute('data-ovb-orig-src', el.getAttribute('src') || '');
-                        }
-                        el.setAttribute('src', c.src);
-                    } else if (el.hasAttribute('data-ovb-orig-src') && el.tagName === 'IMG') {
-                        el.setAttribute('src', el.getAttribute('data-ovb-orig-src'));
-                        el.removeAttribute('data-ovb-orig-src');
-                    }
+            const isDark = document.body.classList.contains('theme-dark');
+            const curLang = document.documentElement.lang && document.documentElement.lang.toLowerCase().startsWith('en') ? 'en' : 'pt';
 
-                    if (c.href !== undefined && c.href !== '' && el.tagName === 'A') {
-                        if (!el.hasAttribute('data-ovb-orig-href')) {
-                            el.setAttribute('data-ovb-orig-href', el.getAttribute('href') || '');
-                        }
-                        el.setAttribute('href', c.href);
-                    }
+            Object.entries(builderData.elements || {}).forEach(([selector, elConfig]) => {
+                if (!elConfig || typeof elConfig !== 'object') return;
+                let nodes = [];
+                try {
+                    nodes = Array.from(document.querySelectorAll(selector));
+                } catch (e) {
+                    return;
                 }
 
-                // 2. Hover Animation Preset Class
-                ['ovb-hover-lift', 'ovb-hover-grow', 'ovb-hover-shrink', 'ovb-hover-tilt', 'ovb-hover-glow-boost'].forEach(cls => {
-                    el.classList.remove(cls);
-                });
-                const st = (elConfig.styles && elConfig.styles.desktop) || {};
-                if (st.hoverPreset && st.hoverPreset !== 'none') {
-                    el.classList.add(st.hoverPreset);
-                }
+                nodes.forEach(el => {
+                    // 1. Content & Native Attributes Overrides
+                    if (elConfig.content) {
+                        const c = elConfig.content;
+                        const activeText = (curLang === 'en' && c.textEn) ? c.textEn : c.text;
 
-                // 3. Extra Layer Overlay (Blend Mode Layer inside Element)
-                if (st.overlayEnabled && st.overlayColor) {
-                    const compPos = window.getComputedStyle(el).position;
-                    if (compPos === 'static') {
-                        el.style.position = 'relative';
-                    }
-                    const ov = document.createElement('div');
-                    ov.className = 'ovb-layer-overlay';
-                    if (st.overlayColor2) {
-                        ov.style.background = `linear-gradient(${st.overlayAngle || 135}deg, ${st.overlayColor}, ${st.overlayColor2})`;
-                    } else {
-                        ov.style.background = st.overlayColor;
-                    }
-                    ov.style.mixBlendMode = st.overlayBlendMode || 'overlay';
-                    ov.style.opacity = st.overlayOpacity !== undefined ? Number(st.overlayOpacity) / 100 : 0.5;
-                    el.appendChild(ov);
-                }
+                        if (activeText !== undefined && activeText !== '') {
+                            if (!el.hasAttribute('data-ovb-orig-text')) {
+                                el.setAttribute('data-ovb-orig-text', el.textContent);
+                            }
+                            if (el.children.length === 0 || el.tagName === 'TEXT' || el.tagName === 'TSPAN') {
+                                if (el.textContent !== activeText) {
+                                    el.textContent = activeText;
+                                }
+                            } else {
+                                // If element has icon + span (like buttons), update text node or span
+                                const textSpan = el.querySelector('span[data-key], span');
+                                if (textSpan && textSpan.textContent !== activeText) {
+                                    textSpan.textContent = activeText;
+                                }
+                            }
+                        } else if (el.hasAttribute('data-ovb-orig-text')) {
+                            if (el.children.length === 0) {
+                                el.textContent = el.getAttribute('data-ovb-orig-text');
+                            }
+                            el.removeAttribute('data-ovb-orig-text');
+                        }
 
-                // 4. Entrance Scroll Animation
-                if (st.entranceAnim && st.entranceAnim !== 'none') {
-                    el._ovbAnimConfig = {
-                        name: st.entranceAnim,
-                        duration: st.entranceDuration || '0.75s',
-                        delay: st.entranceDelay || '0s',
-                        easing: st.entranceEasing || 'cubic-bezier(0.22, 1, 0.36, 1)',
-                        repeat: !!st.entranceRepeat
-                    };
-                    if (!el.classList.contains('ovb-anim-Triggered')) {
-                        el.classList.add('ovb-anim-Wait');
-                        if (scrollObserver) scrollObserver.observe(el);
-                    }
-                } else if (el._ovbAnimConfig) {
-                    delete el._ovbAnimConfig;
-                    el.classList.remove('ovb-anim-Wait', 'ovb-anim-Triggered');
-                    el.style.removeProperty('animation-name');
-                }
+                        // Image Src (supports general src, srcDark, srcLight)
+                        if (el.tagName === 'IMG') {
+                            const targetSrc = (isDark && c.srcDark) ? c.srcDark : ((!isDark && c.srcLight) ? c.srcLight : c.src);
+                            if (targetSrc !== undefined && targetSrc !== '') {
+                                if (!el.hasAttribute('data-ovb-orig-src')) {
+                                    el.setAttribute('data-ovb-orig-src', el.getAttribute('src') || '');
+                                }
+                                if (el.getAttribute('src') !== targetSrc) {
+                                    el.setAttribute('src', targetSrc);
+                                }
+                            }
+                        }
 
-                // 5. 3D Tilt Effect (VanillaTilt)
-                if (st.tiltEnabled && window.VanillaTilt) {
-                    if (el.vanillaTilt) {
+                        if (c.href !== undefined && c.href !== '' && el.tagName === 'A') {
+                            el.setAttribute('href', c.href);
+                        }
+
+                        if (c.alt !== undefined && c.alt !== '' && el.tagName === 'IMG') {
+                            el.setAttribute('alt', c.alt);
+                        }
+
+                        // Custom HTML / SVG attributes
+                        if (c.attrs && typeof c.attrs === 'object') {
+                            Object.entries(c.attrs).forEach(([attrName, attrVal]) => {
+                                if (attrVal !== undefined && attrVal !== '') {
+                                    el.setAttribute(attrName, attrVal);
+                                }
+                            });
+                        }
+                    }
+
+                    // 2. Hover Animation Preset Class
+                    ['ovb-hover-lift', 'ovb-hover-grow', 'ovb-hover-shrink', 'ovb-hover-tilt', 'ovb-hover-glow-boost'].forEach(cls => {
+                        el.classList.remove(cls);
+                    });
+                    const st = (elConfig.styles && elConfig.styles.desktop) || {};
+                    if (st.hoverPreset && st.hoverPreset !== 'none') {
+                        el.classList.add(st.hoverPreset);
+                    }
+
+                    // 3. Extra Layer Overlay (Blend Mode Layer inside HTML Element)
+                    if (st.overlayEnabled && st.overlayColor && !(el instanceof SVGElement)) {
+                        const compPos = window.getComputedStyle(el).position;
+                        if (compPos === 'static') {
+                            el.style.position = 'relative';
+                        }
+                        const ov = document.createElement('div');
+                        ov.className = 'ovb-layer-overlay';
+                        if (st.overlayColor2) {
+                            ov.style.background = `linear-gradient(${st.overlayAngle || 135}deg, ${st.overlayColor}, ${st.overlayColor2})`;
+                        } else {
+                            ov.style.background = st.overlayColor;
+                        }
+                        ov.style.mixBlendMode = st.overlayBlendMode || 'overlay';
+                        ov.style.opacity = st.overlayOpacity !== undefined ? Number(st.overlayOpacity) / 100 : 0.5;
+                        el.appendChild(ov);
+                    }
+
+                    // 4. Entrance Scroll Animation
+                    if (st.entranceAnim && st.entranceAnim !== 'none') {
+                        el._ovbAnimConfig = {
+                            name: st.entranceAnim,
+                            duration: st.entranceDuration || '0.75s',
+                            delay: st.entranceDelay || '0s',
+                            easing: st.entranceEasing || 'cubic-bezier(0.22, 1, 0.36, 1)',
+                            repeat: !!st.entranceRepeat
+                        };
+                        if (!el.classList.contains('ovb-anim-Triggered')) {
+                            el.classList.add('ovb-anim-Wait');
+                            if (scrollObserver) scrollObserver.observe(el);
+                        }
+                    } else if (el._ovbAnimConfig) {
+                        delete el._ovbAnimConfig;
+                        el.classList.remove('ovb-anim-Wait', 'ovb-anim-Triggered');
+                        el.style.removeProperty('animation-name');
+                    }
+
+                    // 5. 3D Tilt Effect (VanillaTilt)
+                    if (st.tiltEnabled && window.VanillaTilt && !(el instanceof SVGElement)) {
+                        if (el.vanillaTilt) {
+                            el.vanillaTilt.destroy();
+                        }
+                        window.VanillaTilt.init(el, {
+                            max: Number(st.tiltMax || 15),
+                            speed: Number(st.tiltSpeed || 400),
+                            scale: Number(st.tiltScale || 1.04),
+                            glare: !!st.tiltGlare,
+                            'max-glare': Number(st.tiltMaxGlare || 0.35)
+                        });
+                    } else if (st.tiltEnabled === false && el.vanillaTilt) {
                         el.vanillaTilt.destroy();
                     }
-                    window.VanillaTilt.init(el, {
-                        max: Number(st.tiltMax || 15),
-                        speed: Number(st.tiltSpeed || 400),
-                        scale: Number(st.tiltScale || 1.04),
-                        glare: !!st.tiltGlare,
-                        'max-glare': Number(st.tiltMaxGlare || 0.35)
-                    });
-                } else if (st.tiltEnabled === false && el.vanillaTilt) {
-                    el.vanillaTilt.destroy();
-                }
+                });
             });
-        });
+        } finally {
+            isApplyingDOM = false;
+        }
     }
 
-    /**
-     * Triggers an entrance animation immediately on a selector (for the "Test Animation" button in Studio)
-     */
     function triggerAnimationPreview(selector, animName, duration, delay, easing) {
         if (!selector || !animName || animName === 'none') return;
         let nodes = [];
@@ -665,38 +790,46 @@
         }
         nodes.forEach(el => {
             el.style.setProperty('animation', 'none', 'important');
-            void el.offsetWidth; // Force reflow
+            void el.getBoundingClientRect();
             el.style.setProperty('animation', `${animName} ${duration || '0.75s'} ${easing || 'cubic-bezier(0.22, 1, 0.36, 1)'} ${delay || '0s'} both`, 'important');
         });
     }
 
     /**
-     * Generates a clean, human-readable, stable CSS selector for a clicked DOM element
+     * Generates a clean, accurate CSS selector for ANY HTML or SVG element on the page
      */
     function generateSelector(el) {
         if (!el || el.nodeType !== 1) return null;
 
-        // If it's a custom block or inside a custom block, check if user clicked the block or child
-        if (el.hasAttribute('data-ovb-block-id')) {
-            return `#${el.getAttribute('data-ovb-block-id')}`;
+        // If user clicked a path/tspan inside a named SVG group (.dg-item) in the vector banner,
+        // allow selecting the SVG icon group itself unless they already selected the group and clicked deeper!
+        const svgGroup = el.closest && el.closest('g.dg-item[id]');
+        if (svgGroup && el !== svgGroup && selectedElement !== svgGroup) {
+            el = svgGroup;
         }
 
-        // If element has a unique ID (that isn't transient)
+        if (el.hasAttribute('data-ovb-block-id')) {
+            return `#${CSS.escape(el.getAttribute('data-ovb-block-id'))}`;
+        }
+        if (el.hasAttribute('data-ovb-clone-id')) {
+            return `#${CSS.escape(el.getAttribute('data-ovb-clone-id'))}`;
+        }
+
         if (el.id && !el.id.startsWith('ovb-')) {
             return `#${CSS.escape(el.id)}`;
         }
 
-        // If element has a unique data-key (used throughout Odyssee theme for headings/texts/buttons!)
         const dataKey = el.getAttribute('data-key');
         if (dataKey) {
             const tag = el.tagName.toLowerCase();
             const candidate = `${tag}[data-key="${CSS.escape(dataKey)}"]`;
-            if (document.querySelectorAll(candidate).length === 1) {
-                return candidate;
-            }
+            try {
+                if (document.querySelectorAll(candidate).length === 1) {
+                    return candidate;
+                }
+            } catch (e) {}
         }
 
-        // Build concise path from nearest ancestor with ID
         const parts = [];
         let cur = el;
         while (cur && cur.nodeType === 1 && cur !== document.body && cur !== document.documentElement) {
@@ -706,7 +839,7 @@
             }
 
             let part = cur.tagName.toLowerCase();
-            const validClasses = Array.from(cur.classList).filter(c =>
+            const validClasses = Array.from(cur.classList || []).filter(c =>
                 !c.startsWith('ovb-') &&
                 !['theme-dark', 'theme-light', 'color-purple', 'color-red', 'modo-onboarding', 'transparent', 'active', 'visible'].includes(c)
             );
@@ -715,7 +848,6 @@
                 part += '.' + validClasses.slice(0, 2).map(c => CSS.escape(c)).join('.');
             }
 
-            // Check if this class selector is already unique within its parent or document
             if (cur.parentElement) {
                 const siblings = Array.from(cur.parentElement.children).filter(ch => ch.tagName === cur.tagName);
                 if (siblings.length > 1) {
@@ -740,42 +872,113 @@
     }
 
     /**
-     * Friendly label for an element in the UI / Navigator
+     * Friendly human-readable label for any element
      */
     function getElementLabel(el) {
         if (!el || el.nodeType !== 1) return 'Elemento';
         if (el.hasAttribute('data-ovb-block-id')) {
             return `Bloco · #${el.getAttribute('data-ovb-block-id')}`;
         }
+        if (el.hasAttribute('data-ovb-clone-id')) {
+            return `Cópia · #${el.getAttribute('data-ovb-clone-id')}`;
+        }
+
         const tag = el.tagName.toUpperCase();
-        if (el.id) return `${tag}#${el.id}`;
+        if (el.id) {
+            const cleanId = el.id.replace('.png', '');
+            return `${tag} #${cleanId}`;
+        }
         const key = el.getAttribute('data-key');
         if (key) return `${tag} [${key}]`;
-        const cls = Array.from(el.classList).filter(c => !c.startsWith('ovb-'))[0];
-        if (cls) return `${tag}.${cls}`;
+        const cls = Array.from(el.classList || []).filter(c => !c.startsWith('ovb-'))[0];
+        if (cls) return `${tag} .${cls}`;
         return tag;
     }
 
     /**
-     * Computes current effective styles of an element to populate the editor sidebar
+     * Reads ALL real computed styles & HTML/SVG attributes of the selected element
      */
     function getComputedSnapshot(el) {
         if (!el || el.nodeType !== 1) return {};
         const cs = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+
+        // Collect all HTML/SVG attributes
+        const attrs = {};
+        if (el.attributes) {
+            for (let i = 0; i < el.attributes.length; i++) {
+                const a = el.attributes[i];
+                if (!a.name.startsWith('data-ovb-') && a.name !== 'style') {
+                    attrs[a.name] = a.value;
+                }
+            }
+        }
+
+        // Parse current independent translate X / Y
+        let tx = '0px';
+        let ty = '0px';
+        if (cs.translate && cs.translate !== 'none') {
+            const parts = cs.translate.split(' ');
+            tx = parts[0] || '0px';
+            ty = parts[1] || '0px';
+        }
+
         return {
             tagName: el.tagName.toLowerCase(),
+            isSvg: el instanceof SVGElement,
             label: getElementLabel(el),
-            text: el.children.length === 0 ? (el.textContent || '').trim() : '',
+            text: (el.children.length === 0 || el.tagName === 'TEXT' || el.tagName === 'TSPAN') ? (el.textContent || '').trim() : (el.querySelector('span[data-key], span') ? el.querySelector('span[data-key], span').textContent.trim() : ''),
             src: el.tagName === 'IMG' ? (el.getAttribute('src') || '') : '',
             href: el.tagName === 'A' ? (el.getAttribute('href') || '') : '',
-            isCustomBlock: el.hasAttribute('data-ovb-block-id') || !!el.closest('[data-ovb-block-id]'),
-            blockId: el.getAttribute('data-ovb-block-id') || (el.closest('[data-ovb-block-id]') ? el.closest('[data-ovb-block-id]').getAttribute('data-ovb-block-id') : null),
+            alt: el.tagName === 'IMG' ? (el.getAttribute('alt') || '') : '',
+            dataKey: el.getAttribute('data-key') || '',
+            attrs: attrs,
+            isCustomBlock: el.hasAttribute('data-ovb-block-id'),
+            blockId: el.getAttribute('data-ovb-block-id') || null,
+            isClone: el.hasAttribute('data-ovb-clone-id'),
+            cloneId: el.getAttribute('data-ovb-clone-id') || null,
+            rect: {
+                width: Math.round(rect.width),
+                height: Math.round(rect.height),
+                top: Math.round(rect.top),
+                left: Math.round(rect.left)
+            },
             computed: {
+                display: cs.display,
+                position: cs.position,
+                top: cs.top !== 'auto' ? cs.top : '',
+                right: cs.right !== 'auto' ? cs.right : '',
+                bottom: cs.bottom !== 'auto' ? cs.bottom : '',
+                left: cs.left !== 'auto' ? cs.left : '',
+                translateX: tx,
+                translateY: ty,
+                scale: cs.scale && cs.scale !== 'none' ? cs.scale : '1',
+                rotate: cs.rotate && cs.rotate !== 'none' ? cs.rotate : '0deg',
+                width: Math.round(rect.width) + 'px',
+                height: Math.round(rect.height) + 'px',
+                minWidth: cs.minWidth !== '0px' && cs.minWidth !== 'auto' ? cs.minWidth : '',
+                maxWidth: cs.maxWidth !== 'none' ? cs.maxWidth : '',
+                minHeight: cs.minHeight !== '0px' && cs.minHeight !== 'auto' ? cs.minHeight : '',
+                flexDirection: cs.flexDirection,
+                justifyContent: cs.justifyContent,
+                alignItems: cs.alignItems,
+                flexWrap: cs.flexWrap,
+                gap: cs.gap !== 'normal' ? cs.gap : '',
+                fontFamily: cs.fontFamily,
                 fontSize: cs.fontSize,
                 fontWeight: cs.fontWeight,
+                lineHeight: cs.lineHeight,
+                letterSpacing: cs.letterSpacing !== 'normal' ? cs.letterSpacing : '0px',
+                textAlign: cs.textAlign,
+                textTransform: cs.textTransform,
                 color: cs.color,
+                fill: cs.fill,
+                stroke: cs.stroke !== 'none' ? cs.stroke : '',
                 backgroundColor: cs.backgroundColor,
                 borderRadius: cs.borderRadius,
+                borderStyle: cs.borderTopStyle,
+                borderWidth: cs.borderTopWidth,
+                borderColor: cs.borderTopColor,
                 paddingTop: cs.paddingTop,
                 paddingRight: cs.paddingRight,
                 paddingBottom: cs.paddingBottom,
@@ -784,80 +987,215 @@
                 marginRight: cs.marginRight,
                 marginBottom: cs.marginBottom,
                 marginLeft: cs.marginLeft,
-                mixBlendMode: cs.mixBlendMode,
-                opacity: Math.round(parseFloat(cs.opacity || '1') * 100)
+                zIndex: cs.zIndex !== 'auto' ? cs.zIndex : '',
+                overflow: cs.overflow,
+                mixBlendMode: cs.mixBlendMode || 'normal',
+                opacity: Math.round(parseFloat(cs.opacity || '1') * 100),
+                filter: cs.filter !== 'none' ? cs.filter : '',
+                boxShadow: cs.boxShadow !== 'none' ? cs.boxShadow : '',
+                textShadow: cs.textShadow !== 'none' ? cs.textShadow : ''
             }
         };
     }
 
     /**
-     * Collects a structured page tree for the Layer Navigator in the Studio sidebar
+     * Collects a complete, categorized Scene Graph of ALL base elements on the current page
      */
     function collectPageTree() {
-        const items = [];
-        const mainNodes = document.querySelectorAll('header.main-header, section[id], footer.site-footer, .ovb-custom-block[data-ovb-block-id]');
-        mainNodes.forEach(node => {
-            const sel = generateSelector(node);
-            const children = [];
-            node.querySelectorAll('h1, h2, h3, p, a, button, img, .category-banner-wrapper, .hero-logo-container, .ovb-custom-block').forEach(child => {
-                if (child.closest('#ovb-Floating-Badge, #ovb-Hover-Badge')) return;
-                const cSel = generateSelector(child);
-                if (cSel) {
-                    children.push({
-                        selector: cSel,
-                        label: getElementLabel(child),
-                        hasCustom: !!builderData.elements[cSel],
-                        isBlock: child.hasAttribute('data-ovb-block-id')
-                    });
-                }
-            });
-            items.push({
+        const groups = [];
+
+        function makeNode(el, customLabel) {
+            if (!el) return null;
+            const sel = generateSelector(el);
+            if (!sel) return null;
+            return {
                 selector: sel,
-                label: getElementLabel(node),
+                label: customLabel || getElementLabel(el),
                 hasCustom: !!builderData.elements[sel],
-                isBlock: node.hasAttribute('data-ovb-block-id'),
-                children: children.slice(0, 25)
+                isBlock: el.hasAttribute('data-ovb-block-id') || el.hasAttribute('data-ovb-clone-id')
+            };
+        }
+
+        // 1. Cabeçalho & Navegação
+        const headerEl = document.querySelector('header.main-header');
+        if (headerEl) {
+            const hChildren = [];
+            headerEl.querySelectorAll('#header-logotype, .logo-link, .main-nav, .main-nav a, .header-mobile-buttons a, #btn-faq, #btn-settings, #btn-mobile-menu').forEach(el => {
+                const n = makeNode(el);
+                if (n) hChildren.push(n);
+            });
+            const sidebarEl = document.getElementById('settings-sidebar');
+            if (sidebarEl) hChildren.push(makeNode(sidebarEl, 'ASIDE #settings-sidebar (Gaveta Config)'));
+            groups.push({
+                selector: generateSelector(headerEl),
+                label: '🧭 Cabeçalho & Menu Principal',
+                hasCustom: !!builderData.elements[generateSelector(headerEl)],
+                children: hChildren
+            });
+        }
+
+        // 2. Tela de Onboarding & Aurora
+        const onbEl = document.getElementById('onboarding-container');
+        if (onbEl) {
+            const onbChildren = [];
+            document.querySelectorAll('.onboarding-aurora, .onboarding-aurora .g1, .onboarding-aurora .g2, .onboarding-aurora .g3, .onboarding-aurora .g4, .onboarding-aurora .g5').forEach(el => {
+                const n = makeNode(el);
+                if (n) onbChildren.push(n);
+            });
+            onbEl.querySelectorAll('.onboarding-logo, .onboarding-subtitle, #step-language, #lang-pt, #lang-en, #step-theme, #btn-light, #btn-dark, .color-option-btn, #btn-continuar').forEach(el => {
+                const n = makeNode(el);
+                if (n) onbChildren.push(n);
+            });
+            groups.push({
+                selector: '#onboarding-container',
+                label: '🚪 Tela de Onboarding & Aurora',
+                hasCustom: !!builderData.elements['#onboarding-container'],
+                children: onbChildren
+            });
+        }
+
+        // 3. Nebulosas & Fundo Imersivo (Home)
+        const gradContainer = document.querySelector('.immersive-wrapper > .gradients-container');
+        if (gradContainer) {
+            const gChildren = [];
+            gradContainer.querySelectorAll('.g1, .g2, .g3, .g4, .g5').forEach((el, idx) => {
+                const n = makeNode(el, `Nebulosa .g${idx + 1}`);
+                if (n) gChildren.push(n);
+            });
+            const fadeBot = document.querySelector('.gradient-fade-bottom');
+            if (fadeBot) gChildren.push(makeNode(fadeBot, 'Fade Inferior (.gradient-fade-bottom)'));
+            groups.push({
+                selector: generateSelector(gradContainer),
+                label: '🌌 Nebulosas de Fundo (.gradients-container)',
+                hasCustom: !!builderData.elements[generateSelector(gradContainer)],
+                children: gChildren
+            });
+        }
+
+        // 4. Todas as Seções da Página (<section>)
+        document.querySelectorAll('section').forEach(sec => {
+            const secSel = generateSelector(sec);
+            const secChildren = [];
+
+            // Direct & key elements inside this section
+            sec.querySelectorAll(
+                '#artcraft-orbit-container, .hero-content-centered, .hero-logo-container, .hero-symbol, .hero-slogan, .scroll-indicator, ' +
+                'h1, h2, h3, h4, p, .category-banner-wrapper, img.category-banner, svg#dg-animated-banner, ' +
+                'svg#dg-animated-banner g.dg-item[id], svg#dg-animated-banner text.dg-item, ' +
+                '.portfolio-showcase, .carousel-wrapper, .category-buttons, .category-image-placeholder, .category-posts-link, ' +
+                '.services-grid, .service-card, .package-card, .btn-primary, button, a.btn, .ovb-custom-block'
+            ).forEach(child => {
+                if (child.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box')) return;
+                let customName = null;
+                if (child.matches && child.matches('svg#dg-animated-banner g.dg-item[id]')) {
+                    customName = `🎨 Ícone SVG: ${child.id.replace('.png', '')}`;
+                } else if (child.matches && child.matches('svg#dg-animated-banner text.dg-item')) {
+                    customName = `🔤 Texto SVG: ${child.textContent.trim()}`;
+                }
+                const n = makeNode(child, customName);
+                if (n) secChildren.push(n);
+            });
+
+            groups.push({
+                selector: secSel,
+                label: `📦 Seção: ${getElementLabel(sec)}`,
+                hasCustom: !!builderData.elements[secSel],
+                children: secChildren
             });
         });
-        return items;
+
+        // 5. Páginas sem <section> ou elementos de Currículo/FAQ/Blog
+        document.querySelectorAll('.cv-container, .faq-container, .posts-page-container, article, footer.site-footer').forEach(box => {
+            const bSel = generateSelector(box);
+            const bChildren = [];
+            box.querySelectorAll('h1, h2, h3, h4, p, img, button, a, .faq-item, .cv-card, .cv-section').forEach(ch => {
+                const n = makeNode(ch);
+                if (n) bChildren.push(n);
+            });
+            groups.push({
+                selector: bSel,
+                label: `📄 Bloco: ${getElementLabel(box)}`,
+                hasCustom: !!builderData.elements[bSel],
+                children: bChildren.slice(0, 40)
+            });
+        });
+
+        return groups;
     }
 
     /**
-     * Initializes the Interactive Canvas Inspector when loaded inside the Studio iframe
+     * Initializes the Interactive Canvas Manipulation Engine (Drag-to-Move, 8 Resize Handles, Reorder, Duplicate)
      */
     function initPreviewInspector() {
         document.body.classList.add('ovb-editor-active');
 
-        // Bypass onboarding by default in preview so the user can edit the site immediately
         try {
             localStorage.setItem('onboardingFeito', 'sim');
         } catch (e) {}
         document.body.classList.remove('modo-onboarding');
 
-        // Create floating selection & hover badges
+        // 1. Hover Badge
         const hoverBadge = document.createElement('div');
         hoverBadge.id = 'ovb-Hover-Badge';
         document.body.appendChild(hoverBadge);
 
+        // 2. Selection Frame with 8 Resize Handles
+        const selBox = document.createElement('div');
+        selBox.id = 'ovb-Selection-Box';
+        selBox.innerHTML = `
+            <div class="ovb-resize-handle ovb-rh-nw" data-rh="nw" title="Redimensionar Escala / Tamanho"></div>
+            <div class="ovb-resize-handle ovb-rh-n"  data-rh="n"  title="Redimensionar Altura"></div>
+            <div class="ovb-resize-handle ovb-rh-ne" data-rh="ne" title="Redimensionar Escala / Tamanho"></div>
+            <div class="ovb-resize-handle ovb-rh-e"  data-rh="e"  title="Redimensionar Largura"></div>
+            <div class="ovb-resize-handle ovb-rh-se" data-rh="se" title="Redimensionar Escala / Tamanho"></div>
+            <div class="ovb-resize-handle ovb-rh-s"  data-rh="s"  title="Redimensionar Altura"></div>
+            <div class="ovb-resize-handle ovb-rh-sw" data-rh="sw" title="Redimensionar Escala / Tamanho"></div>
+            <div class="ovb-resize-handle ovb-rh-w"  data-rh="w"  title="Redimensionar Largura"></div>
+        `;
+        document.body.appendChild(selBox);
+
+        // 3. Floating Action Toolbar on Selected Element
         const floatBadge = document.createElement('div');
         floatBadge.id = 'ovb-Floating-Badge';
         floatBadge.innerHTML = `
-            <span class="ovb-badge-title">Elemento</span>
+            <span class="ovb-badge-drag-handle" title="Arraste aqui (ou arraste o próprio elemento) para mover livremente em X/Y">
+                ✥ <span class="ovb-badge-title">Elemento</span>
+            </span>
+            <button type="button" class="ovb-badge-btn" data-act="move-up" title="Mover Acima na Ordem da Página (HTML)">▲</button>
+            <button type="button" class="ovb-badge-btn" data-act="move-down" title="Mover Abaixo na Ordem da Página (HTML)">▼</button>
             <button type="button" class="ovb-badge-btn" data-act="parent" title="Selecionar Elemento Pai">⬆ Pai</button>
-            <button type="button" class="ovb-badge-btn" data-act="add-after" title="Inserir Novo Bloco Abaixo">＋ Bloco</button>
-            <button type="button" class="ovb-badge-btn" data-act="reset" title="Resetar Estilo deste Elemento">↺</button>
+            <button type="button" class="ovb-badge-btn" data-act="duplicate" title="Duplicar este Elemento">⧉</button>
+            <button type="button" class="ovb-badge-btn" data-act="hide" title="Ocultar Elemento">👁️</button>
+            <button type="button" class="ovb-badge-btn" data-act="add-after" title="Inserir Novo Bloco Abaixo">＋</button>
+            <button type="button" class="ovb-badge-btn" data-act="reset" title="Resetar Posição e Estilo deste Elemento">↺</button>
         `;
         document.body.appendChild(floatBadge);
 
-        function updateBadgesPosition() {
+        // 4. Live Transform HUD & Snap Guide
+        const hud = document.createElement('div');
+        hud.id = 'ovb-Transform-HUD';
+        document.body.appendChild(hud);
+
+        const snapGuideV = document.createElement('div');
+        snapGuideV.id = 'ovb-Snap-Guide-V';
+        document.body.appendChild(snapGuideV);
+
+        function updateSelectionOverlay() {
             if (selectedElement && document.body.contains(selectedElement) && !isInteractiveMode) {
                 const rect = selectedElement.getBoundingClientRect();
+                selBox.style.display = 'block';
+                selBox.style.top = `${rect.top}px`;
+                selBox.style.left = `${rect.left}px`;
+                selBox.style.width = `${Math.max(8, rect.width)}px`;
+                selBox.style.height = `${Math.max(8, rect.height)}px`;
+
                 floatBadge.style.display = 'flex';
-                const top = Math.max(6, rect.top - 30);
-                const left = Math.max(6, Math.min(window.innerWidth - 260, rect.left));
-                floatBadge.style.top = `${top}px`;
-                floatBadge.style.left = `${left}px`;
+                const badgeTop = rect.top > 38 ? rect.top - 34 : Math.min(window.innerHeight - 36, rect.bottom + 6);
+                const badgeLeft = Math.max(6, Math.min(window.innerWidth - 360, rect.left));
+                floatBadge.style.top = `${badgeTop}px`;
+                floatBadge.style.left = `${badgeLeft}px`;
             } else {
+                selBox.style.display = 'none';
                 floatBadge.style.display = 'none';
             }
 
@@ -871,8 +1209,8 @@
             }
         }
 
-        window.addEventListener('scroll', updateBadgesPosition, true);
-        window.addEventListener('resize', updateBadgesPosition);
+        window.addEventListener('scroll', updateSelectionOverlay, true);
+        window.addEventListener('resize', updateSelectionOverlay);
 
         function selectElement(el, scrollToIt) {
             if (!el || el.nodeType !== 1) return;
@@ -889,7 +1227,7 @@
             if (scrollToIt) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-            updateBadgesPosition();
+            updateSelectionOverlay();
 
             window.parent.postMessage({
                 type: 'OVB_ELEMENT_SELECTED',
@@ -898,21 +1236,272 @@
             }, '*');
         }
 
-        // Badge quick buttons
+        // --- DRAG TO MOVE ENGINE (Works on ANY pre-existing HTML or SVG element!) ---
+        let dragState = null;
+
+        function getElementCurrentTranslate(el, selector) {
+            const rec = builderData.elements[selector];
+            const st = (rec && rec.styles && rec.styles.desktop) || {};
+            if (st.translateX !== undefined || st.translateY !== undefined) {
+                return {
+                    x: parseFloat(String(st.translateX || '0')) || 0,
+                    y: parseFloat(String(st.translateY || '0')) || 0
+                };
+            }
+            const cs = window.getComputedStyle(el);
+            if (cs.translate && cs.translate !== 'none') {
+                const parts = cs.translate.split(' ');
+                return {
+                    x: parseFloat(parts[0]) || 0,
+                    y: parseFloat(parts[1]) || 0
+                };
+            }
+            return { x: 0, y: 0 };
+        }
+
+        function startDraggingElement(e, el) {
+            if (!el || el === document.body || el === document.documentElement) return;
+            const sel = generateSelector(el);
+            const curT = getElementCurrentTranslate(el, sel);
+
+            // Calculate scale factor if inside an SVG with viewBox
+            let svgScale = 1;
+            const ownerSvg = el instanceof SVGElement && el.tagName.toLowerCase() !== 'svg' ? el.ownerSVGElement : null;
+            if (ownerSvg && ownerSvg.viewBox && ownerSvg.viewBox.baseVal && ownerSvg.viewBox.baseVal.width) {
+                const svgRect = ownerSvg.getBoundingClientRect();
+                if (svgRect.width > 0) {
+                    svgScale = ownerSvg.viewBox.baseVal.width / svgRect.width;
+                }
+            }
+
+            dragState = {
+                mode: 'move',
+                el: el,
+                selector: sel,
+                startX: e.clientX,
+                startY: e.clientY,
+                origX: curT.x,
+                origY: curT.y,
+                svgScale: svgScale,
+                moved: false
+            };
+        }
+
+        // Start drag from the floating badge handle OR directly on any element on the canvas
+        floatBadge.querySelector('.ovb-badge-drag-handle').addEventListener('mousedown', (e) => {
+            if (e.button !== 0 || !selectedElement) return;
+            e.preventDefault();
+            e.stopPropagation();
+            startDraggingElement(e, selectedElement);
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            if (isInteractiveMode || !dragModeEnabled || e.button !== 0) return;
+            const target = e.target;
+            if (!target || target === document.body || target === document.documentElement) return;
+            if (target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar')) return;
+
+            // Select or prepare to drag the target element
+            let elToAct = target;
+            const svgGroup = target.closest && target.closest('g.dg-item[id]');
+            if (svgGroup && selectedElement !== target) {
+                elToAct = svgGroup;
+            }
+
+            selectElement(elToAct, false);
+            startDraggingElement(e, elToAct);
+            e.preventDefault();
+        }, true);
+
+        // --- 8-POINT RESIZE HANDLES ENGINE ---
+        selBox.querySelectorAll('.ovb-resize-handle').forEach(handle => {
+            handle.addEventListener('mousedown', (e) => {
+                if (e.button !== 0 || !selectedElement) return;
+                e.preventDefault();
+                e.stopPropagation();
+
+                const dir = handle.getAttribute('data-rh');
+                const rect = selectedElement.getBoundingClientRect();
+                const cs = window.getComputedStyle(selectedElement);
+                const curScale = parseFloat(cs.scale && cs.scale !== 'none' ? cs.scale : '1') || 1;
+
+                dragState = {
+                    mode: 'resize',
+                    dir: dir,
+                    el: selectedElement,
+                    selector: selectedSelector,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    origW: rect.width,
+                    origH: rect.height,
+                    origScale: curScale,
+                    isSvgOrCorner: (selectedElement instanceof SVGElement) || ['nw', 'ne', 'se', 'sw'].includes(dir),
+                    moved: false
+                };
+            });
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!dragState) return;
+            const dx = e.clientX - dragState.startX;
+            const dy = e.clientY - dragState.startY;
+
+            if (!dragState.moved && Math.hypot(dx, dy) < 4) return;
+            dragState.moved = true;
+            document.body.classList.add('ovb-is-dragging');
+
+            if (dragState.mode === 'move') {
+                let newX = Math.round(dragState.origX + dx * dragState.svgScale);
+                let newY = Math.round(dragState.origY + dy * dragState.svgScale);
+
+                // Snap to 0 center if within 6px
+                if (Math.abs(newX) <= 6) {
+                    newX = 0;
+                    snapGuideV.style.display = 'block';
+                } else {
+                    snapGuideV.style.display = 'none';
+                }
+
+                dragState.currentX = `${newX}px`;
+                dragState.currentY = `${newY}px`;
+
+                dragState.el.style.setProperty('translate', `${newX}px ${newY}px`, 'important');
+
+                hud.style.display = 'block';
+                hud.style.top = `${e.clientY + 16}px`;
+                hud.style.left = `${e.clientX + 16}px`;
+                hud.textContent = `X: ${newX >= 0 ? '+' : ''}${newX}px  |  Y: ${newY >= 0 ? '+' : ''}${newY}px`;
+                updateSelectionOverlay();
+            } else if (dragState.mode === 'resize') {
+                if (dragState.isSvgOrCorner && (dragState.el instanceof SVGElement || dragState.dir === 'se' || dragState.dir === 'nw')) {
+                    const sign = (dragState.dir === 'nw' || dragState.dir === 'sw') ? -1 : 1;
+                    const delta = (dx * sign) / Math.max(60, dragState.origW);
+                    const newScale = Math.max(0.15, Math.min(5, Number((dragState.origScale + delta).toFixed(2))));
+                    dragState.currentScale = newScale;
+                    dragState.el.style.setProperty('scale', String(newScale), 'important');
+
+                    hud.style.display = 'block';
+                    hud.style.top = `${e.clientY + 16}px`;
+                    hud.style.left = `${e.clientX + 16}px`;
+                    hud.textContent = `Escala: ${Math.round(newScale * 100)}% (${newScale}x)`;
+                } else {
+                    let newW = dragState.origW;
+                    let newH = dragState.origH;
+                    if (dragState.dir.includes('e')) newW = Math.max(20, Math.round(dragState.origW + dx));
+                    if (dragState.dir.includes('w')) newW = Math.max(20, Math.round(dragState.origW - dx));
+                    if (dragState.dir.includes('s')) newH = Math.max(20, Math.round(dragState.origH + dy));
+                    if (dragState.dir.includes('n')) newH = Math.max(20, Math.round(dragState.origH - dy));
+
+                    if (dragState.dir.includes('e') || dragState.dir.includes('w')) {
+                        dragState.currentW = `${newW}px`;
+                        dragState.el.style.setProperty('width', `${newW}px`, 'important');
+                    }
+                    if (dragState.dir.includes('s') || dragState.dir.includes('n')) {
+                        dragState.currentH = `${newH}px`;
+                        dragState.el.style.setProperty('height', `${newH}px`, 'important');
+                    }
+
+                    hud.style.display = 'block';
+                    hud.style.top = `${e.clientY + 16}px`;
+                    hud.style.left = `${e.clientX + 16}px`;
+                    hud.textContent = `L: ${newW}px  ×  A: ${newH}px`;
+                }
+                updateSelectionOverlay();
+            }
+        }, true);
+
+        window.addEventListener('mouseup', () => {
+            if (!dragState) return;
+            const st = dragState;
+            dragState = null;
+            document.body.classList.remove('ovb-is-dragging');
+            hud.style.display = 'none';
+            snapGuideV.style.display = 'none';
+
+            if (st.moved) {
+                const changes = {};
+                if (st.mode === 'move') {
+                    changes.translateX = st.currentX;
+                    changes.translateY = st.currentY;
+                } else if (st.mode === 'resize') {
+                    if (st.currentScale !== undefined) changes.scale = st.currentScale;
+                    if (st.currentW !== undefined) changes.width = st.currentW;
+                    if (st.currentH !== undefined) changes.height = st.currentH;
+                }
+
+                window.parent.postMessage({
+                    type: 'OVB_CANVAS_TRANSFORMED',
+                    selector: st.selector,
+                    changes: changes,
+                    snapshot: getComputedSnapshot(st.el)
+                }, '*');
+            }
+        }, true);
+
+        // Prevent accidental click navigation when in Editor Mode
+        document.addEventListener('click', (e) => {
+            if (isInteractiveMode) return;
+            const target = e.target;
+            if (!target || target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar')) return;
+            e.preventDefault();
+            e.stopPropagation();
+        }, true);
+
+        // Floating Badge Action Buttons (Move Up/Down in DOM, Duplicate, Hide, Parent, Add Block, Reset)
         floatBadge.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             const btn = e.target.closest('[data-act]');
             if (!btn || !selectedElement) return;
             const act = btn.getAttribute('data-act');
+
             if (act === 'parent' && selectedElement.parentElement && selectedElement.parentElement !== document.body) {
                 selectElement(selectedElement.parentElement, false);
+            } else if (act === 'move-up') {
+                const prev = selectedElement.previousElementSibling;
+                if (prev && !prev.id.startsWith('ovb-')) {
+                    const prevSel = generateSelector(prev);
+                    selectedElement.parentNode.insertBefore(selectedElement, prev);
+                    updateSelectionOverlay();
+                    window.parent.postMessage({
+                        type: 'OVB_DOM_MOVED',
+                        move: { selector: selectedSelector, refSelector: prevSel, pos: 'before' },
+                        tree: collectPageTree()
+                    }, '*');
+                }
+            } else if (act === 'move-down') {
+                const next = selectedElement.nextElementSibling;
+                if (next && !next.id.startsWith('ovb-')) {
+                    const nextSel = generateSelector(next);
+                    selectedElement.parentNode.insertBefore(selectedElement, next.nextSibling);
+                    updateSelectionOverlay();
+                    window.parent.postMessage({
+                        type: 'OVB_DOM_MOVED',
+                        move: { selector: selectedSelector, refSelector: nextSel, pos: 'after' },
+                        tree: collectPageTree()
+                    }, '*');
+                }
+            } else if (act === 'duplicate') {
+                window.parent.postMessage({
+                    type: 'OVB_DUPLICATE_ELEMENT',
+                    selector: selectedSelector
+                }, '*');
+            } else if (act === 'hide') {
+                window.parent.postMessage({
+                    type: 'OVB_CANVAS_TRANSFORMED',
+                    selector: selectedSelector,
+                    changes: { hidden: true }
+                }, '*');
             } else if (act === 'add-after') {
                 window.parent.postMessage({
                     type: 'OVB_OPEN_ADD_BLOCK',
                     targetSelector: selectedSelector
                 }, '*');
             } else if (act === 'reset') {
+                selectedElement.style.removeProperty('translate');
+                selectedElement.style.removeProperty('scale');
+                selectedElement.style.removeProperty('width');
+                selectedElement.style.removeProperty('height');
                 window.parent.postMessage({
                     type: 'OVB_RESET_ELEMENT',
                     selector: selectedSelector
@@ -920,12 +1509,12 @@
             }
         });
 
-        // Mouseover highlight
+        // Hover Highlight
         document.addEventListener('mouseover', (e) => {
-            if (isInteractiveMode) return;
+            if (isInteractiveMode || dragState) return;
             const target = e.target;
             if (!target || target === document.body || target === document.documentElement) return;
-            if (target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #wpadminbar')) return;
+            if (target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar')) return;
 
             if (hoveredElement && hoveredElement !== target) {
                 hoveredElement.removeAttribute('data-ovb-hover');
@@ -933,7 +1522,7 @@
             hoveredElement = target;
             hoveredElement.setAttribute('data-ovb-hover', 'true');
             hoverBadge.textContent = getElementLabel(target);
-            updateBadgesPosition();
+            updateSelectionOverlay();
         }, true);
 
         document.addEventListener('mouseout', (e) => {
@@ -944,17 +1533,6 @@
             }
         }, true);
 
-        // Click to select element
-        document.addEventListener('click', (e) => {
-            if (isInteractiveMode) return;
-            const target = e.target;
-            if (!target || target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #wpadminbar')) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-            selectElement(target, false);
-        }, true);
-
         // Listen for commands from the Studio Editor parent window
         window.addEventListener('message', (event) => {
             const msg = event.data;
@@ -963,6 +1541,8 @@
             switch (msg.type) {
                 case 'OVB_SYNC_DATA': {
                     builderData = normalizeData(msg.data);
+                    applyDOMMoves();
+                    renderClonedElements();
                     renderCustomBlocks();
                     updateLiveStyleTag();
                     applyDOMFeatures();
@@ -975,7 +1555,7 @@
                             }
                         } catch (err) {}
                     }
-                    updateBadgesPosition();
+                    updateSelectionOverlay();
                     break;
                 }
                 case 'OVB_SELECT_SELECTOR': {
@@ -992,6 +1572,16 @@
                     }
                     break;
                 }
+                case 'OVB_MOVE_DOM_STEP': {
+                    if (!selectedElement) return;
+                    const dir = msg.dir;
+                    if (dir === 'up') {
+                        floatBadge.querySelector('[data-act="move-up"]').click();
+                    } else if (dir === 'down') {
+                        floatBadge.querySelector('[data-act="move-down"]').click();
+                    }
+                    break;
+                }
                 case 'OVB_TEST_ANIMATION': {
                     triggerAnimationPreview(msg.selector || selectedSelector, msg.anim, msg.duration, msg.delay, msg.easing);
                     break;
@@ -1003,8 +1593,9 @@
                         if (hoveredElement) hoveredElement.removeAttribute('data-ovb-hover');
                         hoverBadge.style.display = 'none';
                         floatBadge.style.display = 'none';
+                        selBox.style.display = 'none';
                     } else {
-                        updateBadgesPosition();
+                        updateSelectionOverlay();
                     }
                     break;
                 }
@@ -1030,6 +1621,7 @@
                     if (msg.onboarding !== undefined) {
                         document.body.classList.toggle('modo-onboarding', !!msg.onboarding);
                     }
+                    setTimeout(applyDOMFeatures, 60);
                     break;
                 }
                 case 'OVB_REQUEST_TREE': {
@@ -1042,7 +1634,6 @@
             }
         });
 
-        // Notify parent Studio that preview iframe is ready
         window.parent.postMessage({
             type: 'OVB_PREVIEW_READY',
             url: window.location.href,
@@ -1052,22 +1643,29 @@
         }, '*');
     }
 
-    /**
-     * Bootstraps everything on DOMContentLoaded
-     */
     function init() {
+        applyDOMMoves();
+        renderClonedElements();
         renderCustomBlocks();
         updateLiveStyleTag();
         applyDOMFeatures();
 
-        // Re-apply DOM features when dynamic carousels or service cards finish rendering
+        // Observe dynamic changes (carousels, translations, theme switches) and keep customizations intact
         let debounceTimer = null;
         const domObserver = new MutationObserver((mutations) => {
+            if (isApplyingDOM) return;
             let shouldReapply = false;
             for (const m of mutations) {
+                if (m.type === 'attributes' && (m.target === document.body || m.target === document.documentElement)) {
+                    shouldReapply = true;
+                    break;
+                }
                 if (m.addedNodes && m.addedNodes.length > 0) {
                     for (const n of m.addedNodes) {
-                        if (n.nodeType === 1 && !n.classList.contains('ovb-layer-overlay') && !n.classList.contains('ovb-custom-block') && n.id !== 'ovb-Floating-Badge' && n.id !== 'ovb-Hover-Badge') {
+                        if (n.nodeType === 1 &&
+                            !n.classList.contains('ovb-layer-overlay') &&
+                            !n.classList.contains('ovb-custom-block') &&
+                            !String(n.id).startsWith('ovb-')) {
                             shouldReapply = true;
                             break;
                         }
@@ -1079,13 +1677,22 @@
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
                     applyDOMFeatures();
-                }, 180);
+                }, 120);
             }
         });
 
         if (document.body) {
-            domObserver.observe(document.body, { childList: true, subtree: true });
+            domObserver.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class']
+            });
         }
+        domObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['lang']
+        });
 
         if (config.isPreview && window.parent !== window) {
             initPreviewInspector();

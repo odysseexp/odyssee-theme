@@ -1,6 +1,5 @@
 /* ==========================================================================
-   Odyssee Visual Studio — Frontend Runtime & Animations CSS
-   Non-destructive visual layer for animations, glow, blend modes & blocks
+   Odyssee Visual Studio — Frontend Runtime, Animations & Interactive Canvas
    ========================================================================== */
 
 /* --- Keyframe Animations: Entrance --- */
@@ -146,6 +145,16 @@
     20%, 24%, 55% { opacity: 0.65; }
 }
 
+/* --- SVG Sub-Elements Transform Box Support --- */
+svg g,
+svg path,
+svg text,
+svg rect,
+svg circle {
+    transform-box: fill-box;
+    transform-origin: center center;
+}
+
 /* --- Entrance Animation Helper Classes --- */
 .ovb-anim-Wait {
     opacity: 0 !important;
@@ -157,35 +166,36 @@
 
 /* --- Hover Effect Classes --- */
 .ovb-hover-lift {
-    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.32s ease, filter 0.32s ease !important;
+    transition: translate 0.32s cubic-bezier(0.22, 1, 0.36, 1), scale 0.32s ease, box-shadow 0.32s ease, filter 0.32s ease !important;
 }
 .ovb-hover-lift:hover {
-    transform: translateY(-8px) !important;
+    translate: 0px -8px !important;
 }
 
 .ovb-hover-grow {
-    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), filter 0.32s ease !important;
+    transition: scale 0.32s cubic-bezier(0.22, 1, 0.36, 1), filter 0.32s ease !important;
 }
 .ovb-hover-grow:hover {
-    transform: scale(1.07) !important;
+    scale: 1.07 !important;
 }
 
 .ovb-hover-shrink {
-    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    transition: scale 0.32s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 .ovb-hover-shrink:hover {
-    transform: scale(0.94) !important;
+    scale: 0.94 !important;
 }
 
 .ovb-hover-tilt {
-    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    transition: rotate 0.32s cubic-bezier(0.22, 1, 0.36, 1), scale 0.32s ease !important;
 }
 .ovb-hover-tilt:hover {
-    transform: rotate(3deg) scale(1.04) !important;
+    rotate: 3deg !important;
+    scale: 1.04 !important;
 }
 
 .ovb-hover-glow-boost {
-    transition: filter 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease !important;
+    transition: filter 0.35s ease, box-shadow 0.35s ease !important;
 }
 .ovb-hover-glow-boost:hover {
     filter: brightness(1.18) drop-shadow(0 0 24px var(--ovb-glow-color, var(--color-accent, #8b5cf6))) !important;
@@ -323,7 +333,7 @@
 }
 
 /* ==========================================================================
-   Editor Preview Mode Overlay (Only active when ?odyssee_vb_preview=1)
+   Editor Preview Mode — Selection Box, Drag-to-Move & 8 Resize Handles
    ========================================================================== */
 body.ovb-editor-active {
     user-select: none;
@@ -332,41 +342,97 @@ body.ovb-editor-active {
 body.ovb-editor-active [data-ovb-hover="true"] {
     outline: 2px dashed #38bdf8 !important;
     outline-offset: 2px !important;
-    cursor: pointer !important;
+    cursor: grab !important;
 }
 
-body.ovb-editor-active [data-ovb-selected="true"] {
-    outline: 2px solid #a855f7 !important;
-    outline-offset: 2px !important;
-    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.22) !important;
+body.ovb-editor-active.ovb-is-dragging,
+body.ovb-editor-active.ovb-is-dragging * {
+    cursor: grabbing !important;
+    transition: none !important;
 }
 
+/* Interactive Selection Frame Overlay */
+#ovb-Selection-Box {
+    position: fixed;
+    z-index: 2147483644;
+    border: 2px solid #a855f7;
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    pointer-events: none;
+    display: none;
+    box-sizing: border-box;
+}
+
+/* 8 Resize Handles around Selection Box */
+#ovb-Selection-Box .ovb-resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #ffffff;
+    border: 2px solid #9333ea;
+    border-radius: 50%;
+    pointer-events: auto;
+    box-sizing: border-box;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    transition: transform 0.12s ease, background 0.12s ease;
+}
+
+#ovb-Selection-Box .ovb-resize-handle:hover {
+    transform: scale(1.35);
+    background: #d946ef;
+}
+
+#ovb-Selection-Box .ovb-rh-nw { top: -6px; left: -6px; cursor: nwse-resize; }
+#ovb-Selection-Box .ovb-rh-n  { top: -6px; left: calc(50% - 5px); cursor: ns-resize; }
+#ovb-Selection-Box .ovb-rh-ne { top: -6px; right: -6px; cursor: nesw-resize; }
+#ovb-Selection-Box .ovb-rh-e  { top: calc(50% - 5px); right: -6px; cursor: ew-resize; }
+#ovb-Selection-Box .ovb-rh-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+#ovb-Selection-Box .ovb-rh-s  { bottom: -6px; left: calc(50% - 5px); cursor: ns-resize; }
+#ovb-Selection-Box .ovb-rh-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+#ovb-Selection-Box .ovb-rh-w  { top: calc(50% - 5px); left: -6px; cursor: ew-resize; }
+
+/* Floating Element Action Bar */
 #ovb-Floating-Badge {
     position: fixed;
     z-index: 2147483646;
-    background: linear-gradient(135deg, #7c3aed, #db2777);
+    background: linear-gradient(135deg, #6d28d9, #be185d);
     color: #ffffff;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 11px;
     font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 6px;
+    padding: 4px 8px;
+    border-radius: 7px;
     pointer-events: auto;
     display: none;
     align-items: center;
-    gap: 8px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
+    gap: 5px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     white-space: nowrap;
     letter-spacing: 0.2px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+#ovb-Floating-Badge .ovb-badge-drag-handle {
+    cursor: grab;
+    background: rgba(255, 255, 255, 0.22);
+    padding: 2px 7px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+}
+
+#ovb-Floating-Badge .ovb-badge-drag-handle:active {
+    cursor: grabbing;
 }
 
 #ovb-Floating-Badge .ovb-badge-btn {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.16);
     border: none;
     color: #fff;
     border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 10px;
+    padding: 3px 6px;
+    font-size: 10.5px;
     cursor: pointer;
     font-weight: 700;
     transition: background 0.15s;
@@ -384,10 +450,41 @@ body.ovb-editor-active [data-ovb-selected="true"] {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 10.5px;
     font-weight: 600;
-    padding: 2px 8px;
+    padding: 3px 8px;
     border-radius: 4px;
     pointer-events: none;
     display: none;
     white-space: nowrap;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* Live Coordinates & Dimensions HUD while dragging/resizing */
+#ovb-Transform-HUD {
+    position: fixed;
+    z-index: 2147483647;
+    background: #0f172a;
+    color: #38bdf8;
+    border: 1px solid #38bdf8;
+    font-family: monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 6px;
+    pointer-events: none;
+    display: none;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+/* Center Alignment Guide Lines */
+#ovb-Snap-Guide-V {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: #ec4899;
+    z-index: 2147483643;
+    pointer-events: none;
+    display: none;
+    box-shadow: 0 0 8px #ec4899;
 }

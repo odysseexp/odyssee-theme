@@ -1,5 +1,6 @@
 /**
- * Odyssee Visual Studio — Admin Editor Controller (Elementor-like UI)
+ * Odyssee Visual Studio — Full Admin Editor Controller
+ * Supports interactive canvas Drag-to-Move, 8-point Resize, DOM Reordering, Clones, and All Computed Styles
  */
 (function ($) {
     'use strict';
@@ -8,7 +9,7 @@
         ajaxurl: '',
         nonce: '',
         homeUrl: '/',
-        initialData: { elements: {}, blocks: [], globalVars: {}, customCss: '' }
+        initialData: { elements: {}, blocks: [], domMoves: [], clones: [], globalVars: {}, customCss: '' }
     };
 
     let state = deepClone(normalizeData(adminCfg.initialData));
@@ -29,6 +30,8 @@
         return {
             elements: d.elements && typeof d.elements === 'object' && !Array.isArray(d.elements) ? d.elements : {},
             blocks: Array.isArray(d.blocks) ? d.blocks : [],
+            domMoves: Array.isArray(d.domMoves) ? d.domMoves : [],
+            clones: Array.isArray(d.clones) ? d.clones : [],
             globalVars: d.globalVars && typeof d.globalVars === 'object' && !Array.isArray(d.globalVars) ? d.globalVars : { all: {}, dark: {}, light: {} },
             customCss: typeof d.customCss === 'string' ? d.customCss : ''
         };
@@ -37,7 +40,7 @@
     function pushHistory() {
         history = history.slice(0, historyIdx + 1);
         history.push(deepClone(state));
-        if (history.length > 40) history.shift();
+        if (history.length > 50) history.shift();
         historyIdx = history.length - 1;
         updateUndoRedoButtons();
     }
@@ -78,9 +81,9 @@
         if (!state.elements[selector]) {
             state.elements[selector] = {
                 themeScope: 'all',
-                content: {},
+                content: { attrs: {} },
                 styles: {
-                    desktop: {},
+                    desktop: { rawCssProps: {} },
                     hover: {},
                     tablet: {},
                     mobile: {},
@@ -93,27 +96,28 @@
         const rec = state.elements[selector];
         if (!rec.styles) rec.styles = {};
         if (!rec.styles[currentBucket]) rec.styles[currentBucket] = {};
+        if (!rec.styles[currentBucket].rawCssProps) rec.styles[currentBucket].rawCssProps = {};
         if (!rec.content) rec.content = {};
+        if (!rec.content.attrs) rec.content.attrs = {};
         return rec;
-    }
-
-    function getActiveStyleObj() {
-        if (!currentSelector) return {};
-        const rec = state.elements[currentSelector];
-        if (!rec || !rec.styles || !rec.styles[currentBucket]) return {};
-        return rec.styles[currentBucket];
     }
 
     function rgbToHex(rgb) {
         if (!rgb) return '#8b5cf6';
-        if (rgb.startsWith('#')) return rgb.slice(0, 7);
+        rgb = String(rgb).trim();
+        if (rgb.startsWith('#')) {
+            if (rgb.length === 4) {
+                return '#' + rgb.slice(1).split('').map(c => c + c).join('');
+            }
+            return rgb.slice(0, 7);
+        }
         const m = rgb.match(/\d+/g);
         if (!m || m.length < 3) return '#8b5cf6';
         return '#' + m.slice(0, 3).map(x => parseInt(x, 10).toString(16).padStart(2, '0')).join('');
     }
 
     /**
-     * Populates all sidebar inputs from the currently selected element & style bucket
+     * Populates all sidebar inputs from the currently selected element & its live computed styles
      */
     function populateSidebarFromSelection() {
         const bannerLabel = $('#ovb-sel-label');
@@ -121,7 +125,7 @@
 
         if (!currentSelector) {
             bannerLabel.text('Nenhum elemento selecionado');
-            bannerSel.text('Clique em qualquer item do site ao lado →');
+            bannerSel.text('Clique ou arraste qualquer item do site ao lado →');
             return;
         }
 
@@ -137,17 +141,26 @@
 
         $('#ovb-theme-scope').val(rec.themeScope || 'all');
 
-        // Content Tab
+        // Content Tab (PT + EN text, Image URLs, Href, Attributes)
         const textVal = content.text !== undefined ? content.text : ((currentSnapshot && currentSnapshot.text) || '');
         $('#ovb-content-text').val(textVal);
+        $('#ovb-content-text-en').val(content.textEn || '');
 
         const srcVal = content.src !== undefined ? content.src : ((currentSnapshot && currentSnapshot.src) || '');
         $('#ovb-content-src').val(srcVal);
+        $('#ovb-content-src-dark').val(content.srcDark || '');
+        $('#ovb-content-src-light').val(content.srcLight || '');
 
         const hrefVal = content.href !== undefined ? content.href : ((currentSnapshot && currentSnapshot.href) || '');
         $('#ovb-content-href').val(hrefVal);
 
-        // If this is a custom block, show block controls
+        // Native Attributes Inspector Table
+        renderAttributesList(content.attrs || {}, (currentSnapshot && currentSnapshot.attrs) || {});
+
+        // Computed Styles & Custom Raw CSS Properties Table
+        renderComputedInspector(st.rawCssProps || {}, comp);
+
+        // Custom Block or Clone Controls
         const blockId = (currentSnapshot && currentSnapshot.blockId) || (currentSelector.startsWith('#ovb_blk_') ? currentSelector.slice(1) : null);
         const blockObj = blockId ? (state.blocks || []).find(b => b.id === blockId) : null;
         if (blockObj) {
@@ -157,32 +170,31 @@
             $('#ovb-custom-block-editor').hide();
         }
 
-        // Bind data-prop style fields
+        // Bind all [data-ovb-prop] fields, falling back to live computed values so every pre-existing style is visible!
         $('[data-ovb-prop]').each(function () {
             const $el = $(this);
             const prop = $el.attr('data-ovb-prop');
-            // Animation, Glow, Blend, Tilt properties live on desktop bucket primarily unless overridden
-            const val = st[prop] !== undefined ? st[prop] : (dSt[prop] !== undefined ? dSt[prop] : '');
+            const savedVal = st[prop] !== undefined ? st[prop] : dSt[prop];
+            const compVal = comp[prop];
+            const effectiveVal = savedVal !== undefined ? savedVal : (compVal !== undefined ? compVal : '');
 
             if ($el.attr('type') === 'checkbox') {
-                $el.prop('checked', !!val);
+                $el.prop('checked', !!savedVal);
             } else if ($el.attr('type') === 'color') {
-                if (val) {
-                    $el.val(rgbToHex(val));
-                } else if (prop === 'color' && comp.color) {
-                    $el.val(rgbToHex(comp.color));
-                } else if (prop === 'backgroundColor' && comp.backgroundColor && comp.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                    $el.val(rgbToHex(comp.backgroundColor));
+                if (effectiveVal && effectiveVal !== 'rgba(0, 0, 0, 0)' && effectiveVal !== 'transparent' && effectiveVal !== 'none') {
+                    $el.val(rgbToHex(effectiveVal));
                 }
             } else {
-                $el.val(val !== undefined && val !== null ? val : '');
+                $el.val(effectiveVal !== undefined && effectiveVal !== null ? effectiveVal : '');
             }
         });
 
-        // Sync range sliders with their partner number inputs
+        // Sync range sliders with their partner inputs or computed values
         $('.ovb-range[data-ovb-range-for]').each(function () {
             const prop = $(this).attr('data-ovb-range-for');
-            const rawVal = st[prop] !== undefined ? st[prop] : (dSt[prop] !== undefined ? dSt[prop] : $(this).attr('data-default') || 0);
+            const savedVal = st[prop] !== undefined ? st[prop] : dSt[prop];
+            const compVal = comp[prop];
+            const rawVal = savedVal !== undefined ? savedVal : (compVal !== undefined ? compVal : ($(this).attr('data-default') || 0));
             const numeric = parseFloat(String(rawVal).replace(/[^0-9.-]/g, ''));
             if (!isNaN(numeric)) {
                 $(this).val(numeric);
@@ -190,7 +202,7 @@
         });
 
         // Highlight active blend mode pill
-        const activeBlend = st.blendMode || dSt.blendMode || 'normal';
+        const activeBlend = st.blendMode || dSt.blendMode || comp.mixBlendMode || 'normal';
         $('.ovb-blend-pill').removeClass('active');
         $(`.ovb-blend-pill[data-blend="${activeBlend}"]`).addClass('active');
 
@@ -199,8 +211,76 @@
     }
 
     /**
-     * Updates a property on the current element and immediately syncs the live preview
+     * Renders the editable HTML/SVG Attributes table for the selected element
      */
+    function renderAttributesList(savedAttrs, liveAttrs) {
+        const container = $('#ovb-attrs-list');
+        container.empty();
+
+        const merged = Object.assign({}, liveAttrs, savedAttrs);
+        const entries = Object.entries(merged);
+
+        if (entries.length === 0) {
+            container.html('<p style="color:#64748b;font-size:11px;margin:0;">Nenhum atributo extra neste elemento.</p>');
+            return;
+        }
+
+        entries.forEach(([attrName, attrVal]) => {
+            const row = $(`
+                <div class="ovb-field-row" style="margin-bottom:4px;">
+                    <span style="font-family:monospace;font-size:11px;color:#38bdf8;width:115px;overflow:hidden;text-overflow:ellipsis;" title="${$('<div>').text(attrName).html()}">${$('<div>').text(attrName).html()}</span>
+                    <input type="text" class="ovb-input ovb-attr-input" data-attr-name="${$('<div>').text(attrName).html()}" value="${$('<div>').text(attrVal).html()}" style="flex:1;padding:3px 6px !important;font-size:11px !important;">
+                </div>
+            `);
+            container.append(row);
+        });
+    }
+
+    /**
+     * Renders the Full Computed Styles Inspector so the user can see and edit ANY CSS property
+     */
+    function renderComputedInspector(rawCssProps, comp) {
+        const container = $('#ovb-computed-inspector-list');
+        container.empty();
+
+        const keyProps = [
+            ['display', comp.display],
+            ['position', comp.position],
+            ['translate', `${comp.translateX || '0px'} ${comp.translateY || '0px'}`],
+            ['width', comp.width],
+            ['height', comp.height],
+            ['font-size', comp.fontSize],
+            ['font-weight', comp.fontWeight],
+            ['color', comp.color],
+            ['background-color', comp.backgroundColor],
+            ['border-radius', comp.borderRadius],
+            ['mix-blend-mode', comp.mixBlendMode],
+            ['filter', comp.filter || 'none'],
+            ['box-shadow', comp.boxShadow || 'none']
+        ];
+
+        // Merge any custom rawCssProps added by user
+        Object.entries(rawCssProps || {}).forEach(([k, v]) => {
+            const existing = keyProps.find(p => p[0] === k);
+            if (existing) {
+                existing[1] = v;
+            } else {
+                keyProps.unshift([k, v]);
+            }
+        });
+
+        keyProps.forEach(([propName, propVal]) => {
+            const isOverridden = rawCssProps && rawCssProps[propName] !== undefined;
+            const row = $(`
+                <div class="ovb-field-row" style="margin-bottom:4px;">
+                    <span style="font-family:monospace;font-size:10.5px;color:${isOverridden ? '#c084fc' : '#94a3b8'};width:115px;overflow:hidden;text-overflow:ellipsis;" title="${propName}">${propName}</span>
+                    <input type="text" class="ovb-input ovb-raw-css-input" data-css-prop="${propName}" value="${$('<div>').text(propVal || '').html()}" style="flex:1;padding:3px 6px !important;font-size:11px !important;">
+                </div>
+            `);
+            container.append(row);
+        });
+    }
+
     let historyTimer = null;
     function updateElementStyleProp(prop, value) {
         if (!currentSelector) {
@@ -223,41 +303,52 @@
     }
 
     /**
-     * Renders the Layer Navigator & Modified Elements lists in Tab 4
+     * Renders the Complete Categorized Base Elements Tree in Tab 4 (with live search filter)
      */
     function renderNavigatorTree() {
         const container = $('#ovb-navigator-tree');
+        const filterText = ($('#ovb-tree-search').val() || '').toLowerCase().trim();
         container.empty();
 
         if (!pageTree || pageTree.length === 0) {
-            container.html('<p style="color:#64748b;font-size:11.5px;">Carregando estrutura da página...</p>');
+            container.html('<p style="color:#64748b;font-size:11.5px;">Carregando elementos base da página...</p>');
             return;
         }
 
-        pageTree.forEach(item => {
-            const isMod = !!state.elements[item.selector];
-            const row = $(`
-                <div class="ovb-tree-item ${isMod ? 'is-modified' : ''} ${item.isBlock ? 'is-block' : ''}" data-sel="${ $('<div>').text(item.selector).html() }">
-                    <span><i class="fas ${item.isBlock ? 'fa-cube' : 'fa-layer-group'}" style="margin-right:6px;opacity:0.75;"></i>${ $('<div>').text(item.label).html() }</span>
-                    <span style="font-size:10px;color:#94a3b8;">${isMod ? '● Editado' : ''}</span>
+        pageTree.forEach(group => {
+            const groupMatch = !filterText || group.label.toLowerCase().includes(filterText) || (group.selector && group.selector.toLowerCase().includes(filterText));
+            const matchingChildren = (group.children || []).filter(ch =>
+                !filterText || ch.label.toLowerCase().includes(filterText) || (ch.selector && ch.selector.toLowerCase().includes(filterText))
+            );
+
+            if (!groupMatch && matchingChildren.length === 0) return;
+
+            const isMod = !!state.elements[group.selector];
+            const groupBox = $('<div style="margin-bottom:8px;"></div>');
+            const headerRow = $(`
+                <div class="ovb-tree-item ${isMod ? 'is-modified' : ''}" data-sel="${$('<div>').text(group.selector).html()}" style="font-weight:700;background:#161f33;">
+                    <span>${$('<div>').text(group.label).html()}</span>
+                    <span style="font-size:10px;color:#c084fc;">${isMod ? '● Editado' : `${matchingChildren.length} itens`}</span>
                 </div>
             `);
-            container.append(row);
+            groupBox.append(headerRow);
 
-            if (item.children && item.children.length > 0) {
+            if (matchingChildren.length > 0) {
                 const childWrap = $('<div class="ovb-tree-children"></div>');
-                item.children.forEach(ch => {
+                matchingChildren.forEach(ch => {
                     const chMod = !!state.elements[ch.selector];
                     const chRow = $(`
-                        <div class="ovb-tree-item ${chMod ? 'is-modified' : ''} ${ch.isBlock ? 'is-block' : ''}" data-sel="${ $('<div>').text(ch.selector).html() }">
-                            <span>${ $('<div>').text(ch.label).html() }</span>
+                        <div class="ovb-tree-item ${chMod ? 'is-modified' : ''} ${ch.isBlock ? 'is-block' : ''}" data-sel="${$('<div>').text(ch.selector).html()}">
+                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${$('<div>').text(ch.label).html()}</span>
                             <span style="font-size:10px;color:#a855f7;">${chMod ? '●' : ''}</span>
                         </div>
                     `);
                     childWrap.append(chRow);
                 });
-                container.append(childWrap);
+                groupBox.append(childWrap);
             }
+
+            container.append(groupBox);
         });
     }
 
@@ -265,25 +356,22 @@
         const list = $('#ovb-modified-list');
         list.empty();
         const keys = Object.keys(state.elements || {});
-        if (keys.length === 0 && (!state.blocks || state.blocks.length === 0)) {
+        if (keys.length === 0 && (!state.blocks || state.blocks.length === 0) && (!state.domMoves || state.domMoves.length === 0)) {
             list.html('<p style="color:#64748b;font-size:11.5px;margin:0;">Nenhuma customização ativa ainda.</p>');
             return;
         }
 
         keys.forEach(sel => {
             const item = $(`
-                <div class="ovb-tree-item is-modified" data-sel="${ $('<div>').text(sel).html() }">
-                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;" title="${ $('<div>').text(sel).html() }">${ $('<div>').text(sel).html() }</span>
-                    <button type="button" class="ovb-mini-btn ovb-del-rule" data-sel="${ $('<div>').text(sel).html() }" title="Remover estilo deste seletor">✕</button>
+                <div class="ovb-tree-item is-modified" data-sel="${$('<div>').text(sel).html()}">
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;" title="${$('<div>').text(sel).html()}">${$('<div>').text(sel).html()}</span>
+                    <button type="button" class="ovb-mini-btn ovb-del-rule" data-sel="${$('<div>').text(sel).html()}" title="Restaurar este elemento">✕</button>
                 </div>
             `);
             list.append(item);
         });
     }
 
-    /**
-     * Inserts a new custom widget/block into the page
-     */
     function insertNewBlock(type) {
         const targetSel = currentSelector || '#home';
         const pos = $('#ovb-insert-position').val() || 'after';
@@ -291,7 +379,7 @@
 
         const defaultContents = {
             'heading': { tag: 'h2', text: 'Título Criativo com Efeito' },
-            'text': { html: '<p>Texto personalizado adicionado pelo Odyssee Studio. Clique para editar tipografia, cores, glow e animações.</p>' },
+            'text': { html: '<p>Texto personalizado adicionado pelo Odyssee Studio. Clique e arraste para mover ou edite tipografia, cores, glow e animações.</p>' },
             'button': { text: 'Explorar Agora', url: '#contato', icon: 'fas fa-bolt' },
             'image': { src: '/wp-content/uploads/2025/11/typewhite.webp', alt: 'Imagem Odyssee' },
             'card': { icon: 'fas fa-wand-magic-sparkles', title: 'Card em Destaque', desc: 'Personalize este card com glassmorphism, glow neon, blend modes e tilt 3D.' },
@@ -311,7 +399,6 @@
         if (!Array.isArray(state.blocks)) state.blocks = [];
         state.blocks.push(newBlock);
 
-        // If it's a glow orb, pre-populate cool additive glow settings on it
         if (type === 'glow-orb') {
             state.elements['#' + id] = {
                 themeScope: 'all',
@@ -338,12 +425,9 @@
             postToPreview({ type: 'OVB_REQUEST_TREE' });
         }, 120);
 
-        showToast('Novo bloco inserido! Você pode estilizá-lo livremente.');
+        showToast('Novo bloco inserido! Arraste-o com o mouse para posicionar onde quiser.');
     }
 
-    /**
-     * Populates Global Theme Variables inputs
-     */
     function populateGlobalVariables() {
         const gv = state.globalVars || { all: {}, dark: {}, light: {} };
         $('[data-ovb-gvar]').each(function () {
@@ -357,15 +441,11 @@
         $('#ovb-global-custom-css').val(state.customCss || '');
     }
 
-    /**
-     * Document Ready Initialization
-     */
     $(document).ready(function () {
         populateGlobalVariables();
         renderModifiedElementsList();
         updateUndoRedoButtons();
 
-        // Listen for messages from the preview iframe
         window.addEventListener('message', (event) => {
             const msg = event.data;
             if (!msg || typeof msg !== 'object' || !msg.type) return;
@@ -383,6 +463,62 @@
                     populateSidebarFromSelection();
                     break;
                 }
+                case 'OVB_CANVAS_TRANSFORMED': {
+                    // Triggered when user drags an element or resize handle directly on the canvas!
+                    const sel = msg.selector || currentSelector;
+                    if (!sel) break;
+                    currentSelector = sel;
+                    if (msg.snapshot) currentSnapshot = msg.snapshot;
+                    const rec = ensureElementRecord(sel);
+                    Object.assign(rec.styles[currentBucket], msg.changes || {});
+                    pushHistory();
+                    syncPreview();
+                    populateSidebarFromSelection();
+                    break;
+                }
+                case 'OVB_DOM_MOVED': {
+                    if (msg.move) {
+                        if (!Array.isArray(state.domMoves)) state.domMoves = [];
+                        state.domMoves.push(msg.move);
+                        pushHistory();
+                        showToast('Ordem do elemento atualizada na estrutura da página!');
+                    }
+                    if (msg.tree) {
+                        pageTree = msg.tree;
+                        renderNavigatorTree();
+                    }
+                    break;
+                }
+                case 'OVB_DUPLICATE_ELEMENT': {
+                    const srcSel = msg.selector || currentSelector;
+                    if (!srcSel) break;
+                    const cloneId = 'ovb_clone_' + Math.random().toString(36).substring(2, 8);
+                    if (!Array.isArray(state.clones)) state.clones = [];
+                    state.clones.push({
+                        id: cloneId,
+                        sourceSelector: srcSel
+                    });
+                    // Copy styles from source if any, offset slightly so user sees the copy
+                    const srcRec = state.elements[srcSel] ? deepClone(state.elements[srcSel]) : {
+                        themeScope: 'all',
+                        content: {},
+                        styles: { desktop: {} }
+                    };
+                    if (!srcRec.styles) srcRec.styles = { desktop: {} };
+                    if (!srcRec.styles.desktop) srcRec.styles.desktop = {};
+                    srcRec.styles.desktop.translateX = '24px';
+                    srcRec.styles.desktop.translateY = '24px';
+                    state.elements['#' + cloneId] = srcRec;
+
+                    pushHistory();
+                    syncPreview();
+                    setTimeout(() => {
+                        postToPreview({ type: 'OVB_SELECT_SELECTOR', selector: '#' + cloneId, scroll: false });
+                        postToPreview({ type: 'OVB_REQUEST_TREE' });
+                    }, 100);
+                    showToast('Elemento duplicado! Arraste a cópia para onde desejar.');
+                    break;
+                }
                 case 'OVB_PAGE_TREE': {
                     pageTree = msg.tree || [];
                     renderNavigatorTree();
@@ -397,12 +533,17 @@
                 }
                 case 'OVB_RESET_ELEMENT': {
                     const sel = msg.selector || currentSelector;
-                    if (sel && state.elements[sel]) {
+                    if (sel) {
                         delete state.elements[sel];
+                        state.domMoves = (state.domMoves || []).filter(m => m.selector !== sel);
+                        if (sel.startsWith('#ovb_clone_')) {
+                            const cid = sel.slice(1);
+                            state.clones = (state.clones || []).filter(c => c.id !== cid);
+                        }
                         pushHistory();
                         syncPreview();
                         populateSidebarFromSelection();
-                        showToast('Estilo do elemento restaurado para o original!');
+                        showToast('Elemento restaurado ao original!');
                     }
                     break;
                 }
@@ -419,6 +560,11 @@
             if (tabId === 'tab-layers') {
                 postToPreview({ type: 'OVB_REQUEST_TREE' });
             }
+        });
+
+        // Search filter in Base Elements Navigator
+        $('#ovb-tree-search').on('input', function () {
+            renderNavigatorTree();
         });
 
         // Accordion Sections
@@ -443,7 +589,6 @@
             const container = $('#ovb-iframe-container');
             container.removeClass('device-desktop device-tablet device-mobile').addClass('device-' + dev);
 
-            // Also switch editing bucket if user switches to tablet/mobile or back to desktop
             if (dev === 'tablet' || dev === 'mobile' || dev === 'desktop') {
                 currentBucket = dev;
                 $('#ovb-state-bucket').val(dev);
@@ -451,13 +596,13 @@
             }
         });
 
-        // State Bucket Switcher (Normal / Hover / Tablet / Mobile / Dark / Light)
+        // State Bucket Switcher
         $('#ovb-state-bucket').on('change', function () {
             currentBucket = $(this).val();
             populateSidebarFromSelection();
         });
 
-        // Element Theme Scope (All / Dark only / Light only)
+        // Element Theme Scope
         $('#ovb-theme-scope').on('change', function () {
             if (!currentSelector) return;
             const rec = ensureElementRecord(currentSelector);
@@ -466,7 +611,7 @@
             syncPreview();
         });
 
-        // Preview Theme (Dark/Light) & Accent (Purple/Red) & Onboarding toggles in Topbar
+        // Preview Theme & Accent & Onboarding toggles
         $(document).on('click', '.ovb-preview-theme-btn', function () {
             const theme = $(this).attr('data-theme');
             $('.ovb-preview-theme-btn').removeClass('active');
@@ -487,17 +632,41 @@
             postToPreview({ type: 'OVB_SET_PREVIEW_THEME', onboarding: active });
         });
 
-        // Interactive Mode Toggle (Navigate vs Select)
+        // Interactive Mode Toggle (Navigate vs Select/Drag)
         $('#ovb-toggle-interactive').on('click', function () {
             $(this).toggleClass('active');
             const interactive = $(this).hasClass('active');
             postToPreview({ type: 'OVB_SET_INTERACTIVE_MODE', interactive: interactive });
-            showToast(interactive ? 'Modo Navegação Livre ativado (cliques normais no site)' : 'Modo Seleção de Elementos ativado');
+            showToast(interactive ? 'Modo Navegação Livre ativado (cliques normais no site)' : 'Modo Editor (Selecionar, Arrastar e Redimensionar) ativado');
         });
 
-        // Select Parent Button
+        // Quick Structural & Position Actions in Sidebar
         $('#ovb-btn-select-parent').on('click', function () {
             postToPreview({ type: 'OVB_SELECT_PARENT' });
+        });
+
+        $('#ovb-btn-dom-up').on('click', function () {
+            postToPreview({ type: 'OVB_MOVE_DOM_STEP', dir: 'up' });
+        });
+
+        $('#ovb-btn-dom-down').on('click', function () {
+            postToPreview({ type: 'OVB_MOVE_DOM_STEP', dir: 'down' });
+        });
+
+        $('#ovb-btn-center-xy').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].translateX = '0px';
+            rec.styles[currentBucket].translateY = '0px';
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+            showToast('Posição X/Y centralizada (0px, 0px)!');
+        });
+
+        $('#ovb-btn-duplicate-el').on('click', function () {
+            if (!currentSelector) return;
+            window.postMessage({ type: 'OVB_DUPLICATE_ELEMENT', selector: currentSelector }, '*');
         });
 
         // Manual CSS Selector override
@@ -512,18 +681,21 @@
         // Reset Current Element
         $('#ovb-btn-reset-element').on('click', function () {
             if (!currentSelector) return;
-            delete state.elements[currentSelector];
-            pushHistory();
-            syncPreview();
-            populateSidebarFromSelection();
-            showToast('Elemento restaurado ao padrão original!');
+            window.postMessage({ type: 'OVB_RESET_ELEMENT', selector: currentSelector }, '*');
         });
 
-        // Content Overrides (Text, Image Src, Link Href)
+        // Content Overrides (Text PT, Text EN, Image Src, Dark/Light Src, Link Href)
         $('#ovb-content-text').on('input', function () {
             if (!currentSelector) return;
             const rec = ensureElementRecord(currentSelector);
             rec.content.text = $(this).val();
+            syncPreview();
+        });
+
+        $('#ovb-content-text-en').on('input', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.content.textEn = $(this).val();
             syncPreview();
         });
 
@@ -534,11 +706,79 @@
             syncPreview();
         });
 
+        $('#ovb-content-src-dark').on('input change', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.content.srcDark = $(this).val();
+            syncPreview();
+        });
+
+        $('#ovb-content-src-light').on('input change', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.content.srcLight = $(this).val();
+            syncPreview();
+        });
+
         $('#ovb-content-href').on('input change', function () {
             if (!currentSelector) return;
             const rec = ensureElementRecord(currentSelector);
             rec.content.href = $(this).val();
             syncPreview();
+        });
+
+        // Live HTML / SVG Attributes Editing
+        $(document).on('input change', '.ovb-attr-input', function () {
+            if (!currentSelector) return;
+            const attrName = $(this).attr('data-attr-name');
+            const attrVal = $(this).val();
+            const rec = ensureElementRecord(currentSelector);
+            rec.content.attrs[attrName] = attrVal;
+            syncPreview();
+        });
+
+        $('#ovb-btn-add-attr').on('click', function () {
+            if (!currentSelector) return;
+            const name = $('#ovb-new-attr-name').val().trim();
+            const val = $('#ovb-new-attr-val').val();
+            if (!name) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.content.attrs[name] = val;
+            $('#ovb-new-attr-name').val('');
+            $('#ovb-new-attr-val').val('');
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        // Live Computed / Raw CSS Properties Inspector Editing
+        $(document).on('input change', '.ovb-raw-css-input', function () {
+            if (!currentSelector) return;
+            const cssProp = $(this).attr('data-css-prop');
+            const cssVal = $(this).val();
+            const rec = ensureElementRecord(currentSelector);
+            if (!rec.styles[currentBucket].rawCssProps) rec.styles[currentBucket].rawCssProps = {};
+            if (cssVal === '') {
+                delete rec.styles[currentBucket].rawCssProps[cssProp];
+            } else {
+                rec.styles[currentBucket].rawCssProps[cssProp] = cssVal;
+            }
+            syncPreview();
+        });
+
+        $('#ovb-btn-add-raw-css').on('click', function () {
+            if (!currentSelector) return;
+            const prop = $('#ovb-new-css-prop').val().trim();
+            const val = $('#ovb-new-css-val').val().trim();
+            if (!prop) return;
+            const rec = ensureElementRecord(currentSelector);
+            if (!rec.styles[currentBucket].rawCssProps) rec.styles[currentBucket].rawCssProps = {};
+            rec.styles[currentBucket].rawCssProps[prop] = val;
+            $('#ovb-new-css-prop').val('');
+            $('#ovb-new-css-val').val('');
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
         });
 
         // Custom Block Content Edit & Delete
@@ -598,7 +838,6 @@
             const prop = $el.attr('data-ovb-prop');
             let val = $el.attr('type') === 'checkbox' ? $el.is(':checked') : $el.val();
 
-            // Sync partner slider if present
             const $slider = $(`.ovb-range[data-ovb-range-for="${prop}"]`);
             if ($slider.length) {
                 const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
@@ -635,14 +874,6 @@
             const c2 = $(this).attr('data-c2');
             const mode = $(this).attr('data-mode') || 'box';
             const blur = $(this).attr('data-blur') || 28;
-
-            $('[data-ovb-prop="glowEnabled"]').prop('checked', true);
-            $('[data-ovb-prop="glowColor"]').val(c1);
-            $('[data-ovb-prop="glowColor2"]').val(c2);
-            $('[data-ovb-prop="glowMode"]').val(mode);
-            $('[data-ovb-prop="glowBlur"]').val(blur);
-            $('[data-ovb-prop="glowIntensity"]').val(85);
-            $('[data-ovb-prop="glowLayers"]').val(2);
 
             const rec = ensureElementRecord(currentSelector);
             Object.assign(rec.styles[currentBucket], {
@@ -824,7 +1055,7 @@
             if (!confirm('Tem certeza que deseja limpar todas as personalizações visuais do Odyssee Studio? O tema original permanecerá intacto.')) {
                 return;
             }
-            state = { elements: {}, blocks: [], globalVars: { all: {}, dark: {}, light: {} }, customCss: '' };
+            state = { elements: {}, blocks: [], domMoves: [], clones: [], globalVars: { all: {}, dark: {}, light: {} }, customCss: '' };
             pushHistory();
             syncPreview();
             populateSidebarFromSelection();
