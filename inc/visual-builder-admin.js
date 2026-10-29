@@ -96,6 +96,7 @@
             iframe.contentWindow.postMessage(payload, '*');
         }
     }
+    const postToIframe = postToPreview;
 
     function syncPreview() {
         postToPreview({
@@ -320,6 +321,33 @@
         const activeBlend = st.blendMode || comp.mixBlendMode || 'normal';
         $('.ovb-blend-pill').removeClass('active');
         $(`.ovb-blend-pill[data-blend="${activeBlend}"]`).addClass('active');
+
+        // Synchronize Top Control Bar inputs
+        const curTx = (st.translateX !== undefined && st.translateX !== '') ? st.translateX : ((comp.translate && comp.translate.x) || '0');
+        const curTy = (st.translateY !== undefined && st.translateY !== '') ? st.translateY : ((comp.translate && comp.translate.y) || '0');
+        const curW = (st.width !== undefined && st.width !== '') ? st.width : ((comp.rect && Math.round(comp.rect.width)) || '');
+        const curH = (st.height !== undefined && st.height !== '') ? st.height : ((comp.rect && Math.round(comp.rect.height)) || '');
+
+        $('#ovb-cbar-val-x').val(String(curTx).replace(/px$/, ''));
+        $('#ovb-cbar-val-y').val(String(curTy).replace(/px$/, ''));
+        $('#ovb-cbar-val-w').val(String(curW).replace(/px$/, ''));
+        $('#ovb-cbar-val-h').val(String(curH).replace(/px$/, ''));
+        $('#ovb-cbar-aspect-lock').toggleClass('unlocked', !aspectRatioLocked);
+
+        // Smart Lock for Raster Images (JPEG/PNG) — blocks color insertion to avoid confusion
+        const isRaster = currentSnapshot && (
+            (currentSnapshot.tagName && currentSnapshot.tagName.toLowerCase() === 'img') ||
+            (currentSnapshot.src && /\.(jpe?g|png|webp|avif|gif)(\?|$)/i.test(currentSnapshot.src)) ||
+            (currentSnapshot.computed && currentSnapshot.computed.bgImage && !currentSnapshot.computed.bgImage.includes('<svg') && /\.(jpe?g|png|webp|avif|gif)/i.test(currentSnapshot.computed.bgImage))
+        );
+
+        if (isRaster) {
+            $('#ovb-raster-color-lock-notice').show();
+            $('#ovb-color-controls-wrap').css({ 'opacity': '0.38', 'pointer-events': 'none' });
+        } else {
+            $('#ovb-raster-color-lock-notice').hide();
+            $('#ovb-color-controls-wrap').css({ 'opacity': '1', 'pointer-events': 'auto' });
+        }
 
         // Element Custom CSS (both sidebar & Code IDE Drawer)
         $('#ovb-element-custom-css').val(rec.customCss || '');
@@ -723,8 +751,71 @@
         });
     }
 
+    let clipboardElement = null;
+
+    function copyElement(sel) {
+        if (!sel) return;
+        const rec = state.elements[sel] ? deepClone(state.elements[sel]) : null;
+        clipboardElement = {
+            selector: sel,
+            record: rec,
+            snapshot: currentSnapshot ? deepClone(currentSnapshot) : null
+        };
+        showToast('📋 Elemento copiado para a área de transferência do Odyssee Studio!');
+    }
+
+    function cutElement(sel) {
+        if (!sel) return;
+        copyElement(sel);
+        executeShortcutCommand('delete-element');
+        showToast('✂ Elemento recortado!');
+    }
+
+    function pasteElement(inPlace) {
+        if (!clipboardElement || !clipboardElement.selector) {
+            showToast('Nenhum elemento copiado para colar!', true);
+            return;
+        }
+        const srcSel = clipboardElement.selector;
+        const cloneId = 'ovb_clone_' + Math.random().toString(36).substring(2, 8);
+        if (!Array.isArray(state.clones)) state.clones = [];
+        state.clones.push({
+            id: cloneId,
+            sourceSelector: srcSel
+        });
+        const copyRec = clipboardElement.record ? deepClone(clipboardElement.record) : {
+            themeScope: 'all',
+            content: {},
+            styles: { desktop: {} }
+        };
+        if (!copyRec.styles) copyRec.styles = { desktop: {} };
+        if (!copyRec.styles[currentBucket]) copyRec.styles[currentBucket] = {};
+        if (!inPlace) {
+            const curTx = parseFloat(copyRec.styles[currentBucket].translateX || 0) + 24;
+            const curTy = parseFloat(copyRec.styles[currentBucket].translateY || 0) + 24;
+            copyRec.styles[currentBucket].translateX = `${curTx}px`;
+            copyRec.styles[currentBucket].translateY = `${curTy}px`;
+        }
+        state.elements['#' + cloneId] = copyRec;
+        pushHistory();
+        syncPreview();
+        setTimeout(() => {
+            postToPreview({ type: 'OVB_SELECT_SELECTOR', selector: '#' + cloneId, scroll: false });
+            postToPreview({ type: 'OVB_REQUEST_TREE' });
+        }, 100);
+        showToast(inPlace ? '📌 Elemento colado no mesmo local!' : '📋 Elemento colado!');
+    }
+
+    function deselectElement() {
+        currentSelector = null;
+        currentSnapshot = null;
+        populateSidebarFromSelection();
+        postToPreview({ type: 'OVB_SELECT_SELECTOR', selector: '' });
+        showToast('Elemento desselecionado');
+    }
+
     /**
-     * Executes Undo, Redo, and Adaptive Adobe Illustrator Keyboard Shortcuts (from Admin or Preview Iframe)
+     * Executes Undo, Redo, and Adaptive Keyboard Shortcuts (from Admin or Preview Iframe)
      */
     function executeShortcutCommand(cmd) {
         if (!cmd) return;
@@ -738,11 +829,32 @@
             case 'save':
                 $('#ovb-btn-save').trigger('click');
                 break;
+            case 'cut':
+                cutElement(currentSelector);
+                break;
+            case 'copy':
+                copyElement(currentSelector);
+                break;
+            case 'paste':
+                pasteElement(false);
+                break;
+            case 'paste-in-place':
+                pasteElement(true);
+                break;
+            case 'deselect':
+                deselectElement();
+                break;
+            case 'find':
+                $('.ovb-tab-btn[data-tab="tab-layers"]').trigger('click');
+                $('#ovb-search-layers').focus();
+                break;
             case 'duplicate':
                 if (currentSelector) {
                     window.postMessage({ type: 'OVB_DUPLICATE_ELEMENT', selector: currentSelector }, '*');
                 }
                 break;
+            case 'delete':
+            case 'delete-or-hide':
             case 'delete-element': {
                 if (!currentSelector) break;
                 if (currentSelector.startsWith('#ovb_blk_')) {
@@ -997,6 +1109,14 @@
         populateGlobalVariables();
         renderModifiedElementsList();
         updateUndoRedoButtons();
+
+        // Ensure Rock-Solid Handshake with Preview Iframe on Load
+        $('#ovb-preview-iframe').on('load', function () {
+            postToPreview({ type: 'OVB_PING_INIT' });
+            syncPreview();
+        });
+        setTimeout(() => { postToPreview({ type: 'OVB_PING_INIT' }); syncPreview(); }, 250);
+        setTimeout(() => { postToPreview({ type: 'OVB_PING_INIT' }); }, 1200);
 
         window.addEventListener('message', (event) => {
             const msg = event.data;
@@ -1834,8 +1954,8 @@
             syncPreview();
         });
 
-        // Adaptive Illustrator Toolbar Buttons + Quick Hero Slogan + Quick Immune
-        $(document).on('click', '.ovb-ai-tool-btn[data-ai-cmd]', function () {
+        // Tool Buttons (Top Control Bar, Left Toolstrip & Illustrator Strip)
+        $(document).on('click', '.ovb-ai-tool-btn[data-ai-cmd], .ovb-cbar-btn[data-ai-cmd], .ovb-toolstrip-btn[data-ai-cmd]', function () {
             const cmd = $(this).attr('data-ai-cmd');
             executeShortcutCommand(cmd);
         });
@@ -1853,6 +1973,418 @@
                 return;
             }
             window.postMessage({ type: 'OVB_TOGGLE_IMMUNE_ELEMENT', selector: currentSelector }, '*');
+        });
+
+        // ==========================================
+        // TOP CONTROL BAR NUMERIC & TRANSFORM INPUTS
+        // ==========================================
+        $('#ovb-cbar-val-x').on('input change', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].translateX = $(this).val();
+            pushHistory();
+            syncPreview();
+        });
+
+        $('#ovb-cbar-val-y').on('input change', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].translateY = $(this).val();
+            pushHistory();
+            syncPreview();
+        });
+
+        $('#ovb-cbar-val-w').on('input change', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            const val = $(this).val();
+            rec.styles[currentBucket].width = val ? (isNaN(val) ? val : `${val}px`) : '';
+            if (aspectRatioLocked && currentSnapshot && currentSnapshot.computed && currentSnapshot.computed.rect) {
+                const aspect = (currentSnapshot.computed.rect.width / currentSnapshot.computed.rect.height) || 1;
+                const numW = parseFloat(val);
+                if (!isNaN(numW)) {
+                    const newH = Math.round(numW / aspect);
+                    rec.styles[currentBucket].height = `${newH}px`;
+                    $('#ovb-cbar-val-h').val(newH);
+                }
+            }
+            pushHistory();
+            syncPreview();
+        });
+
+        $('#ovb-cbar-val-h').on('input change', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            const val = $(this).val();
+            rec.styles[currentBucket].height = val ? (isNaN(val) ? val : `${val}px`) : '';
+            pushHistory();
+            syncPreview();
+        });
+
+        $('#ovb-cbar-aspect-lock').on('click', function () {
+            aspectRatioLocked = !aspectRatioLocked;
+            $(this).toggleClass('unlocked', !aspectRatioLocked);
+            $('#ovb-btn-aspect-lock').toggleClass('unlocked', !aspectRatioLocked);
+            postToPreview({ type: 'OVB_SET_ASPECT_LOCK', locked: aspectRatioLocked });
+            showToast(aspectRatioLocked ? '🔒 Proporção travada!' : '🔓 Proporção livre ativada');
+        });
+
+        $('#ovb-cbar-rot-m90').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].rotate = (parseInt(rec.styles[currentBucket].rotate, 10) || 0) - 90;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-cbar-rot-p90').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].rotate = (parseInt(rec.styles[currentBucket].rotate, 10) || 0) + 90;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-cbar-flip-h').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].flipX = !rec.styles[currentBucket].flipX;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-cbar-flip-v').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].flipY = !rec.styles[currentBucket].flipY;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-cbar-z-top').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].zIndex = 9999;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-cbar-z-up').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].zIndex = (parseInt(rec.styles[currentBucket].zIndex, 10) || 10) + 1;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-cbar-z-down').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].zIndex = Math.max(0, (parseInt(rec.styles[currentBucket].zIndex, 10) || 10) - 1);
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-cbar-z-bottom').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].zIndex = 0;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        // ==========================================
+        // TAB 3: EDITAR BUTTONS
+        // ==========================================
+        $('#ovb-edit-undo').on('click', () => $('#ovb-btn-undo').trigger('click'));
+        $('#ovb-edit-redo').on('click', () => $('#ovb-btn-redo').trigger('click'));
+        $('#ovb-edit-find').on('click', () => {
+            $('.ovb-tab-btn[data-tab="tab-layers"]').trigger('click');
+            $('#ovb-search-layers').focus();
+        });
+        $('#ovb-edit-cut').on('click', () => executeShortcutCommand('cut'));
+        $('#ovb-edit-copy').on('click', () => executeShortcutCommand('copy'));
+        $('#ovb-edit-paste').on('click', () => executeShortcutCommand('paste'));
+        $('#ovb-edit-paste-in-place').on('click', () => executeShortcutCommand('paste-in-place'));
+        $('#ovb-edit-duplicate').on('click', () => executeShortcutCommand('duplicate'));
+        $('#ovb-edit-deselect').on('click', () => executeShortcutCommand('deselect'));
+        $('#ovb-edit-delete').on('click', () => executeShortcutCommand('delete-element'));
+
+        // ==========================================
+        // TAB 4: CAMADAS GROUPING & CLIPPING MASK
+        // ==========================================
+        $('#ovb-btn-layer-group').on('click', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento para agrupar!', true);
+                return;
+            }
+            const gName = prompt('Nome do novo grupo de camadas:', 'Grupo ' + (((state.layerGroups || []).length) + 1));
+            if (!gName) return;
+            if (!Array.isArray(state.layerGroups)) state.layerGroups = [];
+            const gId = 'ovb_grp_' + Date.now();
+            state.layerGroups.push({
+                id: gId,
+                name: gName,
+                selectors: [currentSelector]
+            });
+            pushHistory();
+            renderNavigatorTree();
+            showToast(`📦 Grupo '${gName}' criado!`);
+        });
+
+        $('#ovb-btn-layer-ungroup').on('click', function () {
+            if (!Array.isArray(state.layerGroups) || !state.layerGroups.length) {
+                showToast('Nenhum grupo de camadas criado ainda.', true);
+                return;
+            }
+            state.layerGroups = state.layerGroups.filter(g => !g.selectors || !g.selectors.includes(currentSelector));
+            pushHistory();
+            renderNavigatorTree();
+            showToast('📦 Elemento desagrupado!');
+        });
+
+        $('#ovb-btn-layer-mask').on('click', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento para aplicar máscara de recorte (Clipping Mask)!', true);
+                return;
+            }
+            const rec = ensureElementRecord(currentSelector);
+            const st = rec.styles[currentBucket];
+            if (st.clipPath) {
+                delete st.clipPath;
+                delete st.overflow;
+                showToast('Máscara de recorte removida.');
+            } else {
+                st.overflow = 'hidden';
+                st.clipPath = 'inset(0px round 16px)';
+                showToast('✂ Máscara de recorte (Clipping Mask) aplicada!');
+            }
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        // ==========================================
+        // TAB 8: EXPORTAR ACTIONS
+        // ==========================================
+        $('#ovb-export-what-selector').on('change', function () {
+            const val = $(this).val();
+            $('#ovb-export-preset-picker-wrap').toggle(val === 'preset');
+        });
+
+        function generateDesignTokens(data) {
+            const tokens = {
+                color: {
+                    brand: { value: '#8b5cf6', type: 'color' },
+                    accent: { value: '#ec4899', type: 'color' }
+                },
+                dimension: {},
+                elevation: {}
+            };
+            (data.colorPalettes || []).forEach(p => {
+                tokens.color[p.id] = {
+                    accent: { value: p.accent, type: 'color' },
+                    accentHover: { value: p.accentHover || p.accent, type: 'color' },
+                    bgDark: { value: p.bgDark || '#0f172a', type: 'color' },
+                    bgLight: { value: p.bgLight || '#f8fafc', type: 'color' }
+                };
+            });
+            return tokens;
+        }
+
+        const crcTable = (() => {
+            let c;
+            const table = [];
+            for (let n = 0; n < 256; n++) {
+                c = n;
+                for (let k = 0; k < 8; k++) {
+                    c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+                }
+                table[n] = c;
+            }
+            return table;
+        })();
+
+        function crc32(r) {
+            let t = -1;
+            for (let i = 0; i < r.length; i++) {
+                t = (t >>> 8) ^ crcTable[(t ^ r[i]) & 255];
+            }
+            return (t ^ -1) >>> 0;
+        }
+
+        function downloadZipFile(zipFilename, files) {
+            const textEnc = new TextEncoder();
+            const localHeaders = [];
+            const centralHeaders = [];
+            let offset = 0;
+
+            files.forEach(file => {
+                const nameBytes = textEnc.encode(file.name);
+                const dataBytes = textEnc.encode(file.content);
+                const crc = crc32(dataBytes);
+                const size = dataBytes.length;
+
+                // Local file header (30 bytes + name length + data)
+                const local = new Uint8Array(30 + nameBytes.length + size);
+                const lv = new DataView(local.buffer);
+                lv.setUint32(0, 0x04034b50, true);
+                lv.setUint16(4, 20, true);
+                lv.setUint16(6, 0, true);
+                lv.setUint16(8, 0, true);
+                lv.setUint16(10, 0, true);
+                lv.setUint16(12, 0, true);
+                lv.setUint32(14, crc, true);
+                lv.setUint32(18, size, true);
+                lv.setUint32(22, size, true);
+                lv.setUint16(26, nameBytes.length, true);
+                lv.setUint16(28, 0, true);
+                local.set(nameBytes, 30);
+                local.set(dataBytes, 30 + nameBytes.length);
+                localHeaders.push(local);
+
+                // Central directory header (46 bytes + name length)
+                const cd = new Uint8Array(46 + nameBytes.length);
+                const cv = new DataView(cd.buffer);
+                cv.setUint32(0, 0x02014b50, true);
+                cv.setUint16(4, 20, true);
+                cv.setUint16(6, 20, true);
+                cv.setUint16(8, 0, true);
+                cv.setUint16(10, 0, true);
+                cv.setUint16(12, 0, true);
+                cv.setUint32(16, crc, true);
+                cv.setUint32(20, size, true);
+                cv.setUint32(24, size, true);
+                cv.setUint16(28, nameBytes.length, true);
+                cv.setUint16(30, 0, true);
+                cv.setUint16(32, 0, true);
+                cv.setUint16(34, 0, true);
+                cv.setUint32(36, 0, true);
+                cv.setUint32(42, offset, true);
+                cd.set(nameBytes, 46);
+                centralHeaders.push(cd);
+
+                offset += local.length;
+            });
+
+            const cdOffset = offset;
+            let cdSize = 0;
+            centralHeaders.forEach(c => cdSize += c.length);
+
+            const eocd = new Uint8Array(22);
+            const ev = new DataView(eocd.buffer);
+            ev.setUint32(0, 0x06054b50, true);
+            ev.setUint16(4, 0, true);
+            ev.setUint16(6, 0, true);
+            ev.setUint16(8, files.length, true);
+            ev.setUint16(10, files.length, true);
+            ev.setUint32(12, cdSize, true);
+            ev.setUint32(16, cdOffset, true);
+            ev.setUint16(20, 0, true);
+
+            const blob = new Blob([...localHeaders, ...centralHeaders, eocd], { type: 'application/zip' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = zipFilename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        $('#ovb-btn-export-zip-css').on('click', function () {
+            const pName = (state.presetName || 'odysseexp').toLowerCase().replace(/\s+/g, '-');
+            const files = [
+                { name: 'style.css', content: latestCompiledCss || '/* Theme Compiled CSS */' },
+                { name: `${pName}.json`, content: JSON.stringify(state, null, 2) },
+                { name: 'tokens.json', content: JSON.stringify(generateDesignTokens(state), null, 2) }
+            ];
+            downloadZipFile(`odyssee-${pName}-theme.zip`, files);
+            showToast('📦 Arquivo .zip gerado e baixado com sucesso!');
+        });
+
+        $('#ovb-btn-export-figma').on('click', function () {
+            const scope = $('#ovb-export-what-selector').val() === 'element' ? 'element' : 'page';
+            postToPreview({
+                type: 'OVB_EXPORT_FIGMA_SVG',
+                target: 'figma',
+                scope: scope,
+                selector: currentSelector
+            });
+            showToast('🎨 Gerando SVG otimizado para o Figma...');
+        });
+
+        $('#ovb-btn-export-lunacy').on('click', function () {
+            const scope = $('#ovb-export-what-selector').val() === 'element' ? 'element' : 'page';
+            postToPreview({
+                type: 'OVB_EXPORT_FIGMA_SVG',
+                target: 'lunacy',
+                scope: scope,
+                selector: currentSelector
+            });
+            showToast('🌙 Gerando SVG otimizado para o Lunacy...');
+        });
+
+        $('#ovb-btn-export-tokens').on('click', function () {
+            const tokens = generateDesignTokens(state);
+            const blob = new Blob([JSON.stringify(tokens, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `odyssee-tokens.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('💎 Design Tokens W3C exportados!');
+        });
+
+        // ==========================================
+        // TAB 9: PREFERÊNCIAS (INTERACTIVE SHORTCUT RECORDING)
+        // ==========================================
+        let recordingShortcutBtn = null;
+        $(document).on('click', '.ovb-sc-btn', function () {
+            $('.ovb-sc-btn').removeClass('recording').text(function () { return $(this).attr('data-key') || ''; });
+            recordingShortcutBtn = $(this);
+            recordingShortcutBtn.addClass('recording').text('Pressione...');
+        });
+
+        $(document).on('keydown', function (e) {
+            if (!recordingShortcutBtn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const parts = [];
+            if (e.ctrlKey) parts.push('Ctrl');
+            if (e.shiftKey) parts.push('Shift');
+            if (e.altKey) parts.push('Alt');
+            const key = e.key.toUpperCase();
+            if (!['CONTROL', 'SHIFT', 'ALT'].includes(key)) {
+                parts.push(key);
+                const combo = parts.join('+');
+                const act = recordingShortcutBtn.closest('.ovb-shortcut-row').attr('data-action');
+                recordingShortcutBtn.attr('data-key', combo).text(combo).removeClass('recording');
+                if (!state.shortcuts) state.shortcuts = {};
+                state.shortcuts[act] = combo;
+                recordingShortcutBtn = null;
+                pushHistory();
+                showToast(`⌨ Atalho atualizado: ${act} → ${combo}`);
+            }
+        });
+
+        $('#ovb-btn-reset-shortcuts').on('click', function () {
+            delete state.shortcuts;
+            pushHistory();
+            $('.ovb-shortcut-row').each(function () {
+                const btn = $(this).find('.ovb-sc-btn');
+                const dKey = btn.attr('data-default-key') || btn.text();
+                btn.attr('data-key', dKey).text(dKey);
+            });
+            showToast('Atalhos restaurados para o padrão');
         });
 
         // Insert any of the 21 Pre-Built Presets (1–12 Small/Modular & 13–21 Robust Full-Screen)
@@ -2122,7 +2654,7 @@
             pushHistory();
             syncPreview();
             setTimeout(() => {
-                postToIframe({ type: 'OVB_SELECT_SELECTOR', selector: blkSel });
+                postToPreview({ type: 'OVB_SELECT_SELECTOR', selector: blkSel });
             }, 90);
             showToast('✨ Novo bloco SVG / HTML inserido na página e selecionado!');
         }
@@ -2171,7 +2703,7 @@
         $('#ovb-btn-select-parent-svg').on('click', function () {
             const parentSvgSel = $(this).attr('data-parent-svg');
             if (parentSvgSel) {
-                postToIframe({ type: 'OVB_SELECT_SELECTOR', selector: parentSvgSel });
+                postToPreview({ type: 'OVB_SELECT_SELECTOR', selector: parentSvgSel });
                 showToast('⬆️ Tag <svg> raiz selecionada!');
             }
         });
@@ -2205,7 +2737,7 @@
             pushHistory();
             syncPreview();
             setTimeout(() => {
-                postToIframe({ type: 'OVB_SELECT_SELECTOR', selector: currentSelector });
+                postToPreview({ type: 'OVB_SELECT_SELECTOR', selector: currentSelector });
             }, 60);
             showToast('↺ Código original do elemento restaurado!');
         });

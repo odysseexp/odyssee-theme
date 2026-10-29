@@ -2347,13 +2347,23 @@
             }
         });
 
-        // Prevent accidental click navigation when in Editor Mode
+        // Prevent accidental click navigation when in Editor Mode & Guarantee Element Selection on Click
         document.addEventListener('click', (e) => {
             if (isInteractiveMode) return;
             const target = e.target;
-            if (!target || target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar')) return;
+            if (!target || target === document.body || target === document.documentElement) return;
+            if (target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar, .ovb-lightbox-overlay')) return;
             e.preventDefault();
             e.stopPropagation();
+
+            let elToAct = target;
+            const svgGroup = target.closest && target.closest('g.dg-item[id]');
+            if (svgGroup && selectedElement !== target) {
+                elToAct = svgGroup;
+            }
+            if (selectedElement !== elToAct) {
+                selectElement(elToAct, false);
+            }
         }, true);
 
         // Floating Badge Action Buttons
@@ -2568,20 +2578,38 @@
                     }
                     break;
                 }
+                case 'OVB_PING_INIT': {
+                    window.parent.postMessage({
+                        type: 'OVB_PREVIEW_READY',
+                        url: window.location.href,
+                        pageKey: getNormalizedPageKey(),
+                        theme: document.body.classList.contains('theme-light') ? 'light' : 'dark',
+                        color: document.body.getAttribute('data-ovb-palette') || (document.body.classList.contains('color-red') ? 'red' : 'purple'),
+                        tree: collectPageTree(),
+                        compiledCss: compileAllCSS(builderData)
+                    }, '*');
+                    break;
+                }
                 case 'OVB_SET_PREVIEW_THEME': {
                     if (msg.theme === 'light') {
                         document.body.classList.remove('theme-dark');
                         document.body.classList.add('theme-light');
+                        document.documentElement.setAttribute('data-theme', 'light');
                         try { localStorage.setItem('userTheme', 'light'); } catch (e) {}
                     } else if (msg.theme === 'dark') {
                         document.body.classList.remove('theme-light');
                         document.body.classList.add('theme-dark');
+                        document.documentElement.setAttribute('data-theme', 'dark');
                         try { localStorage.setItem('userTheme', 'dark'); } catch (e) {}
                     }
                     if (msg.color) {
                         window._ovbVisitorExplicitlyPickedColor = true;
                         setCookieVal('odyssee_user_palette', msg.color);
                         try { localStorage.setItem('userColor', msg.color); } catch (e) {}
+                        document.body.classList.toggle('color-red', msg.color === 'red');
+                        document.body.classList.toggle('color-purple', msg.color !== 'red');
+                        document.body.setAttribute('data-ovb-palette', msg.color);
+                        applyColorPalettesEngine();
                     }
                     if (msg.onboarding !== undefined) {
                         document.body.classList.toggle('modo-onboarding', !!msg.onboarding);
@@ -2629,15 +2657,19 @@
             }
         });
 
-        window.parent.postMessage({
-            type: 'OVB_PREVIEW_READY',
-            url: window.location.href,
-            pageKey: getNormalizedPageKey(),
-            theme: document.body.classList.contains('theme-light') ? 'light' : 'dark',
-            color: document.body.getAttribute('data-ovb-palette') || (document.body.classList.contains('color-red') ? 'red' : 'purple'),
-            tree: collectPageTree(),
-            compiledCss: compileAllCSS(builderData)
-        }, '*');
+        function sendPreviewReady() {
+            window.parent.postMessage({
+                type: 'OVB_PREVIEW_READY',
+                url: window.location.href,
+                pageKey: getNormalizedPageKey(),
+                theme: document.body.classList.contains('theme-light') ? 'light' : 'dark',
+                color: document.body.getAttribute('data-ovb-palette') || (document.body.classList.contains('color-red') ? 'red' : 'purple'),
+                tree: collectPageTree(),
+                compiledCss: compileAllCSS(builderData)
+            }, '*');
+        }
+        sendPreviewReady();
+        setTimeout(sendPreviewReady, 250);
     }
 
     function init() {
@@ -2691,7 +2723,9 @@
             attributeFilter: ['lang']
         });
 
-        if (config.isPreview && window.parent !== window) {
+        const isInsideIframe = (window.parent && window.parent !== window);
+        const hasPreviewParam = window.location.search.indexOf('odyssee_vb_preview=1') !== -1;
+        if (isInsideIframe || hasPreviewParam || (config && config.isPreview)) {
             initPreviewInspector();
         }
     }

@@ -866,9 +866,24 @@ body.ovb-editor-active {
     user-select: none;
 }
 
-/* CRITICAL FIX: Allow clicking, dragging, and editing the Hero Title (.hero-slogan) and Logo below/above it! */
-body.ovb-editor-active .hero-content-centered {
+/* Allow clicking and dragging on all content elements in editor mode */
+body.ovb-editor-active * {
+    pointer-events: auto;
+}
+
+/* Intercepting decorative canvases & background overlays must pass clicks through */
+body.ovb-editor-active .artcraft-orbit-canvas,
+body.ovb-editor-active .orbit-rings-svg,
+body.ovb-editor-active .gradients-container,
+body.ovb-editor-active .onboarding-aurora,
+body.ovb-editor-active svg#odyssee-vb-svg-filters {
     pointer-events: none !important;
+}
+
+/* CRITICAL FIX: Allow clicking, dragging, and editing the Hero Title (.hero-slogan) and Logo */
+body.ovb-editor-active .hero-content-centered {
+    pointer-events: auto !important;
+    position: relative !important;
     z-index: 35 !important;
 }
 body.ovb-editor-active .hero-slogan,
@@ -881,7 +896,7 @@ body.ovb-editor-active .scroll-indicator {
     z-index: 36 !important;
 }
 
-/* Locked Layers in Photoshop/Illustrator Layer Tree pass clicks to unlocked layers behind them */
+/* Locked Layers in Layer Tree pass clicks to unlocked layers behind them */
 body.ovb-editor-active [data-ovb-locked="true"] {
     pointer-events: none !important;
 }
@@ -1145,7 +1160,14 @@ body #btn-mobile-menu[data-ovb-el-ui-style]:not([data-ovb-el-ui-style="none"]) {
     height: 38px !important;
 }
 
-body [data-ovb-el-ui-style="odysseexp"] {
+body [data-ovb-el-ui-style="odysseexp"],
+body #btn-faq[data-ovb-el-ui-style="odysseexp"],
+body #btn-settings[data-ovb-el-ui-style="odysseexp"],
+body .btn-header-icon[data-ovb-el-ui-style="odysseexp"],
+body .btn-header-settings[data-ovb-el-ui-style="odysseexp"],
+body .btn-header-about[data-ovb-el-ui-style="odysseexp"],
+body .main-nav a[data-ovb-el-ui-style="odysseexp"],
+body #btn-mobile-menu[data-ovb-el-ui-style="odysseexp"] {
     background: rgba(19, 25, 38, 0.82) !important;
     border: 1px solid rgba(139, 92, 246, 0.55) !important;
     border-radius: 14px !important;
@@ -1155,7 +1177,14 @@ body [data-ovb-el-ui-style="odysseexp"] {
     color: #ffffff !important;
 }
 
-body [data-ovb-el-ui-style="frutiger-aero"] {
+body [data-ovb-el-ui-style="frutiger-aero"],
+body #btn-faq[data-ovb-el-ui-style="frutiger-aero"],
+body #btn-settings[data-ovb-el-ui-style="frutiger-aero"],
+body .btn-header-icon[data-ovb-el-ui-style="frutiger-aero"],
+body .btn-header-settings[data-ovb-el-ui-style="frutiger-aero"],
+body .btn-header-about[data-ovb-el-ui-style="frutiger-aero"],
+body .main-nav a[data-ovb-el-ui-style="frutiger-aero"],
+body #btn-mobile-menu[data-ovb-el-ui-style="frutiger-aero"] {
     background: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.78) 0%,
@@ -1175,7 +1204,14 @@ body [data-ovb-el-ui-style="frutiger-aero"] {
     color: #ffffff !important;
 }
 
-body [data-ovb-el-ui-style="gtk4"] {
+body [data-ovb-el-ui-style="gtk4"],
+body #btn-faq[data-ovb-el-ui-style="gtk4"],
+body #btn-settings[data-ovb-el-ui-style="gtk4"],
+body .btn-header-icon[data-ovb-el-ui-style="gtk4"],
+body .btn-header-settings[data-ovb-el-ui-style="gtk4"],
+body .btn-header-about[data-ovb-el-ui-style="gtk4"],
+body .main-nav a[data-ovb-el-ui-style="gtk4"],
+body #btn-mobile-menu[data-ovb-el-ui-style="gtk4"] {
     background: #3584e4 !important;
     border: 1px solid rgba(255, 255, 255, 0.18) !important;
     border-radius: 9px !important;
@@ -1184,7 +1220,14 @@ body [data-ovb-el-ui-style="gtk4"] {
     color: #ffffff !important;
 }
 
-body [data-ovb-el-ui-style="breeze"] {
+body [data-ovb-el-ui-style="breeze"],
+body #btn-faq[data-ovb-el-ui-style="breeze"],
+body #btn-settings[data-ovb-el-ui-style="breeze"],
+body .btn-header-icon[data-ovb-el-ui-style="breeze"],
+body .btn-header-settings[data-ovb-el-ui-style="breeze"],
+body .btn-header-about[data-ovb-el-ui-style="breeze"],
+body .main-nav a[data-ovb-el-ui-style="breeze"],
+body #btn-mobile-menu[data-ovb-el-ui-style="breeze"] {
     background: linear-gradient(180deg, rgba(49, 54, 59, 0.96), rgba(35, 38, 41, 0.96)) !important;
     border: 1.5px solid #3daee9 !important;
     border-radius: 5px !important;
@@ -1192,7 +1235,14 @@ body [data-ovb-el-ui-style="breeze"] {
     color: #eff0f1 !important;
 }
 
-body [data-ovb-el-ui-style="mactahoe"] {
+body [data-ovb-el-ui-style="mactahoe"],
+body #btn-faq[data-ovb-el-ui-style="mactahoe"],
+body #btn-settings[data-ovb-el-ui-style="mactahoe"],
+body .btn-header-icon[data-ovb-el-ui-style="mactahoe"],
+body .btn-header-settings[data-ovb-el-ui-style="mactahoe"],
+body .btn-header-about[data-ovb-el-ui-style="mactahoe"],
+body .main-nav a[data-ovb-el-ui-style="mactahoe"],
+body #btn-mobile-menu[data-ovb-el-ui-style="mactahoe"] {
     background: linear-gradient(
         135deg,
         rgba(255, 255, 255, 0.32) 0%,
@@ -1210,7 +1260,14 @@ body [data-ovb-el-ui-style="mactahoe"] {
     color: #ffffff !important;
 }
 
-body [data-ovb-el-ui-style="material"] {
+body [data-ovb-el-ui-style="material"],
+body #btn-faq[data-ovb-el-ui-style="material"],
+body #btn-settings[data-ovb-el-ui-style="material"],
+body .btn-header-icon[data-ovb-el-ui-style="material"],
+body .btn-header-settings[data-ovb-el-ui-style="material"],
+body .btn-header-about[data-ovb-el-ui-style="material"],
+body .main-nav a[data-ovb-el-ui-style="material"],
+body #btn-mobile-menu[data-ovb-el-ui-style="material"] {
     background: var(--color-accent, #6200ee) !important;
     border: none !important;
     border-radius: 4px !important;
@@ -1224,7 +1281,14 @@ body [data-ovb-el-ui-style="material"] {
     color: #ffffff !important;
 }
 
-body [data-ovb-el-ui-style="material-3-expressive"] {
+body [data-ovb-el-ui-style="material-3-expressive"],
+body #btn-faq[data-ovb-el-ui-style="material-3-expressive"],
+body #btn-settings[data-ovb-el-ui-style="material-3-expressive"],
+body .btn-header-icon[data-ovb-el-ui-style="material-3-expressive"],
+body .btn-header-settings[data-ovb-el-ui-style="material-3-expressive"],
+body .btn-header-about[data-ovb-el-ui-style="material-3-expressive"],
+body .main-nav a[data-ovb-el-ui-style="material-3-expressive"],
+body #btn-mobile-menu[data-ovb-el-ui-style="material-3-expressive"] {
     background: linear-gradient(135deg, #4f378b, #7d5260) !important;
     border: 1px solid rgba(208, 188, 255, 0.45) !important;
     border-radius: 999px !important;
@@ -1233,9 +1297,183 @@ body [data-ovb-el-ui-style="material-3-expressive"] {
     transition: all 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
-body [data-ovb-el-ui-style="material-3-expressive"]:hover {
+body [data-ovb-el-ui-style="material-3-expressive"]:hover,
+body #btn-faq[data-ovb-el-ui-style="material-3-expressive"]:hover,
+body #btn-settings[data-ovb-el-ui-style="material-3-expressive"]:hover,
+body .btn-header-icon[data-ovb-el-ui-style="material-3-expressive"]:hover,
+body .btn-header-settings[data-ovb-el-ui-style="material-3-expressive"]:hover,
+body .btn-header-about[data-ovb-el-ui-style="material-3-expressive"]:hover,
+body .main-nav a[data-ovb-el-ui-style="material-3-expressive"]:hover,
+body #btn-mobile-menu[data-ovb-el-ui-style="material-3-expressive"]:hover {
     border-radius: 14px !important;
     transform: scale(1.05) translateY(-2px) !important;
 }
 
 
+
+/* ==========================================================================
+   ODYSSEE STUDIO V26.10.12 — HOVER & CLICK ANIMATIONS, 3D & LIGHTBOX
+   ========================================================================== */
+
+/* Hover Animations */
+.ovb-hover-scale-up {
+    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.ovb-hover-scale-up:hover {
+    transform: scale(1.08) !important;
+}
+
+.ovb-hover-scale-down {
+    transition: transform 0.28s ease !important;
+}
+.ovb-hover-scale-down:hover {
+    transform: scale(0.92) !important;
+}
+
+.ovb-hover-soft-hop {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.ovb-hover-soft-hop:hover {
+    transform: translateY(-8px) scale(1.03) !important;
+}
+
+.ovb-hover-spin {
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.ovb-hover-spin:hover {
+    transform: rotate(360deg) !important;
+}
+
+.ovb-hover-slide-side {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.ovb-hover-slide-side:hover {
+    transform: translateX(14px) !important;
+}
+
+.ovb-hover-slide-up {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.ovb-hover-slide-up:hover {
+    transform: translateY(-14px) !important;
+}
+
+.ovb-hover-slide-corner {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.ovb-hover-slide-corner:hover {
+    transform: translate(12px, -12px) !important;
+}
+
+.ovb-hover-jelly:hover {
+    animation: ovbJellyAnim 0.65s both !important;
+}
+@keyframes ovbJellyAnim {
+    0% { transform: scale(1, 1); }
+    30% { transform: scale(1.25, 0.75); }
+    40% { transform: scale(0.75, 1.25); }
+    50% { transform: scale(1.15, 0.85); }
+    65% { transform: scale(0.95, 1.05); }
+    75% { transform: scale(1.05, 0.95); }
+    100% { transform: scale(1, 1); }
+}
+
+/* Click Animation Keyframes */
+.ovb-click-pop {
+    animation: ovbClickPopAnim 0.4s both !important;
+}
+@keyframes ovbClickPopAnim {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.9) rotate(-2deg); }
+    100% { transform: scale(1); }
+}
+
+/* Evade Mouse (Repel away from cursor like Home Cards) */
+[data-ovb-evade-mouse="1"] {
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    will-change: transform;
+}
+
+/* Lightbox Modal */
+.ovb-lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999999;
+    background: rgba(5, 8, 15, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+}
+.ovb-lightbox-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+.ovb-lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 85vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ovb-lightbox-img {
+    max-width: 100%;
+    max-height: 85vh;
+    border-radius: 12px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(139, 92, 246, 0.3);
+    object-fit: contain;
+}
+.ovb-lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 10;
+}
+.ovb-lightbox-close:hover {
+    background: #ef4444;
+    border-color: #f87171;
+    transform: scale(1.1);
+}
+.ovb-lightbox-prev,
+.ovb-lightbox-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.ovb-lightbox-prev { left: 20px; }
+.ovb-lightbox-next { right: 20px; }
+.ovb-lightbox-prev:hover,
+.ovb-lightbox-next:hover {
+    background: #8b5cf6;
+    border-color: #a855f7;
+    transform: translateY(-50%) scale(1.1);
+}

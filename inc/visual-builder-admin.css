@@ -1249,3 +1249,417 @@ body.appearance_page_odyssee-visual-builder #wpbody-content {
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.35);
 }
+
+/* ==========================================================================
+   ODYSSEE STUDIO V26.10.12 — 9 TABS, TOP CONTROL BAR & LEFT TOOLSTRIP
+   ========================================================================== */
+
+/* Top Control Bar */
+.ovb-top-control-bar {
+    height: 38px;
+    background: #0f172a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+}
+.ovb-top-control-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.ovb-topbar-tools,
+.ovb-topbar-zorder,
+.ovb-topbar-transforms,
+.ovb-cbar-numeric-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.ovb-cbar-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 5px;
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.ovb-cbar-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+.ovb-cbar-btn.active {
+    background: #8b5cf6;
+    color: #ffffff;
+    border-color: #a855f7;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+
+.ovb-cbar-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+.ovb-cbar-field {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    padding: 2px 5px;
+    height: 26px;
+}
+.ovb-cbar-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+}
+.ovb-cbar-input {
+    width: 48px;
+    background: transparent;
+    border: none;
+    color: #f8fafc;
+    font-size: 11px;
+    font-family: monospace;
+    padding: 0;
+    outline: none;
+}
+.ovb-cbar-lock-btn {
+    width: 26px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+}
+.ovb-cbar-lock-btn.locked {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: #10b981;
+    color: #34d399;
+}
+.ovb-cbar-unit {
+    font-size: 10px;
+    color: #64748b;
+    font-family: monospace;
+}
+
+.ovb-cbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.ovb-cbar-pill-btn {
+    padding: 4px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+.ovb-cbar-pill-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f8fafc;
+}
+
+/* Vertical Left Tool Strip */
+.ovb-left-toolstrip {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 50;
+    width: 38px;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 5px 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+.ovb-toolstrip-btn {
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #cbd5e1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.ovb-toolstrip-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+.ovb-toolstrip-btn.active {
+    background: #8b5cf6;
+    color: #ffffff;
+    border-color: #a855f7;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+.ovb-toolstrip-sep {
+    width: 22px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 2px 0;
+}
+
+/* 9 Structured Tabs Navigation */
+.ovb-tabs.ovb-nine-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    background: #101623;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 4px 6px;
+    gap: 4px;
+}
+.ovb-nine-tabs .ovb-tab-btn {
+    flex: 1 1 calc(33.333% - 4px);
+    min-width: 80px;
+    height: 28px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.ovb-nine-tabs .ovb-tab-btn i {
+    font-size: 10px;
+}
+.ovb-nine-tabs .ovb-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #e2e8f0;
+}
+.ovb-nine-tabs .ovb-tab-btn.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(236, 72, 153, 0.25));
+    border-color: #8b5cf6;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.25);
+}
+
+/* Edit Menu with Live Shortcut Badges */
+.ovb-edit-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.ovb-edit-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #cbd5e1;
+    font-size: 11.5px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+}
+.ovb-edit-menu-item span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.ovb-edit-menu-item span i {
+    width: 14px;
+    text-align: center;
+    color: #94a3b8;
+}
+.ovb-edit-menu-item kbd {
+    font-family: monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #bae6fd;
+}
+.ovb-edit-menu-item:hover {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    color: #f8fafc;
+}
+.ovb-edit-menu-item.ovb-item-danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+.ovb-menu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 3px 0;
+}
+
+/* Alignment Grid in Operação */
+.ovb-align-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+}
+.ovb-align-grid .ovb-align-btn {
+    padding: 7px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.ovb-align-grid .ovb-align-btn:hover {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+
+/* Export Cards Stack & Adaptive Black/White SVG Icons */
+.ovb-export-buttons-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+.ovb-export-format-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s;
+}
+.ovb-export-format-btn:hover {
+    background: #1e293b;
+    border-color: #8b5cf6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.ovb-export-btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+/* Adaptive White / Black SVG Icon depending on Dark vs Light theme in editing */
+.ovb-studio-app[data-editing-theme="dark"] .ovb-export-svg-icon {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+.ovb-studio-app[data-editing-theme="light"] .ovb-export-svg-icon {
+    color: #0f172a !important;
+    fill: #0f172a !important;
+}
+
+.ovb-export-btn-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.ovb-export-btn-text strong {
+    font-size: 12px;
+    color: #f8fafc;
+}
+.ovb-export-btn-text span {
+    font-size: 10.5px;
+    color: #94a3b8;
+}
+
+/* Keyboard Shortcuts Preferences Editor */
+.ovb-shortcuts-editor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ovb-shortcut-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+}
+.ovb-sc-name {
+    font-size: 11px;
+    color: #cbd5e1;
+}
+.ovb-sc-btn {
+    padding: 3px 8px;
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #38bdf8;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.ovb-sc-btn:hover {
+    border-color: #8b5cf6;
+    color: #ffffff;
+}
+.ovb-sc-btn.recording {
+    background: #ec4899;
+    color: #ffffff;
+    border-color: #f472b6;
+    animation: ovbPulseRecord 0.8s infinite alternate;
+}
+@keyframes ovbPulseRecord {
+    from { transform: scale(1); }
+    to { transform: scale(1.06); }
+}
