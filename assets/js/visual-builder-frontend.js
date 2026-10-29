@@ -986,17 +986,124 @@
                     if (elConfig.content) {
                         const c = elConfig.content;
 
-                        // Direct Raw innerHTML Override (from Code Editor "Editar na Lata")
+                        // Direct Raw HTML / SVG Override (from Code Editor "Código HTML / SVG do Elemento")
                         if (c.innerHTML !== undefined && c.innerHTML !== '') {
-                            if (!el.hasAttribute('data-ovb-orig-html')) {
-                                el.setAttribute('data-ovb-orig-html', el.innerHTML);
+                            const rawCode = String(c.innerHTML).trim();
+                            if (el._ovbLastAppliedRawCode !== rawCode) {
+                                el._ovbLastAppliedRawCode = rawCode;
+
+                                if (el.tagName === 'IMG') {
+                                    if (el._ovbOrigSrc === undefined) {
+                                        el._ovbOrigSrc = el.getAttribute('src') || '';
+                                    }
+                                    if (/^<svg[\s>]/i.test(rawCode) || rawCode.includes('<svg')) {
+                                        let svgMarkup = rawCode;
+                                        if (!svgMarkup.includes('xmlns=')) {
+                                            svgMarkup = svgMarkup.replace(/<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+                                        }
+                                        const svgDataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgMarkup);
+                                        el.setAttribute('src', svgDataUri);
+                                    } else if (/^<img[\s>]/i.test(rawCode)) {
+                                        const tmpDiv = document.createElement('div');
+                                        tmpDiv.innerHTML = rawCode;
+                                        const parsedImg = tmpDiv.querySelector('img');
+                                        if (parsedImg && parsedImg.getAttribute('src')) {
+                                            el.setAttribute('src', parsedImg.getAttribute('src'));
+                                        }
+                                    }
+                                } else if (el instanceof SVGElement) {
+                                    const isRootSvg = el.tagName.toLowerCase() === 'svg';
+                                    if (el._ovbOrigHtml === undefined) {
+                                        el._ovbOrigHtml = el.innerHTML;
+                                        el._ovbOrigSvgAttrs = {};
+                                        Array.from(el.attributes).forEach(a => {
+                                            if (!a.name.startsWith('data-ovb-')) el._ovbOrigSvgAttrs[a.name] = a.value;
+                                        });
+                                    }
+
+                                    if (isRootSvg) {
+                                        if (/^<svg[\s>]/i.test(rawCode)) {
+                                            const tmpDiv = document.createElement('div');
+                                            tmpDiv.innerHTML = rawCode;
+                                            const parsedSvg = tmpDiv.querySelector('svg');
+                                            if (parsedSvg) {
+                                                Array.from(parsedSvg.attributes).forEach(a => {
+                                                    if (a.name !== 'id' && !a.name.startsWith('data-ovb-')) {
+                                                        try { el.setAttribute(a.name, a.value); } catch (e) {}
+                                                    }
+                                                });
+                                                el.innerHTML = parsedSvg.innerHTML;
+                                            }
+                                        } else {
+                                            el.innerHTML = rawCode;
+                                        }
+                                    } else {
+                                        // Child SVG element (<path>, <g>, <rect>, <circle>, <polygon>, etc.)
+                                        if (/^<svg[\s>]/i.test(rawCode) && el.ownerSVGElement) {
+                                            const rootSvg = el.ownerSVGElement;
+                                            if (rootSvg._ovbOrigHtml === undefined) {
+                                                rootSvg._ovbOrigHtml = rootSvg.innerHTML;
+                                            }
+                                            const tmpDiv = document.createElement('div');
+                                            tmpDiv.innerHTML = rawCode;
+                                            const parsedSvg = tmpDiv.querySelector('svg');
+                                            if (parsedSvg) {
+                                                Array.from(parsedSvg.attributes).forEach(a => {
+                                                    if (a.name !== 'id' && !a.name.startsWith('data-ovb-')) {
+                                                        try { rootSvg.setAttribute(a.name, a.value); } catch (e) {}
+                                                    }
+                                                });
+                                                rootSvg.innerHTML = parsedSvg.innerHTML;
+                                            }
+                                        } else {
+                                            const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                                            tmpSvg.innerHTML = rawCode;
+                                            const firstChild = tmpSvg.firstElementChild;
+                                            if (firstChild && firstChild.tagName.toLowerCase() === el.tagName.toLowerCase()) {
+                                                Array.from(firstChild.attributes).forEach(a => {
+                                                    if (a.name !== 'id' && !a.name.startsWith('data-ovb-')) {
+                                                        try { el.setAttribute(a.name, a.value); } catch (e) {}
+                                                    }
+                                                });
+                                                el.innerHTML = firstChild.innerHTML;
+                                            } else {
+                                                el.innerHTML = rawCode;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Regular HTML element (<div>, <button>, <a>, <span>, custom block)
+                                    if (el._ovbOrigHtml === undefined) {
+                                        const cleanClone = el.cloneNode(true);
+                                        cleanClone.querySelectorAll('.ovb-layer-overlay').forEach(o => o.remove());
+                                        el._ovbOrigHtml = cleanClone.innerHTML;
+                                    }
+                                    el.innerHTML = rawCode;
+                                    // Ensure any inline <svg> pasted inside an HTML element is visible and responsive
+                                    el.querySelectorAll('svg').forEach(svgNode => {
+                                        if (!svgNode.getAttribute('width') && !svgNode.style.width) {
+                                            svgNode.style.maxWidth = '100%';
+                                            svgNode.style.height = 'auto';
+                                            svgNode.style.display = 'inline-block';
+                                        }
+                                    });
+                                }
                             }
-                            if (el.innerHTML !== c.innerHTML) {
-                                el.innerHTML = c.innerHTML;
+                        } else if (el._ovbLastAppliedRawCode !== undefined) {
+                            delete el._ovbLastAppliedRawCode;
+                            if (el.tagName === 'IMG' && el._ovbOrigSrc !== undefined) {
+                                el.setAttribute('src', el._ovbOrigSrc);
+                                delete el._ovbOrigSrc;
+                            } else if (el._ovbOrigHtml !== undefined) {
+                                el.innerHTML = el._ovbOrigHtml;
+                                if (el._ovbOrigSvgAttrs) {
+                                    Object.entries(el._ovbOrigSvgAttrs).forEach(([k, v]) => {
+                                        try { el.setAttribute(k, v); } catch (e) {}
+                                    });
+                                    delete el._ovbOrigSvgAttrs;
+                                }
+                                delete el._ovbOrigHtml;
                             }
-                        } else if (el.hasAttribute('data-ovb-orig-html')) {
-                            el.innerHTML = el.getAttribute('data-ovb-orig-html');
-                            el.removeAttribute('data-ovb-orig-html');
                         }
 
                         const activeText = (curLang === 'en' && c.textEn) ? c.textEn : c.text;
@@ -1022,8 +1129,8 @@
                             el.removeAttribute('data-ovb-orig-text');
                         }
 
-                        // Image Src (supports general src, srcDark, srcLight)
-                        if (el.tagName === 'IMG') {
+                        // Image Src (supports general src, srcDark, srcLight) when not overridden by raw SVG innerHTML
+                        if (el.tagName === 'IMG' && !c.innerHTML) {
                             const targetSrc = (isDark && c.srcDark) ? c.srcDark : ((!isDark && c.srcLight) ? c.srcLight : c.src);
                             if (targetSrc !== undefined && targetSrc !== '') {
                                 if (!el.hasAttribute('data-ovb-orig-src')) {
@@ -1313,11 +1420,57 @@
             ty = parts[1] || '0px';
         }
 
+        // Build clean editable HTML or SVG source code for the Code Editor
+        let editableHtml = '';
+        let parentSvgSelector = '';
+        try {
+            const cleanClone = el.cloneNode(true);
+            const stripOvbAttrs = (node) => {
+                if (!node || !node.attributes) return;
+                Array.from(node.attributes).forEach(attr => {
+                    if (attr.name.startsWith('data-ovb-')) {
+                        node.removeAttribute(attr.name);
+                    }
+                });
+                Array.from(node.children || []).forEach(child => {
+                    if (child.classList && child.classList.contains('ovb-layer-overlay')) {
+                        child.remove();
+                    } else {
+                        stripOvbAttrs(child);
+                    }
+                });
+            };
+            stripOvbAttrs(cleanClone);
+
+            if (el instanceof SVGElement) {
+                editableHtml = cleanClone.outerHTML || el.outerHTML || '';
+                if (el.tagName.toLowerCase() !== 'svg' && el.ownerSVGElement) {
+                    parentSvgSelector = buildUniqueSelector(el.ownerSVGElement) || '';
+                }
+            } else if (el.tagName === 'IMG') {
+                const imgSrc = el.getAttribute('src') || '';
+                if (imgSrc.startsWith('data:image/svg+xml')) {
+                    const commaIdx = imgSrc.indexOf(',');
+                    if (commaIdx !== -1) {
+                        const rawPayload = imgSrc.substring(commaIdx + 1);
+                        editableHtml = imgSrc.includes(';base64,') ? atob(rawPayload) : decodeURIComponent(rawPayload);
+                    }
+                } else {
+                    editableHtml = cleanClone.outerHTML || `<img src="${imgSrc}" alt="${el.getAttribute('alt') || ''}">`;
+                }
+            } else {
+                editableHtml = cleanClone.innerHTML || '';
+            }
+        } catch (e) {
+            editableHtml = el.innerHTML || '';
+        }
+
         return {
             tagName: el.tagName.toLowerCase(),
             isSvg: el instanceof SVGElement,
+            parentSvgSelector: parentSvgSelector,
             label: getElementLabel(el),
-            innerHTML: el.innerHTML || '',
+            innerHTML: editableHtml,
             text: (el.children.length === 0 || el.tagName === 'TEXT' || el.tagName === 'TSPAN') ? (el.textContent || '').trim() : (el.querySelector('span[data-key], span') ? el.querySelector('span[data-key], span').textContent.trim() : ''),
             src: el.tagName === 'IMG' ? (el.getAttribute('src') || '') : '',
             href: el.tagName === 'A' ? (el.getAttribute('href') || '') : '',

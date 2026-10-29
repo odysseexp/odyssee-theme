@@ -323,12 +323,23 @@
 
         // Element Custom CSS (both sidebar & Code IDE Drawer)
         $('#ovb-element-custom-css').val(rec.customCss || '');
-        $('#ovb-code-el-css-editor').val(rec.customCss || '');
+        if (!$('#ovb-code-el-css-editor').is(':focus')) {
+            $('#ovb-code-el-css-editor').val(rec.customCss || '');
+        }
         $('#ovb-code-el-label').text(currentSelector);
+        $('#ovb-code-el-html-label').text(currentSelector);
 
-        // Element Raw innerHTML in Code IDE Drawer
-        const rawHtml = content.innerHTML !== undefined ? content.innerHTML : ((currentSnapshot && currentSnapshot.innerHTML) || '');
-        $('#ovb-code-el-html-editor').val(rawHtml);
+        if (currentSnapshot && currentSnapshot.parentSvgSelector) {
+            $('#ovb-btn-select-parent-svg').attr('data-parent-svg', currentSnapshot.parentSvgSelector).show();
+        } else {
+            $('#ovb-btn-select-parent-svg').hide();
+        }
+
+        // Element Raw innerHTML / SVG in Code IDE Drawer
+        if (!$('#ovb-code-el-html-editor').is(':focus')) {
+            const rawHtml = content.innerHTML !== undefined ? content.innerHTML : ((currentSnapshot && currentSnapshot.innerHTML) || '');
+            $('#ovb-code-el-html-editor').val(rawHtml);
+        }
 
         // Highlight selected row in Photoshop Layers panel
         $('.ovb-ps-layer-row').removeClass('is-selected');
@@ -2011,7 +2022,7 @@
         });
 
         // ==========================================
-        // LIVE CODE EDITOR IDE ("PROGRAMAR POR CÓDIGO / NA LATA")
+        // LIVE CODE EDITOR IDE (CSS, HTML & SVG)
         // ==========================================
         $('#ovb-toggle-code-drawer, #ovb-btn-open-code-export').on('click', function () {
             const drawer = $('#ovb-code-drawer');
@@ -2039,7 +2050,7 @@
             $(this).addClass('active');
             $('.ovb-code-pane').removeClass('active');
             $('#' + paneId).addClass('active');
-            if (paneId === 'pane-gemini-export') {
+            if (paneId === 'pane-compiled-export') {
                 updateCompiledCodeDisplay();
             }
         });
@@ -2081,15 +2092,110 @@
             $('#ovb-code-el-css-editor').val(tpl).trigger('input').focus();
         });
 
-        // Element Raw innerHTML editing in Code IDE Drawer
-        $('#ovb-code-el-html-editor').on('input', function () {
+        // Helper to insert a brand-new standalone SVG/HTML block on the page
+        function insertNewSvgOrHtmlBlock(rawMarkup) {
+            const code = (rawMarkup || '').trim();
+            if (!code) {
+                showToast('Cole ou digite um código <svg>...</svg> ou HTML primeiro!', true);
+                return;
+            }
+            const newId = 'ovb_blk_' + Date.now();
+            const targetSel = (currentSelector && currentSelector !== 'body') ? currentSelector : 'body';
+            const pos = targetSel === 'body' ? 'append' : 'after';
+
+            if (!Array.isArray(state.blocks)) state.blocks = [];
+            state.blocks.push({
+                id: newId,
+                type: 'html',
+                targetSelector: targetSel,
+                position: pos,
+                content: {
+                    html: code
+                }
+            });
+
+            const blkSel = '#' + newId;
+            const rec = ensureElementRecord(blkSel);
+            rec.content.innerHTML = code;
+            rec.elUiStyle = 'none'; // Keep SVG/HTML blocks immune to theme button overrides by default
+
+            pushHistory();
+            syncPreview();
+            setTimeout(() => {
+                postToIframe({ type: 'OVB_SELECT_SELECTOR', selector: blkSel });
+            }, 90);
+            showToast('✨ Novo bloco SVG / HTML inserido na página e selecionado!');
+        }
+
+        // Apply Raw HTML / SVG to the currently selected element
+        function applyRawHtmlOrSvgToSelected(rawVal, showFeedback) {
             if (!currentSelector) {
-                showToast('Selecione um elemento na página primeiro!', true);
+                if (showFeedback) {
+                    insertNewSvgOrHtmlBlock(rawVal);
+                }
                 return;
             }
             const rec = ensureElementRecord(currentSelector);
-            rec.content.innerHTML = $(this).val();
+            rec.content.innerHTML = rawVal;
+
+            // If this element is a custom block (#ovb_blk_...), also sync its block.content.html so renderCustomBlocks() preserves it
+            if (currentSnapshot && currentSnapshot.isCustomBlock && currentSnapshot.blockId && Array.isArray(state.blocks)) {
+                const blk = state.blocks.find(b => b && b.id === currentSnapshot.blockId);
+                if (blk) {
+                    if (!blk.content) blk.content = {};
+                    blk.content.html = rawVal;
+                }
+            }
+
             syncPreview();
+            if (showFeedback) {
+                pushHistory();
+                showToast('✅ Código HTML / SVG aplicado no elemento selecionado!');
+            }
+        }
+
+        // Element Raw innerHTML / SVG live editing in Code IDE Drawer
+        $('#ovb-code-el-html-editor').on('input', function () {
+            if (!currentSelector) return;
+            applyRawHtmlOrSvgToSelected($(this).val(), false);
+        });
+
+        $('#ovb-btn-apply-raw-html').on('click', function () {
+            applyRawHtmlOrSvgToSelected($('#ovb-code-el-html-editor').val(), true);
+        });
+
+        $('#ovb-btn-insert-new-svg-block').on('click', function () {
+            insertNewSvgOrHtmlBlock($('#ovb-code-el-html-editor').val());
+        });
+
+        $('#ovb-btn-select-parent-svg').on('click', function () {
+            const parentSvgSel = $(this).attr('data-parent-svg');
+            if (parentSvgSel) {
+                postToIframe({ type: 'OVB_SELECT_SELECTOR', selector: parentSvgSel });
+                showToast('⬆️ Tag <svg> raiz selecionada!');
+            }
+        });
+
+        $('#ovb-btn-upload-svg-file').on('click', function () {
+            $('#ovb-upload-svg-input').trigger('click');
+        });
+
+        $('#ovb-upload-svg-input').on('change', function (e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                const svgContent = String(evt.target.result || '').trim();
+                if (!svgContent) return;
+                $('#ovb-code-el-html-editor').val(svgContent);
+                if (currentSelector && currentSelector !== 'body') {
+                    applyRawHtmlOrSvgToSelected(svgContent, true);
+                } else {
+                    insertNewSvgOrHtmlBlock(svgContent);
+                }
+            };
+            reader.readAsText(file);
+            $(this).val('');
         });
 
         $('#ovb-btn-restore-el-html').on('click', function () {
@@ -2098,10 +2204,13 @@
             delete rec.content.innerHTML;
             pushHistory();
             syncPreview();
-            showToast('HTML original do elemento restaurado!');
+            setTimeout(() => {
+                postToIframe({ type: 'OVB_SELECT_SELECTOR', selector: currentSelector });
+            }, 60);
+            showToast('↺ Código original do elemento restaurado!');
         });
 
-        // Copy Compiled CSS & Copy Preset JSON for Gemini
+        // Copy Compiled CSS & Copy Preset JSON
         $('#ovb-btn-copy-compiled-css').on('click', function () {
             navigator.clipboard.writeText(latestCompiledCss || '');
             showToast('📋 CSS Compilado copiado para a área de transferência!');
@@ -2109,11 +2218,11 @@
 
         $('#ovb-btn-copy-preset-json').on('click', function () {
             navigator.clipboard.writeText(JSON.stringify(state, null, 2));
-            showToast('📋 Predefinição JSON copiada! Pronta para colar no Gemini.');
+            showToast('📋 Predefinição JSON copiada para a área de transferência!');
         });
 
         // ==========================================
-        // GLOBAL THEME VARIABLES, CUSTOM COLOR PALETTES & GLOBAL CSS NA LATA
+        // GLOBAL THEME VARIABLES, CUSTOM COLOR PALETTES & GLOBAL CSS
         // ==========================================
         $(document).on('input change', '[data-ovb-gvar]', function () {
             const scope = $(this).attr('data-ovb-gscope') || 'all';
@@ -2212,7 +2321,7 @@
             showToast('Paleta removida.');
         });
 
-        // Global Custom CSS ("Editar CSS na lata")
+        // Global Custom CSS
         $('#ovb-global-custom-css').on('input', function () {
             state.customCss = $(this).val();
             syncPreview();
