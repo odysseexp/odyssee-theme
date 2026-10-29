@@ -666,7 +666,7 @@ body.appearance_page_odyssee-visual-builder #wpbody-content {
 }
 
 .ovb-iframe-container.device-tablet {
-    width: 768px;
+    width: 880px;
     height: 92%;
     border: 8px solid #1e293b;
     border-radius: 20px;
@@ -887,4 +887,97 @@ body.appearance_page_odyssee-visual-builder #wpbody-content {
     font-size: 11px;
     color: #94a3b8;
 }
+
+/* ==========================================================================
+   Figma / Adobe Illustrator Transform, Alignment & Aspect Ratio Controls
+   ========================================================================== */
+.ovb-align-bar {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.ovb-align-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    border-radius: 5px;
+    padding: 6px 0;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+}
+
+.ovb-align-btn:hover {
+    background: #8b5cf6;
+    border-color: #a855f7;
+    color: #ffffff;
+}
+
+.ovb-origin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 18px);
+    grid-template-rows: repeat(3, 18px);
+    gap: 3px;
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    padding: 4px;
+}
+
+.ovb-origin-dot {
+    width: 18px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: #94a3b8;
+    padding: 0;
+    transition: all 0.14s;
+}
+
+.ovb-origin-dot:hover {
+    background: rgba(168, 85, 247, 0.35);
+    color: #fff;
+}
+
+.ovb-origin-dot.active {
+    background: #8b5cf6;
+    border-color: #f472b6;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.7);
+}
+
+.ovb-lock-btn {
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    color: #6ee7b7;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+}
+
+.ovb-lock-btn.unlocked {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #94a3b8;
+}
+
 

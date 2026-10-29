@@ -21,8 +21,19 @@
 
     let currentSelector = null;
     let currentSnapshot = null;
-    let currentBucket = 'desktop'; // 'desktop', 'hover', 'tablet', 'mobile', 'dark', 'light'
+    let currentBucket = 'desktop'; // 'desktop', 'tablet', 'mobile', 'global', 'hover', 'dark', 'light'
+    let aspectRatioLocked = true;
     let pageTree = [];
+
+    const BUCKET_LABELS = {
+        desktop: '🖥️ Só Desktop (≥1025px)',
+        tablet: '📱 Só Tablet (769–1024px)',
+        mobile: '📲 Só Mobile (≤768px)',
+        global: '🌐 Todos Dispositivos',
+        hover: '👆 Hover (Mouse)',
+        dark: '🌙 Tema Escuro',
+        light: '☀️ Tema Claro'
+    };
 
     function deepClone(obj) {
         return JSON.parse(JSON.stringify(obj || {}));
@@ -89,12 +100,14 @@
         if (!state.elements[selector]) {
             state.elements[selector] = {
                 themeScope: 'all',
+                elUiStyle: '',
                 content: { attrs: {} },
                 styles: {
                     desktop: { rawCssProps: {} },
-                    hover: {},
                     tablet: {},
                     mobile: {},
+                    global: {},
+                    hover: {},
                     dark: {},
                     light: {}
                 },
@@ -131,6 +144,8 @@
         const bannerLabel = $('#ovb-sel-label');
         const bannerSel = $('#ovb-sel-selector');
 
+        $('#ovb-active-bucket-badge').text(BUCKET_LABELS[currentBucket] || currentBucket);
+
         if (!currentSelector) {
             bannerLabel.text('Nenhum elemento selecionado');
             bannerSel.text('Clique ou arraste qualquer item do site ao lado →');
@@ -142,12 +157,13 @@
         $('#ovb-custom-selector-input').val(currentSelector);
 
         const rec = state.elements[currentSelector] || {};
+        // Strictly read the active bucket's styles without bleeding Desktop into Tablet/Mobile!
         const st = (rec.styles && rec.styles[currentBucket]) || {};
-        const dSt = (rec.styles && rec.styles.desktop) || {};
         const content = rec.content || {};
         const comp = (currentSnapshot && currentSnapshot.computed) || {};
 
         $('#ovb-theme-scope').val(rec.themeScope || 'all');
+        $('#ovb-el-uistyle-select').val(rec.elUiStyle || '');
 
         // Content Tab (PT + EN text, Image URLs, Href, Attributes)
         const textVal = content.text !== undefined ? content.text : ((currentSnapshot && currentSnapshot.text) || '');
@@ -178,11 +194,11 @@
             $('#ovb-custom-block-editor').hide();
         }
 
-        // Bind all [data-ovb-prop] fields, falling back to live computed values so every pre-existing style is visible!
+        // Bind all [data-ovb-prop] fields strictly from active bucket `st[prop]` (or live computed `comp[prop]`)
         $('[data-ovb-prop]').each(function () {
             const $el = $(this);
             const prop = $el.attr('data-ovb-prop');
-            const savedVal = st[prop] !== undefined ? st[prop] : dSt[prop];
+            const savedVal = st[prop];
             const compVal = comp[prop];
             const effectiveVal = savedVal !== undefined ? savedVal : (compVal !== undefined ? compVal : '');
 
@@ -200,7 +216,7 @@
         // Sync range sliders with their partner inputs or computed values
         $('.ovb-range[data-ovb-range-for]').each(function () {
             const prop = $(this).attr('data-ovb-range-for');
-            const savedVal = st[prop] !== undefined ? st[prop] : dSt[prop];
+            const savedVal = st[prop];
             const compVal = comp[prop];
             const rawVal = savedVal !== undefined ? savedVal : (compVal !== undefined ? compVal : ($(this).attr('data-default') || 0));
             const numeric = parseFloat(String(rawVal).replace(/[^0-9.-]/g, ''));
@@ -209,8 +225,17 @@
             }
         });
 
+        // Highlight active 9-point Transform Origin dot
+        const activeOrigin = st.transformOrigin || 'center center';
+        $('.ovb-origin-dot').removeClass('active');
+        $(`.ovb-origin-dot[data-origin="${activeOrigin}"]`).addClass('active');
+
+        // Highlight Flip H / Flip V buttons
+        $('#ovb-btn-flip-x').css('border-color', st.flipX ? '#a855f7' : '');
+        $('#ovb-btn-flip-y').css('border-color', st.flipY ? '#a855f7' : '');
+
         // Highlight active blend mode pill
-        const activeBlend = st.blendMode || dSt.blendMode || comp.mixBlendMode || 'normal';
+        const activeBlend = st.blendMode || comp.mixBlendMode || 'normal';
         $('.ovb-blend-pill').removeClass('active');
         $(`.ovb-blend-pill[data-blend="${activeBlend}"]`).addClass('active');
 
@@ -602,6 +627,23 @@
                     $('.ovb-tab-btn[data-tab="tab-content"]').trigger('click');
                     break;
                 }
+                case 'OVB_UNSTRETCH_ELEMENT': {
+                    const sel = msg.selector || currentSelector;
+                    if (sel && state.elements[sel] && state.elements[sel].styles) {
+                        const bucketObj = state.elements[sel].styles[currentBucket] || {};
+                        delete bucketObj.width;
+                        delete bucketObj.height;
+                        delete bucketObj.scaleX;
+                        delete bucketObj.scaleY;
+                        delete bucketObj.aspectRatio;
+                        delete bucketObj.objectFit;
+                        pushHistory();
+                        syncPreview();
+                        populateSidebarFromSelection();
+                        showToast('✨ Proporção 1:1 original restaurada (sem esticamento)!');
+                    }
+                    break;
+                }
                 case 'OVB_RESET_ELEMENT': {
                     const sel = msg.selector || currentSelector;
                     if (sel) {
@@ -651,7 +693,7 @@
             $('#ovb-preview-iframe').attr('src', url + sep + 'odyssee_vb_preview=1');
         });
 
-        // Responsive Device Switcher
+        // Responsive Device Switcher (Strictly Isolated per Device!)
         $(document).on('click', '.ovb-device-btn', function () {
             const dev = $(this).attr('data-device');
             $('.ovb-device-btn').removeClass('active');
@@ -664,12 +706,18 @@
                 currentBucket = dev;
                 $('#ovb-state-bucket').val(dev);
                 populateSidebarFromSelection();
+                showToast(`Modo isolado ativo: ${BUCKET_LABELS[dev]}`);
             }
         });
 
         // State Bucket Switcher
         $('#ovb-state-bucket').on('change', function () {
             currentBucket = $(this).val();
+            if (currentBucket === 'desktop' || currentBucket === 'tablet' || currentBucket === 'mobile') {
+                $('.ovb-device-btn').removeClass('active');
+                $(`.ovb-device-btn[data-device="${currentBucket}"]`).addClass('active');
+                $('#ovb-iframe-container').removeClass('device-desktop device-tablet device-mobile').addClass('device-' + currentBucket);
+            }
             populateSidebarFromSelection();
         });
 
@@ -682,7 +730,21 @@
             syncPreview();
         });
 
-        // Preview Theme & Accent & Onboarding toggles
+        // Per-Element Individual UI Design System Override
+        $('#ovb-el-uistyle-select').on('change', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento primeiro para aplicar um Estilo UI individual!', true);
+                return;
+            }
+            const rec = ensureElementRecord(currentSelector);
+            rec.elUiStyle = $(this).val() || '';
+            pushHistory();
+            syncPreview();
+            updateCompiledCodeDisplay();
+            showToast(rec.elUiStyle ? `🎯 Estilo '${rec.elUiStyle}' aplicado somente a este item!` : '🎯 Item voltou a herdar o Estilo da Página!');
+        });
+
+        // Preview Theme & Accent & Onboarding & Grid toggles
         $(document).on('click', '.ovb-preview-theme-btn', function () {
             const theme = $(this).attr('data-theme');
             $('.ovb-preview-theme-btn').removeClass('active');
@@ -703,12 +765,187 @@
             postToPreview({ type: 'OVB_SET_PREVIEW_THEME', onboarding: active });
         });
 
+        $('#ovb-toggle-grid').on('click', function () {
+            $(this).toggleClass('active');
+            const showGrid = $(this).hasClass('active');
+            postToPreview({ type: 'OVB_TOGGLE_GRID', show: showGrid });
+            showToast(showGrid ? '📐 Grade de Alinhamento Figma ativada!' : 'Grade de Alinhamento ocultada');
+        });
+
         // Interactive Mode Toggle (Navigate vs Select/Drag)
         $('#ovb-toggle-interactive').on('click', function () {
             $(this).toggleClass('active');
             const interactive = $(this).hasClass('active');
             postToPreview({ type: 'OVB_SET_INTERACTIVE_MODE', interactive: interactive });
             showToast(interactive ? 'Modo Navegação Livre ativado (cliques normais no site)' : 'Modo Editor (Selecionar, Arrastar e Redimensionar) ativado');
+        });
+
+        // ==========================================
+        // FIGMA / ILLUSTRATOR TRANSFORM, PROPORTION & ALIGNMENT TOOLS
+        // ==========================================
+        $('#ovb-btn-aspect-lock').on('click', function () {
+            aspectRatioLocked = !aspectRatioLocked;
+            $(this).toggleClass('unlocked', !aspectRatioLocked);
+            $(this).html(aspectRatioLocked
+                ? '<i class="fas fa-lock"></i> <span>Proporção Travada</span>'
+                : '<i class="fas fa-lock-open"></i> <span>Proporção Livre</span>');
+            postToPreview({ type: 'OVB_SET_ASPECT_LOCK', locked: aspectRatioLocked });
+            showToast(aspectRatioLocked ? '🔒 Proporção travada (evita esticar o elemento sem querer)!' : '🔓 Proporção livre ativada');
+        });
+
+        $('#ovb-btn-unstretch').on('click', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento primeiro!', true);
+                return;
+            }
+            window.postMessage({ type: 'OVB_UNSTRETCH_ELEMENT', selector: currentSelector }, '*');
+        });
+
+        $('#ovb-btn-reset-scale').on('click', function () {
+            if (!currentSelector) return;
+            updateElementStyleProp('scale', '1');
+            populateSidebarFromSelection();
+            showToast('Escala uniforme redefinida para 1x (100%)!');
+        });
+
+        $(document).on('click', '.ovb-btn-auto-dim', function () {
+            if (!currentSelector) return;
+            const dim = $(this).attr('data-dim');
+            const rec = ensureElementRecord(currentSelector);
+            delete rec.styles[currentBucket][dim];
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+            showToast(`${dim === 'width' ? 'Largura' : 'Altura'} redefinida para Auto!`);
+        });
+
+        // Quick 6-Button Alignment Bar (Figma / Illustrator style)
+        $(document).on('click', '.ovb-align-btn', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento na página primeiro!', true);
+                return;
+            }
+            const align = $(this).attr('data-align');
+            const rec = ensureElementRecord(currentSelector);
+            const st = rec.styles[currentBucket];
+
+            if (align === 'left') {
+                st.translateX = '0px';
+                st.marginLeft = '0px';
+                st.marginRight = 'auto';
+                st.textAlign = 'left';
+            } else if (align === 'center-h') {
+                st.translateX = '0px';
+                st.marginLeft = 'auto';
+                st.marginRight = 'auto';
+                st.textAlign = 'center';
+            } else if (align === 'right') {
+                st.translateX = '0px';
+                st.marginLeft = 'auto';
+                st.marginRight = '0px';
+                st.textAlign = 'right';
+            } else if (align === 'top') {
+                st.translateY = '0px';
+                st.alignSelf = 'flex-start';
+            } else if (align === 'center-v') {
+                st.translateY = '0px';
+                st.alignSelf = 'center';
+            } else if (align === 'bottom') {
+                st.translateY = '0px';
+                st.alignSelf = 'flex-end';
+            }
+
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+            showToast('📐 Alinhamento aplicado neste dispositivo!');
+        });
+
+        // 9-Point Reference Point / Transform Origin Matrix (Illustrator style)
+        $(document).on('click', '.ovb-origin-dot', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento primeiro!', true);
+                return;
+            }
+            const origin = $(this).attr('data-origin') || 'center center';
+            $('.ovb-origin-dot').removeClass('active');
+            $(this).addClass('active');
+            updateElementStyleProp('transformOrigin', origin);
+            showToast(`Ponto de âncora alterado para: ${origin}`);
+        });
+
+        // Quick Flip H / Flip V & Rotate -90° / +90° / 0°
+        $('#ovb-btn-flip-x').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].flipX = !rec.styles[currentBucket].flipX;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-btn-flip-y').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].flipY = !rec.styles[currentBucket].flipY;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-btn-rot-m90').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            const cur = parseFloat(String(rec.styles[currentBucket].rotate || '0').replace(/[^0-9.-]/g, '')) || 0;
+            rec.styles[currentBucket].rotate = ((cur - 90) % 360) + 'deg';
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-btn-rot-p90').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            const cur = parseFloat(String(rec.styles[currentBucket].rotate || '0').replace(/[^0-9.-]/g, '')) || 0;
+            rec.styles[currentBucket].rotate = ((cur + 90) % 360) + 'deg';
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-btn-rot-0').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].rotate = '0deg';
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+        });
+
+        // Copy Current Device Styles to All Devices / Reset Current Device Bucket Only
+        $('#ovb-btn-copy-device-to-all').on('click', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento primeiro!', true);
+                return;
+            }
+            const rec = ensureElementRecord(currentSelector);
+            const srcStyles = deepClone(rec.styles[currentBucket] || {});
+            rec.styles.desktop = deepClone(srcStyles);
+            rec.styles.tablet = deepClone(srcStyles);
+            rec.styles.mobile = deepClone(srcStyles);
+            pushHistory();
+            syncPreview();
+            showToast('📲 Estilo copiado para Desktop, Tablet e Mobile!');
+        });
+
+        $('#ovb-btn-reset-bucket').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket] = { rawCssProps: {} };
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+            showToast(`🗑️ Ajustes de ${BUCKET_LABELS[currentBucket] || currentBucket} limpos (outros dispositivos intactos)!`);
         });
 
         // Quick Structural & Position Actions in Sidebar
@@ -732,7 +969,7 @@
             pushHistory();
             syncPreview();
             populateSidebarFromSelection();
-            showToast('Posição X/Y centralizada (0px, 0px)!');
+            showToast('Posição X/Y centralizada (0px, 0px) neste dispositivo!');
         });
 
         $('#ovb-btn-duplicate-el').on('click', function () {
@@ -909,6 +1146,9 @@
             const prop = $el.attr('data-ovb-prop');
             let val = $el.attr('type') === 'checkbox' ? $el.is(':checked') : $el.val();
 
+            // Sync any duplicate inputs with the same [data-ovb-prop]
+            $(`[data-ovb-prop="${prop}"]`).not(this).val(val);
+
             const $slider = $(`.ovb-range[data-ovb-range-for="${prop}"]`);
             if ($slider.length) {
                 const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
@@ -918,12 +1158,32 @@
             updateElementStyleProp(prop, val);
         });
 
-        // Range Sliders Binding ([data-ovb-range-for])
+        // Range Sliders Binding ([data-ovb-range-for]) — with Aspect Ratio Protection for Width/Height!
         $(document).on('input change', '.ovb-range[data-ovb-range-for]', function () {
             const prop = $(this).attr('data-ovb-range-for');
             const unit = $(this).attr('data-unit') || '';
-            const val = $(this).val() + unit;
+            const numVal = parseFloat($(this).val());
+            const val = numVal + unit;
             $(`[data-ovb-prop="${prop}"]`).val(val);
+
+            // If Aspect Ratio Lock is active and user drags Width or Height slider, prevent stretching!
+            if (aspectRatioLocked && currentSelector && (prop === 'width' || prop === 'height')) {
+                const rec = ensureElementRecord(currentSelector);
+                if (prop === 'width') {
+                    // Setting height to 'auto' lets images/containers scale proportionally without stretching
+                    delete rec.styles[currentBucket].height;
+                    $('[data-ovb-prop="height"]').val('auto');
+                } else if (prop === 'height') {
+                    const ratio = (currentSnapshot && currentSnapshot.computed && currentSnapshot.computed.naturalRatio) || 0;
+                    if (ratio > 0) {
+                        const calcW = Math.round(numVal * ratio) + 'px';
+                        rec.styles[currentBucket].width = calcW;
+                        $('[data-ovb-prop="width"]').val(calcW);
+                        $('#ovb-slider-width').val(Math.round(numVal * ratio));
+                    }
+                }
+            }
+
             updateElementStyleProp(prop, val);
         });
 

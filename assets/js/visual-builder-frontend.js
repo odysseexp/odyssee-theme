@@ -83,8 +83,11 @@
         if (st.overflow) rules.push(`overflow: ${st.overflow}${imp}`);
         if (st.pointerEvents) rules.push(`pointer-events: ${st.pointerEvents}${imp}`);
         if (st.cursor) rules.push(`cursor: ${st.cursor}${imp}`);
+        if (st.aspectRatio) rules.push(`aspect-ratio: ${st.aspectRatio}${imp}`);
+        if (st.objectFit) rules.push(`object-fit: ${st.objectFit}${imp}`);
+        if (st.transformOrigin) rules.push(`transform-origin: ${st.transformOrigin}${imp}`);
 
-        // Independent Translate / Scale / Rotate (Composes cleanly with existing animations and VanillaTilt!)
+        // Independent Translate / Scale (Uniform + X/Y + Flip) / Rotate (Composes cleanly with existing animations and VanillaTilt!)
         const tx = st.translateX !== undefined && st.translateX !== '' ? st.translateX : '0px';
         const ty = st.translateY !== undefined && st.translateY !== '' ? st.translateY : '0px';
         if (tx !== '0px' || ty !== '0px') {
@@ -93,8 +96,19 @@
             rules.push(`translate: ${normTx} ${normTy}${imp}`);
         }
 
-        if (st.scale !== undefined && st.scale !== '' && Number(st.scale) !== 1) {
-            rules.push(`scale: ${st.scale}${imp}`);
+        const hasScale = (st.scale !== undefined && st.scale !== '') ||
+                         (st.scaleX !== undefined && st.scaleX !== '') ||
+                         (st.scaleY !== undefined && st.scaleY !== '') ||
+                         st.flipX || st.flipY;
+        if (hasScale) {
+            const baseS = (st.scale !== undefined && st.scale !== '') ? parseFloat(st.scale) : 1;
+            const rawSx = (st.scaleX !== undefined && st.scaleX !== '') ? parseFloat(st.scaleX) : baseS;
+            const rawSy = (st.scaleY !== undefined && st.scaleY !== '') ? parseFloat(st.scaleY) : baseS;
+            const sx = (isNaN(rawSx) ? 1 : rawSx) * (st.flipX ? -1 : 1);
+            const sy = (isNaN(rawSy) ? 1 : rawSy) * (st.flipY ? -1 : 1);
+            if (sx !== 1 || sy !== 1) {
+                rules.push(`scale: ${sx} ${sy}${imp}`);
+            }
         }
 
         if (st.rotate !== undefined && st.rotate !== '' && Number(st.rotate) !== 0) {
@@ -362,7 +376,8 @@
             if (decls) cssParts.push(`body.theme-light { ${decls} }`);
         }
 
-        // 2. Per-Element Rules
+        // 2. Per-Element Rules (Strictly isolated per device: Desktop >=1025px, Tablet 769px-1024px, Mobile <=768px, plus Global)
+        const desktopRules = [];
         const tabletRules = [];
         const mobileRules = [];
 
@@ -372,9 +387,28 @@
             const prefix = themeScope === 'dark' ? 'body.theme-dark ' : (themeScope === 'light' ? 'body.theme-light ' : '');
             const fullSel = prefix + selector;
 
+            // Global rules (when user chooses "Global - Todos os Dispositivos")
+            if (elConfig.styles && elConfig.styles.global) {
+                const gCss = compileRuleDeclarations(elConfig.styles.global, false);
+                if (gCss) cssParts.push(`${fullSel} { ${gCss}; }`);
+            }
+
+            // Desktop-only rules (>= 1025px)
             if (elConfig.styles && elConfig.styles.desktop) {
                 const dCss = compileRuleDeclarations(elConfig.styles.desktop, false);
-                if (dCss) cssParts.push(`${fullSel} { ${dCss}; }`);
+                if (dCss) desktopRules.push(`${fullSel} { ${dCss}; }`);
+            }
+
+            // Tablet-only rules (769px to 1024px)
+            if (elConfig.styles && elConfig.styles.tablet) {
+                const tCss = compileRuleDeclarations(elConfig.styles.tablet, false);
+                if (tCss) tabletRules.push(`${fullSel} { ${tCss}; }`);
+            }
+
+            // Mobile-only rules (<= 768px)
+            if (elConfig.styles && elConfig.styles.mobile) {
+                const mCss = compileRuleDeclarations(elConfig.styles.mobile, false);
+                if (mCss) mobileRules.push(`${fullSel} { ${mCss}; }`);
             }
 
             if (elConfig.styles && elConfig.styles.hover) {
@@ -394,24 +428,17 @@
                 if (lightCss) cssParts.push(`body.theme-light ${selector} { ${lightCss}; }`);
             }
 
-            if (elConfig.styles && elConfig.styles.tablet) {
-                const tCss = compileRuleDeclarations(elConfig.styles.tablet, false);
-                if (tCss) tabletRules.push(`${fullSel} { ${tCss}; }`);
-            }
-
-            if (elConfig.styles && elConfig.styles.mobile) {
-                const mCss = compileRuleDeclarations(elConfig.styles.mobile, false);
-                if (mCss) mobileRules.push(`${fullSel} { ${mCss}; }`);
-            }
-
             if (elConfig.customCss && elConfig.customCss.trim()) {
                 const parsedCustom = elConfig.customCss.replace(/\bselector\b/g, fullSel);
                 cssParts.push(parsedCustom);
             }
         });
 
+        if (desktopRules.length > 0) {
+            cssParts.push(`@media (min-width: 1025px) {\n  ${desktopRules.join('\n  ')}\n}`);
+        }
         if (tabletRules.length > 0) {
-            cssParts.push(`@media (max-width: 1024px) {\n  ${tabletRules.join('\n  ')}\n}`);
+            cssParts.push(`@media (min-width: 769px) and (max-width: 1024px) {\n  ${tabletRules.join('\n  ')}\n}`);
         }
         if (mobileRules.length > 0) {
             cssParts.push(`@media (max-width: 768px) {\n  ${mobileRules.join('\n  ')}\n}`);
@@ -771,11 +798,18 @@
                         }
                     }
 
+                    // 1b. Per-Element Individual UI Design System Override ([data-ovb-el-ui-style])
+                    if (elConfig.elUiStyle && elConfig.elUiStyle !== 'inherit') {
+                        el.setAttribute('data-ovb-el-ui-style', elConfig.elUiStyle);
+                    } else if (el.hasAttribute('data-ovb-el-ui-style')) {
+                        el.removeAttribute('data-ovb-el-ui-style');
+                    }
+
                     // 2. Hover Animation Preset Class
                     ['ovb-hover-lift', 'ovb-hover-grow', 'ovb-hover-shrink', 'ovb-hover-tilt', 'ovb-hover-glow-boost'].forEach(cls => {
                         el.classList.remove(cls);
                     });
-                    const st = (elConfig.styles && elConfig.styles.desktop) || {};
+                    const st = (elConfig.styles && (elConfig.styles.desktop || elConfig.styles.global)) || {};
                     if (st.hoverPreset && st.hoverPreset !== 'none') {
                         el.classList.add(st.hoverPreset);
                     }
@@ -1185,9 +1219,12 @@
 
     /**
      * Initializes the Interactive Canvas Manipulation Engine (Drag-to-Move, 8 Resize Handles, Reorder, Duplicate)
+    /**
+     * Initializes the Interactive Canvas Manipulation Engine (Figma/Illustrator style Drag, 8 Resize Handles, Corner Radius Handle, Aspect Lock, Arrow Nudge)
      */
     function initPreviewInspector() {
         document.body.classList.add('ovb-editor-active');
+        let lockAspectRatio = true; // Constrain proportions by default so elements don't stretch accidentally!
 
         try {
             localStorage.setItem('onboardingFeito', 'sim');
@@ -1199,18 +1236,19 @@
         hoverBadge.id = 'ovb-Hover-Badge';
         document.body.appendChild(hoverBadge);
 
-        // 2. Selection Frame with 8 Resize Handles
+        // 2. Selection Frame with 8 Resize Handles + 1 Figma Corner Radius Handle
         const selBox = document.createElement('div');
         selBox.id = 'ovb-Selection-Box';
         selBox.innerHTML = `
-            <div class="ovb-resize-handle ovb-rh-nw" data-rh="nw" title="Redimensionar Escala / Tamanho"></div>
+            <div class="ovb-resize-handle ovb-rh-nw" data-rh="nw" title="Redimensionar Tamanho Proporcional (Escala)"></div>
             <div class="ovb-resize-handle ovb-rh-n"  data-rh="n"  title="Redimensionar Altura"></div>
-            <div class="ovb-resize-handle ovb-rh-ne" data-rh="ne" title="Redimensionar Escala / Tamanho"></div>
+            <div class="ovb-resize-handle ovb-rh-ne" data-rh="ne" title="Redimensionar Tamanho Proporcional (Escala)"></div>
             <div class="ovb-resize-handle ovb-rh-e"  data-rh="e"  title="Redimensionar Largura"></div>
-            <div class="ovb-resize-handle ovb-rh-se" data-rh="se" title="Redimensionar Escala / Tamanho"></div>
+            <div class="ovb-resize-handle ovb-rh-se" data-rh="se" title="Redimensionar Tamanho Proporcional (Escala)"></div>
             <div class="ovb-resize-handle ovb-rh-s"  data-rh="s"  title="Redimensionar Altura"></div>
-            <div class="ovb-resize-handle ovb-rh-sw" data-rh="sw" title="Redimensionar Escala / Tamanho"></div>
+            <div class="ovb-resize-handle ovb-rh-sw" data-rh="sw" title="Redimensionar Tamanho Proporcional (Escala)"></div>
             <div class="ovb-resize-handle ovb-rh-w"  data-rh="w"  title="Redimensionar Largura"></div>
+            <div class="ovb-radius-handle" title="Arraste para arredondar cantos (Corner Radius estilo Figma/Illustrator)"></div>
         `;
         document.body.appendChild(selBox);
 
@@ -1221,17 +1259,19 @@
             <span class="ovb-badge-drag-handle" title="Arraste aqui (ou arraste o próprio elemento) para mover livremente em X/Y">
                 ✥ <span class="ovb-badge-title">Elemento</span>
             </span>
+            <button type="button" class="ovb-badge-btn" data-act="toggle-lock" title="Travar/Destravar Proporção ao Redimensionar (Evita esticar sem querer)">🔒 Proporção</button>
+            <button type="button" class="ovb-badge-btn" data-act="unstretch" title="Desfazer Esticamento / Restaurar Proporção Original 1:1">1:1</button>
             <button type="button" class="ovb-badge-btn" data-act="move-up" title="Mover Acima na Ordem da Página (HTML)">▲</button>
             <button type="button" class="ovb-badge-btn" data-act="move-down" title="Mover Abaixo na Ordem da Página (HTML)">▼</button>
             <button type="button" class="ovb-badge-btn" data-act="parent" title="Selecionar Elemento Pai">⬆ Pai</button>
-            <button type="button" class="ovb-badge-btn" data-act="duplicate" title="Duplicar este Elemento">⧉</button>
+            <button type="button" class="ovb-badge-btn" data-act="duplicate" title="Duplicar este Elemento (ou Alt+Arrastar)">⧉</button>
             <button type="button" class="ovb-badge-btn" data-act="hide" title="Ocultar Elemento">👁️</button>
             <button type="button" class="ovb-badge-btn" data-act="add-after" title="Inserir Novo Bloco Abaixo">＋</button>
             <button type="button" class="ovb-badge-btn" data-act="reset" title="Resetar Posição e Estilo deste Elemento">↺</button>
         `;
         document.body.appendChild(floatBadge);
 
-        // 4. Live Transform HUD & Snap Guide
+        // 4. Live Transform HUD & Smart Center Snap Guides (V + H)
         const hud = document.createElement('div');
         hud.id = 'ovb-Transform-HUD';
         document.body.appendChild(hud);
@@ -1239,6 +1279,10 @@
         const snapGuideV = document.createElement('div');
         snapGuideV.id = 'ovb-Snap-Guide-V';
         document.body.appendChild(snapGuideV);
+
+        const snapGuideH = document.createElement('div');
+        snapGuideH.id = 'ovb-Snap-Guide-H';
+        document.body.appendChild(snapGuideH);
 
         function updateSelectionOverlay() {
             if (selectedElement && document.body.contains(selectedElement) && !isInteractiveMode) {
@@ -1251,7 +1295,7 @@
 
                 floatBadge.style.display = 'flex';
                 const badgeTop = rect.top > 38 ? rect.top - 34 : Math.min(window.innerHeight - 36, rect.bottom + 6);
-                const badgeLeft = Math.max(6, Math.min(window.innerWidth - 360, rect.left));
+                const badgeLeft = Math.max(6, Math.min(window.innerWidth - 460, rect.left));
                 floatBadge.style.top = `${badgeTop}px`;
                 floatBadge.style.left = `${badgeLeft}px`;
             } else {
@@ -1299,15 +1343,7 @@
         // --- DRAG TO MOVE ENGINE (Works on ANY pre-existing HTML or SVG element!) ---
         let dragState = null;
 
-        function getElementCurrentTranslate(el, selector) {
-            const rec = builderData.elements[selector];
-            const st = (rec && rec.styles && rec.styles.desktop) || {};
-            if (st.translateX !== undefined || st.translateY !== undefined) {
-                return {
-                    x: parseFloat(String(st.translateX || '0')) || 0,
-                    y: parseFloat(String(st.translateY || '0')) || 0
-                };
-            }
+        function getElementCurrentTranslate(el) {
             const cs = window.getComputedStyle(el);
             if (cs.translate && cs.translate !== 'none') {
                 const parts = cs.translate.split(' ');
@@ -1322,7 +1358,7 @@
         function startDraggingElement(e, el) {
             if (!el || el === document.body || el === document.documentElement) return;
             const sel = generateSelector(el);
-            const curT = getElementCurrentTranslate(el, sel);
+            const curT = getElementCurrentTranslate(el);
 
             // Calculate scale factor if inside an SVG with viewBox
             let svgScale = 1;
@@ -1361,7 +1397,6 @@
             if (!target || target === document.body || target === document.documentElement) return;
             if (target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar')) return;
 
-            // Select or prepare to drag the target element
             let elToAct = target;
             const svgGroup = target.closest && target.closest('g.dg-item[id]');
             if (svgGroup && selectedElement !== target) {
@@ -1373,7 +1408,7 @@
             e.preventDefault();
         }, true);
 
-        // --- 8-POINT RESIZE HANDLES ENGINE ---
+        // --- 8-POINT RESIZE HANDLES ENGINE (With Aspect Ratio Lock so it never stretches accidentally!) ---
         selBox.querySelectorAll('.ovb-resize-handle').forEach(handle => {
             handle.addEventListener('mousedown', (e) => {
                 if (e.button !== 0 || !selectedElement) return;
@@ -1383,7 +1418,8 @@
                 const dir = handle.getAttribute('data-rh');
                 const rect = selectedElement.getBoundingClientRect();
                 const cs = window.getComputedStyle(selectedElement);
-                const curScale = parseFloat(cs.scale && cs.scale !== 'none' ? cs.scale : '1') || 1;
+                const curScale = parseFloat(cs.scale && cs.scale !== 'none' ? cs.scale.split(' ')[0] : '1') || 1;
+                const aspect = (rect.width > 0 && rect.height > 0) ? (rect.width / rect.height) : 1;
 
                 dragState = {
                     mode: 'resize',
@@ -1392,21 +1428,43 @@
                     selector: selectedSelector,
                     startX: e.clientX,
                     startY: e.clientY,
-                    origW: rect.width,
-                    origH: rect.height,
+                    origW: Math.max(10, rect.width),
+                    origH: Math.max(10, rect.height),
+                    aspect: aspect,
                     origScale: curScale,
-                    isSvgOrCorner: (selectedElement instanceof SVGElement) || ['nw', 'ne', 'se', 'sw'].includes(dir),
+                    isCorner: ['nw', 'ne', 'se', 'sw'].includes(dir),
                     moved: false
                 };
             });
         });
+
+        // --- FIGMA / ILLUSTRATOR CORNER RADIUS HANDLE ---
+        const radiusHandle = selBox.querySelector('.ovb-radius-handle');
+        if (radiusHandle) {
+            radiusHandle.addEventListener('mousedown', (e) => {
+                if (e.button !== 0 || !selectedElement) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const cs = window.getComputedStyle(selectedElement);
+                const curRadius = parseFloat(cs.borderRadius) || 0;
+                dragState = {
+                    mode: 'radius',
+                    el: selectedElement,
+                    selector: selectedSelector,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    origRadius: curRadius,
+                    moved: false
+                };
+            });
+        }
 
         window.addEventListener('mousemove', (e) => {
             if (!dragState) return;
             const dx = e.clientX - dragState.startX;
             const dy = e.clientY - dragState.startY;
 
-            if (!dragState.moved && Math.hypot(dx, dy) < 4) return;
+            if (!dragState.moved && Math.hypot(dx, dy) < 3) return;
             dragState.moved = true;
             document.body.classList.add('ovb-is-dragging');
 
@@ -1414,12 +1472,28 @@
                 let newX = Math.round(dragState.origX + dx * dragState.svgScale);
                 let newY = Math.round(dragState.origY + dy * dragState.svgScale);
 
-                // Snap to 0 center if within 6px
+                // Shift key constrains movement to strictly horizontal or vertical axis (like Illustrator/Figma!)
+                if (e.shiftKey) {
+                    if (Math.abs(dx) >= Math.abs(dy)) {
+                        newY = Math.round(dragState.origY);
+                    } else {
+                        newX = Math.round(dragState.origX);
+                    }
+                }
+
+                // Snap to 0 center X/Y if within 6px
                 if (Math.abs(newX) <= 6) {
                     newX = 0;
                     snapGuideV.style.display = 'block';
                 } else {
                     snapGuideV.style.display = 'none';
+                }
+
+                if (Math.abs(newY) <= 6) {
+                    newY = 0;
+                    snapGuideH.style.display = 'block';
+                } else {
+                    snapGuideH.style.display = 'none';
                 }
 
                 dragState.currentX = `${newX}px`;
@@ -1433,24 +1507,40 @@
                 hud.textContent = `X: ${newX >= 0 ? '+' : ''}${newX}px  |  Y: ${newY >= 0 ? '+' : ''}${newY}px`;
                 updateSelectionOverlay();
             } else if (dragState.mode === 'resize') {
-                if (dragState.isSvgOrCorner && (dragState.el instanceof SVGElement || dragState.dir === 'se' || dragState.dir === 'nw')) {
+                const constrain = lockAspectRatio || e.shiftKey;
+
+                if (dragState.el instanceof SVGElement || (dragState.isCorner && constrain)) {
+                    // Uniform proportional scale (never stretches or distorts!)
                     const sign = (dragState.dir === 'nw' || dragState.dir === 'sw') ? -1 : 1;
-                    const delta = (dx * sign) / Math.max(60, dragState.origW);
-                    const newScale = Math.max(0.15, Math.min(5, Number((dragState.origScale + delta).toFixed(2))));
+                    const delta = (dx * sign) / Math.max(80, dragState.origW);
+                    const newScale = Math.max(0.1, Math.min(5, Number((dragState.origScale + delta).toFixed(2))));
                     dragState.currentScale = newScale;
                     dragState.el.style.setProperty('scale', String(newScale), 'important');
 
                     hud.style.display = 'block';
                     hud.style.top = `${e.clientY + 16}px`;
                     hud.style.left = `${e.clientX + 16}px`;
-                    hud.textContent = `Escala: ${Math.round(newScale * 100)}% (${newScale}x)`;
+                    hud.textContent = `🔒 Tamanho Proporcional: ${Math.round(newScale * 100)}% (${newScale}x)`;
                 } else {
                     let newW = dragState.origW;
                     let newH = dragState.origH;
-                    if (dragState.dir.includes('e')) newW = Math.max(20, Math.round(dragState.origW + dx));
-                    if (dragState.dir.includes('w')) newW = Math.max(20, Math.round(dragState.origW - dx));
-                    if (dragState.dir.includes('s')) newH = Math.max(20, Math.round(dragState.origH + dy));
-                    if (dragState.dir.includes('n')) newH = Math.max(20, Math.round(dragState.origH - dy));
+                    if (dragState.dir.includes('e')) newW = Math.max(16, Math.round(dragState.origW + dx));
+                    if (dragState.dir.includes('w')) newW = Math.max(16, Math.round(dragState.origW - dx));
+                    if (dragState.dir.includes('s')) newH = Math.max(16, Math.round(dragState.origH + dy));
+                    if (dragState.dir.includes('n')) newH = Math.max(16, Math.round(dragState.origH - dy));
+
+                    // If Aspect Ratio Lock is active on side handles, compute the partner dimension proportionally!
+                    if (constrain && dragState.aspect > 0) {
+                        if (dragState.dir === 'e' || dragState.dir === 'w') {
+                            newH = Math.max(16, Math.round(newW / dragState.aspect));
+                            dragState.currentH = `${newH}px`;
+                            dragState.el.style.setProperty('height', `${newH}px`, 'important');
+                        } else if (dragState.dir === 'n' || dragState.dir === 's') {
+                            newW = Math.max(16, Math.round(newH * dragState.aspect));
+                            dragState.currentW = `${newW}px`;
+                            dragState.el.style.setProperty('width', `${newW}px`, 'important');
+                        }
+                    }
 
                     if (dragState.dir.includes('e') || dragState.dir.includes('w')) {
                         dragState.currentW = `${newW}px`;
@@ -1464,8 +1554,19 @@
                     hud.style.display = 'block';
                     hud.style.top = `${e.clientY + 16}px`;
                     hud.style.left = `${e.clientX + 16}px`;
-                    hud.textContent = `L: ${newW}px  ×  A: ${newH}px`;
+                    hud.textContent = `${constrain ? '🔒 ' : ''}L: ${Math.round(newW)}px  ×  A: ${Math.round(newH)}px`;
                 }
+                updateSelectionOverlay();
+            } else if (dragState.mode === 'radius') {
+                const delta = Math.round((dx + dy) * 0.6);
+                const newRad = Math.max(0, Math.min(200, Math.round(dragState.origRadius + delta)));
+                dragState.currentRadius = `${newRad}px`;
+                dragState.el.style.setProperty('border-radius', `${newRad}px`, 'important');
+
+                hud.style.display = 'block';
+                hud.style.top = `${e.clientY + 16}px`;
+                hud.style.left = `${e.clientX + 16}px`;
+                hud.textContent = `╭ Raio da Borda: ${newRad}px`;
                 updateSelectionOverlay();
             }
         }, true);
@@ -1477,8 +1578,16 @@
             document.body.classList.remove('ovb-is-dragging');
             hud.style.display = 'none';
             snapGuideV.style.display = 'none';
+            snapGuideH.style.display = 'none';
 
             if (st.moved) {
+                // CRITICAL: Remove temporary inline style properties from the DOM element so the per-device @media stylesheet is 100% in charge!
+                st.el.style.removeProperty('translate');
+                st.el.style.removeProperty('scale');
+                st.el.style.removeProperty('width');
+                st.el.style.removeProperty('height');
+                st.el.style.removeProperty('border-radius');
+
                 const changes = {};
                 if (st.mode === 'move') {
                     changes.translateX = st.currentX;
@@ -1487,6 +1596,8 @@
                     if (st.currentScale !== undefined) changes.scale = st.currentScale;
                     if (st.currentW !== undefined) changes.width = st.currentW;
                     if (st.currentH !== undefined) changes.height = st.currentH;
+                } else if (st.mode === 'radius') {
+                    if (st.currentRadius !== undefined) changes.borderRadius = st.currentRadius;
                 }
 
                 window.parent.postMessage({
@@ -1498,6 +1609,33 @@
             }
         }, true);
 
+        // Keyboard Arrow Nudging (↑ ↓ ← → by 1px, or 10px with Shift, just like Figma/Illustrator!)
+        document.addEventListener('keydown', (e) => {
+            if (isInteractiveMode || !selectedElement || !selectedSelector) return;
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target && e.target.tagName) || '')) return;
+
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                const step = e.shiftKey ? 10 : 1;
+                const curT = getElementCurrentTranslate(selectedElement);
+                let nx = curT.x;
+                let ny = curT.y;
+                if (e.key === 'ArrowLeft') nx -= step;
+                if (e.key === 'ArrowRight') nx += step;
+                if (e.key === 'ArrowUp') ny -= step;
+                if (e.key === 'ArrowDown') ny += step;
+
+                window.parent.postMessage({
+                    type: 'OVB_CANVAS_TRANSFORMED',
+                    selector: selectedSelector,
+                    changes: {
+                        translateX: `${Math.round(nx)}px`,
+                        translateY: `${Math.round(ny)}px`
+                    }
+                }, '*');
+            }
+        });
+
         // Prevent accidental click navigation when in Editor Mode
         document.addEventListener('click', (e) => {
             if (isInteractiveMode) return;
@@ -1507,7 +1645,7 @@
             e.stopPropagation();
         }, true);
 
-        // Floating Badge Action Buttons (Move Up/Down in DOM, Duplicate, Hide, Parent, Add Block, Reset)
+        // Floating Badge Action Buttons (Lock Aspect, Un-stretch 1:1, Move Up/Down in DOM, Duplicate, Hide, Parent, Add Block, Reset)
         floatBadge.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -1515,7 +1653,22 @@
             if (!btn || !selectedElement) return;
             const act = btn.getAttribute('data-act');
 
-            if (act === 'parent' && selectedElement.parentElement && selectedElement.parentElement !== document.body) {
+            if (act === 'toggle-lock') {
+                lockAspectRatio = !lockAspectRatio;
+                btn.innerHTML = lockAspectRatio ? '🔒 Proporção' : '🔓 Livre';
+                window.parent.postMessage({
+                    type: 'OVB_ASPECT_LOCK_CHANGED',
+                    locked: lockAspectRatio
+                }, '*');
+            } else if (act === 'unstretch') {
+                selectedElement.style.removeProperty('width');
+                selectedElement.style.removeProperty('height');
+                selectedElement.style.removeProperty('scale');
+                window.parent.postMessage({
+                    type: 'OVB_UNSTRETCH_ELEMENT',
+                    selector: selectedSelector
+                }, '*');
+            } else if (act === 'parent' && selectedElement.parentElement && selectedElement.parentElement !== document.body) {
                 selectElement(selectedElement.parentElement, false);
             } else if (act === 'move-up') {
                 const prev = selectedElement.previousElementSibling;
@@ -1562,6 +1715,7 @@
                 selectedElement.style.removeProperty('scale');
                 selectedElement.style.removeProperty('width');
                 selectedElement.style.removeProperty('height');
+                selectedElement.removeAttribute('data-ovb-el-ui-style');
                 window.parent.postMessage({
                     type: 'OVB_RESET_ELEMENT',
                     selector: selectedSelector
@@ -1620,6 +1774,16 @@
                         type: 'OVB_COMPILED_CSS',
                         compiledCss: compileAllCSS(builderData)
                     }, '*');
+                    break;
+                }
+                case 'OVB_SET_ASPECT_LOCK': {
+                    lockAspectRatio = !!msg.locked;
+                    const lockBtn = floatBadge.querySelector('[data-act="toggle-lock"]');
+                    if (lockBtn) lockBtn.innerHTML = lockAspectRatio ? '🔒 Proporção' : '🔓 Livre';
+                    break;
+                }
+                case 'OVB_TOGGLE_GRID': {
+                    document.body.classList.toggle('ovb-show-grid', !!msg.showGrid);
                     break;
                 }
                 case 'OVB_SELECT_SELECTOR': {
