@@ -980,4 +980,272 @@ body.appearance_page_odyssee-visual-builder #wpbody-content {
     color: #94a3b8;
 }
 
+/* =========================================================
+   ADOBE ILLUSTRATOR ADAPTIVE TOOLBAR
+   ========================================================= */
+.ovb-illustrator-bar {
+    height: 36px;
+    min-height: 36px;
+    background: #0d121d;
+    border-bottom: 1px solid rgba(168, 85, 247, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    gap: 8px;
+    overflow-x: auto;
+    z-index: 9;
+}
 
+.ovb-ai-tools-left,
+.ovb-ai-tools-right {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.ovb-ai-badge {
+    font-size: 11px;
+    font-weight: 800;
+    color: #c084fc;
+    margin-right: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ovb-ai-tool-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.ovb-ai-tool-btn kbd {
+    background: rgba(168, 85, 247, 0.24);
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    color: #f3e8ff;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 9.5px;
+    font-family: monospace;
+    font-weight: 700;
+}
+
+.ovb-ai-tool-btn:hover,
+.ovb-ai-tool-btn.active {
+    background: rgba(139, 92, 246, 0.28);
+    border-color: #a855f7;
+    color: #ffffff;
+}
+
+.ovb-uistyle-target-btn.active,
+.ovb-layer-view-btn.active {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899) !important;
+    border-color: #f472b6 !important;
+    color: #ffffff !important;
+}
+
+/* =========================================================
+   PHOTOSHOP / ILLUSTRATOR LAYERS PANEL WITH LIVE THUMBNAILS
+   ========================================================= */
+.ovb-ps-layers-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 440px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.ovb-ps-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #e2e8f0;
+    margin-top: 4px;
+}
+
+.ovb-ps-layer-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 7px;
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.14s ease;
+}
+
+.ovb-ps-layer-row:hover {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.08);
+}
+
+.ovb-ps-layer-row.is-selected {
+    border-color: #ec4899;
+    background: rgba(236, 72, 153, 0.14);
+    box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.45);
+}
+
+.ovb-ps-layer-row.is-modified {
+    border-left: 3px solid #a855f7;
+}
+
+.ovb-ps-layer-row.is-hidden-layer {
+    opacity: 0.48;
+}
+
+.ovb-ps-icon-toggle {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    color: #94a3b8;
+    font-size: 10.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.ovb-ps-icon-toggle:hover {
+    background: rgba(168, 85, 247, 0.25);
+    color: #fff;
+}
+
+.ovb-ps-icon-toggle.active-warn {
+    background: rgba(244, 63, 94, 0.22);
+    border-color: rgba(244, 63, 94, 0.5);
+    color: #fda4af;
+}
+
+.ovb-ps-thumb {
+    width: 42px;
+    height: 28px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: #131926;
+    background-image:
+        linear-gradient(45deg, rgba(255,255,255,0.06) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.06) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.06) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.06) 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.ovb-ps-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.ovb-ps-thumb svg {
+    width: 24px !important;
+    height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+    pointer-events: none;
+}
+
+.ovb-ps-thumb-text {
+    font-size: 8.5px;
+    font-weight: 800;
+    line-height: 1.05;
+    text-align: center;
+    padding: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 40px;
+}
+
+.ovb-ps-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.ovb-ps-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ovb-ps-sub {
+    font-size: 9.5px;
+    color: #94a3b8;
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ovb-ps-zbadge {
+    font-size: 9.5px;
+    font-family: monospace;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #bae6fd;
+    flex-shrink: 0;
+}
+
+/* Custom Color Palette Card */
+.ovb-palette-item-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 7px;
+}
+
+.ovb-palette-swatches {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.ovb-palette-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}

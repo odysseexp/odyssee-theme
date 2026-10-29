@@ -23,6 +23,9 @@
     let currentSnapshot = null;
     let currentBucket = 'desktop'; // 'desktop', 'tablet', 'mobile', 'global', 'hover', 'dark', 'light'
     let aspectRatioLocked = true;
+    let uiStyleTargetMode = 'element'; // 'element' (Individual) or 'global' (Site-wide)
+    let layerViewMode = 'sections'; // 'sections' or 'zstack'
+    let copiedElementStyle = null;
     let pageTree = [];
 
     const BUCKET_LABELS = {
@@ -55,14 +58,18 @@
             customJs: typeof d.customJs === 'string' ? d.customJs : '',
             componentPresets: Array.isArray(d.componentPresets) ? d.componentPresets : [],
             pagePresets: d.pagePresets && typeof d.pagePresets === 'object' && !Array.isArray(d.pagePresets) ? d.pagePresets : {},
-            sitePresets: d.sitePresets && typeof d.sitePresets === 'object' && !Array.isArray(d.sitePresets) ? d.sitePresets : {}
+            sitePresets: d.sitePresets && typeof d.sitePresets === 'object' && !Array.isArray(d.sitePresets) ? d.sitePresets : {},
+            colorPalettes: Array.isArray(d.colorPalettes) ? d.colorPalettes : [],
+            activeGlobalPalette: typeof d.activeGlobalPalette === 'string' ? d.activeGlobalPalette : '',
+            pagePalettes: d.pagePalettes && typeof d.pagePalettes === 'object' && !Array.isArray(d.pagePalettes) ? d.pagePalettes : {},
+            allowVisitorColorSwitch: d.allowVisitorColorSwitch !== undefined ? !!d.allowVisitorColorSwitch : true
         };
     }
 
     function pushHistory() {
         history = history.slice(0, historyIdx + 1);
         history.push(deepClone(state));
-        if (history.length > 50) history.shift();
+        if (history.length > 60) history.shift();
         historyIdx = history.length - 1;
         updateUndoRedoButtons();
     }
@@ -104,6 +111,11 @@
             state.elements[selector] = {
                 themeScope: 'all',
                 elUiStyle: '',
+                elementRole: '',
+                roleUrl: '',
+                roleNewTab: false,
+                passEvents: false,
+                locked: false,
                 specialConfig: {},
                 content: { attrs: {} },
                 styles: {
@@ -142,6 +154,21 @@
         return '#' + m.slice(0, 3).map(x => parseInt(x, 10).toString(16).padStart(2, '0')).join('');
     }
 
+    function syncUiStyleCardsSelection() {
+        $('.ovb-uistyle-card').removeClass('active');
+        if (uiStyleTargetMode === 'element' && currentSelector) {
+            const rec = state.elements[currentSelector] || {};
+            const elStyle = rec.elUiStyle || '';
+            if (elStyle) {
+                $(`.ovb-uistyle-card[data-uistyle="${elStyle}"]`).addClass('active');
+            } else {
+                $(`.ovb-uistyle-card[data-uistyle="${state.uiStyle || 'odysseexp'}"]`).addClass('active');
+            }
+        } else {
+            $(`.ovb-uistyle-card[data-uistyle="${state.uiStyle || 'odysseexp'}"]`).addClass('active');
+        }
+    }
+
     /**
      * Populates all sidebar inputs from the currently selected element & its live computed styles
      */
@@ -154,6 +181,7 @@
         if (!currentSelector) {
             bannerLabel.text('Nenhum elemento selecionado');
             bannerSel.text('Clique ou arraste qualquer item do site ao lado →');
+            syncUiStyleCardsSelection();
             return;
         }
 
@@ -169,6 +197,24 @@
 
         $('#ovb-theme-scope').val(rec.themeScope || 'all');
         $('#ovb-el-uistyle-select').val(rec.elUiStyle || '');
+        syncUiStyleCardsSelection();
+
+        // Standalone Element / Shape Interactive Role & Behavior
+        const roleVal = rec.elementRole || '';
+        $('.ovb-el-role-select').val(roleVal);
+        $('.ovb-el-role-url').val(rec.roleUrl || '');
+        $('.ovb-el-role-newtab').prop('checked', !!rec.roleNewTab);
+        $('.ovb-el-pass-events').prop('checked', !!rec.passEvents);
+        if (roleVal === 'link' || roleVal === 'scroll' || roleVal === 'button') {
+            $('.ovb-role-url-box').show();
+        } else {
+            $('.ovb-role-url-box').hide();
+        }
+        if (roleVal === 'none') {
+            $('.ovb-role-none-box').show();
+        } else {
+            $('.ovb-role-none-box').hide();
+        }
 
         // Content Tab (PT + EN text, Image URLs, Href, Attributes)
         const textVal = content.text !== undefined ? content.text : ((currentSnapshot && currentSnapshot.text) || '');
@@ -283,6 +329,10 @@
         // Element Raw innerHTML in Code IDE Drawer
         const rawHtml = content.innerHTML !== undefined ? content.innerHTML : ((currentSnapshot && currentSnapshot.innerHTML) || '');
         $('#ovb-code-el-html-editor').val(rawHtml);
+
+        // Highlight selected row in Photoshop Layers panel
+        $('.ovb-ps-layer-row').removeClass('is-selected');
+        $(`.ovb-ps-layer-row[data-sel="${CSS.escape(currentSelector)}"]`).addClass('is-selected');
     }
 
     /**
@@ -378,7 +428,67 @@
     }
 
     /**
-     * Renders the Complete Categorized Base Elements Tree in Tab 4 (with live search filter)
+     * Builds the HTML for a single Photoshop/Illustrator style layer row with live visual thumbnail
+     */
+    function buildPhotoshopLayerRow(item) {
+        const sel = item.selector || '';
+        const rec = state.elements[sel] || {};
+        const st = (rec.styles && rec.styles[currentBucket]) || {};
+        const isMod = !!state.elements[sel];
+        const isSelected = currentSelector === sel;
+        const isHidden = !!st.hidden || !!item.hidden;
+        const isLocked = !!rec.locked || !!item.locked;
+        const isImmune = rec.elUiStyle === 'none' || item.elUiStyle === 'none';
+        const effZ = st.zIndex !== undefined && st.zIndex !== '' ? st.zIndex : (item.zIndex !== undefined ? item.zIndex : 0);
+
+        let thumbInnerHtml = '';
+        let thumbStyle = '';
+        if (item.thumbType === 'image' && item.thumbSrc) {
+            thumbInnerHtml = `<img src="${$('<div>').text(item.thumbSrc).html()}" alt="">`;
+        } else if (item.thumbType === 'svg' && item.thumbSrc) {
+            thumbInnerHtml = item.thumbSrc;
+        } else if (item.thumbType === 'shape') {
+            thumbStyle = item.thumbBg ? `background:${item.thumbBg};` : 'background:linear-gradient(135deg,#8b5cf6,#ec4899);';
+            thumbInnerHtml = `<span class="ovb-ps-thumb-text" style="color:#fff;text-shadow:0 1px 2px #000;">Forma</span>`;
+        } else {
+            if (item.thumbBg) {
+                thumbStyle = `background:${item.thumbBg};`;
+            }
+            const tColor = item.thumbColor || '#f8fafc';
+            const tLabel = $('<div>').text(item.thumbText || 'Aa').html();
+            thumbInnerHtml = `<span class="ovb-ps-thumb-text" style="color:${tColor};">${tLabel}</span>`;
+        }
+
+        const safeSel = $('<div>').text(sel).html();
+        const safeLabel = $('<div>').text(item.label || sel).html();
+        const immuneBadge = isImmune ? '<span title="Tema Não Aplicável (Imune)" style="color:#fda4af;margin-left:3px;">🛡️</span>' : '';
+
+        return $(`
+            <div class="ovb-ps-layer-row ${isSelected ? 'is-selected' : ''} ${isMod ? 'is-modified' : ''} ${isHidden ? 'is-hidden-layer' : ''}" data-sel="${safeSel}">
+                <button type="button" class="ovb-ps-icon-toggle ovb-ps-eye ${isHidden ? 'active-warn' : ''}" data-sel="${safeSel}" title="Mostrar / Ocultar Camada (👁️)">
+                    ${isHidden ? '🚫' : '👁️'}
+                </button>
+                <button type="button" class="ovb-ps-icon-toggle ovb-ps-lock ${isLocked ? 'active-warn' : ''}" data-sel="${safeSel}" title="Trancar / Destrancar Camada (🔒)">
+                    ${isLocked ? '🔒' : '🔓'}
+                </button>
+                <div class="ovb-ps-thumb" style="${$('<div>').text(thumbStyle).html()}" title="Miniatura de Preview da Camada">
+                    ${thumbInnerHtml}
+                </div>
+                <div class="ovb-ps-meta">
+                    <div class="ovb-ps-title">${safeLabel}${immuneBadge}</div>
+                    <div class="ovb-ps-sub">${safeSel}</div>
+                </div>
+                <span class="ovb-ps-zbadge" title="Camada Z-Index">Z:${effZ}</span>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                    <button type="button" class="ovb-ps-icon-toggle ovb-ps-zup" data-sel="${safeSel}" style="width:18px;height:13px;font-size:8px;" title="Subir Camada (Atalho: ] )">▲</button>
+                    <button type="button" class="ovb-ps-icon-toggle ovb-ps-zdown" data-sel="${safeSel}" style="width:18px;height:13px;font-size:8px;" title="Descer Camada (Atalho: [ )">▼</button>
+                </div>
+            </div>
+        `);
+    }
+
+    /**
+     * Renders the Photoshop / Illustrator Layers Panel in Tab 4 with Live Thumbnail Previews
      */
     function renderNavigatorTree() {
         const container = $('#ovb-navigator-tree');
@@ -386,10 +496,32 @@
         container.empty();
 
         if (!pageTree || pageTree.length === 0) {
-            container.html('<p style="color:#64748b;font-size:11.5px;">Carregando elementos base da página...</p>');
+            container.html('<p style="color:#64748b;font-size:11.5px;">Carregando camadas e miniaturas da página...</p>');
             return;
         }
 
+        if (layerViewMode === 'zstack') {
+            // Flatten all layers and sort by Z-Index descending (top-to-bottom like Photoshop/Illustrator)
+            const flat = [];
+            pageTree.forEach(group => {
+                (group.children || []).forEach(ch => {
+                    if (!filterText || ch.label.toLowerCase().includes(filterText) || (ch.selector && ch.selector.toLowerCase().includes(filterText))) {
+                        flat.push(ch);
+                    }
+                });
+            });
+            flat.sort((a, b) => {
+                const za = (state.elements[a.selector] && state.elements[a.selector].styles && state.elements[a.selector].styles[currentBucket] && parseInt(state.elements[a.selector].styles[currentBucket].zIndex, 10)) || a.zIndex || 0;
+                const zb = (state.elements[b.selector] && state.elements[b.selector].styles && state.elements[b.selector].styles[currentBucket] && parseInt(state.elements[b.selector].styles[currentBucket].zIndex, 10)) || b.zIndex || 0;
+                return zb - za;
+            });
+            flat.forEach(ch => {
+                container.append(buildPhotoshopLayerRow(ch));
+            });
+            return;
+        }
+
+        // Default: Grouped by Section with Photoshop Layer Rows & Thumbnails
         pageTree.forEach(group => {
             const groupMatch = !filterText || group.label.toLowerCase().includes(filterText) || (group.selector && group.selector.toLowerCase().includes(filterText));
             const matchingChildren = (group.children || []).filter(ch =>
@@ -398,32 +530,18 @@
 
             if (!groupMatch && matchingChildren.length === 0) return;
 
-            const isMod = !!state.elements[group.selector];
-            const groupBox = $('<div style="margin-bottom:8px;"></div>');
-            const headerRow = $(`
-                <div class="ovb-tree-item ${isMod ? 'is-modified' : ''}" data-sel="${$('<div>').text(group.selector).html()}" style="font-weight:700;background:#161f33;">
-                    <span>${$('<div>').text(group.label).html()}</span>
-                    <span style="font-size:10px;color:#c084fc;">${isMod ? '● Editado' : `${matchingChildren.length} itens`}</span>
+            const safeGroupSel = $('<div>').text(group.selector).html();
+            const groupHeader = $(`
+                <div class="ovb-ps-group-header" data-sel="${safeGroupSel}" style="cursor:pointer;">
+                    <span>📁 ${$('<div>').text(group.label).html()}</span>
+                    <span style="font-size:10px;color:#c084fc;">${matchingChildren.length} camadas</span>
                 </div>
             `);
-            groupBox.append(headerRow);
+            container.append(groupHeader);
 
-            if (matchingChildren.length > 0) {
-                const childWrap = $('<div class="ovb-tree-children"></div>');
-                matchingChildren.forEach(ch => {
-                    const chMod = !!state.elements[ch.selector];
-                    const chRow = $(`
-                        <div class="ovb-tree-item ${chMod ? 'is-modified' : ''} ${ch.isBlock ? 'is-block' : ''}" data-sel="${$('<div>').text(ch.selector).html()}">
-                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${$('<div>').text(ch.label).html()}</span>
-                            <span style="font-size:10px;color:#a855f7;">${chMod ? '●' : ''}</span>
-                        </div>
-                    `);
-                    childWrap.append(chRow);
-                });
-                groupBox.append(childWrap);
-            }
-
-            container.append(groupBox);
+            matchingChildren.forEach(ch => {
+                container.append(buildPhotoshopLayerRow(ch));
+            });
         });
     }
 
@@ -478,7 +596,24 @@
         if (!Array.isArray(state.blocks)) state.blocks = [];
         state.blocks.push(newBlock);
 
-        if (type === 'glow-orb') {
+        // Initialize shapes with a vivid visible color & gradient immediately so they never start invisible!
+        if (type === 'shape-square' || type === 'shape-circle' || type === 'shape-bar' || type === 'shape-squircle') {
+            const initC1 = $('#ovb-shape-init-color').val() || '#8b5cf6';
+            const initC2 = $('#ovb-shape-init-color2').val() || '#ec4899';
+            const rec = ensureElementRecord('#' + id);
+            rec.elementRole = 'none';
+            rec.styles[currentBucket] = Object.assign(rec.styles[currentBucket] || {}, {
+                backgroundColor: initC1,
+                bgGradientEnabled: true,
+                bgGradientColor1: initC1,
+                bgGradientColor2: initC2,
+                bgGradientType: 'linear',
+                bgGradientAngle: 135,
+                borderStyle: 'solid',
+                borderWidth: '1px',
+                borderColor: 'rgba(255,255,255,0.28)'
+            });
+        } else if (type === 'glow-orb') {
             state.elements['#' + id] = {
                 themeScope: 'all',
                 content: {},
@@ -504,7 +639,230 @@
             postToPreview({ type: 'OVB_REQUEST_TREE' });
         }, 120);
 
-        showToast('Novo elemento inserido! Arraste-o com o mouse para posicionar onde quiser.');
+        showToast('✨ Elemento criado com cor visível! Use as opções abaixo para trocar cor, degradê ou interação.');
+    }
+
+    /**
+     * Renders the Custom Color Palettes UI in Tab 4 (Global, Per-Page & Visitor Cookies Toggle)
+     */
+    function renderColorPalettesUI() {
+        $('#ovb-allow-visitor-color-switch').prop('checked', state.allowVisitorColorSwitch !== false);
+
+        const baseOptions = [
+            { id: 'purple', name: '🟣 Roxo Odyssee (#8b5cf6)' },
+            { id: 'red', name: '🔴 Vermelho Crimson (#ef4444)' }
+        ];
+        const customPals = Array.isArray(state.colorPalettes) ? state.colorPalettes : [];
+
+        // Populate Global Palette dropdown
+        const $globalSel = $('#ovb-global-palette-select');
+        $globalSel.empty();
+        $globalSel.append('<option value="">Padrão Nativo (Roxo Odyssee #8b5cf6)</option>');
+        baseOptions.forEach(bp => {
+            $globalSel.append($('<option></option>').val(bp.id).text(bp.name));
+        });
+        customPals.forEach(cp => {
+            $globalSel.append($('<option></option>').val(cp.id).text(`🎨 ${cp.name} (${cp.accent})`));
+        });
+        $globalSel.val(state.activeGlobalPalette || '');
+
+        // Populate Per-Page Palette dropdowns
+        $('.ovb-page-palette-select').each(function () {
+            const pageKey = $(this).attr('data-page-key');
+            const $sel = $(this);
+            $sel.empty();
+            $sel.append('<option value="">Herdar Paleta Global</option>');
+            baseOptions.forEach(bp => {
+                $sel.append($('<option></option>').val(bp.id).text(bp.name));
+            });
+            customPals.forEach(cp => {
+                $sel.append($('<option></option>').val(cp.id).text(`🎨 ${cp.name}`));
+            });
+            const savedPagePal = (state.pagePalettes && state.pagePalettes[pageKey]) || '';
+            $sel.val(savedPagePal);
+        });
+
+        // Render Custom Palettes Cards List
+        const $list = $('#ovb-custom-palettes-list');
+        $list.empty();
+        if (customPals.length === 0) {
+            $list.html('<p style="color:#64748b;font-size:10.5px;margin:0;">Nenhuma paleta extra criada ainda. Crie acima para disponibilizar globalmente, por página e nos Settings do visitante!</p>');
+            return;
+        }
+
+        customPals.forEach((cp, idx) => {
+            const safeName = $('<div>').text(cp.name).html();
+            const card = $(`
+                <div class="ovb-palette-item-card">
+                    <div style="display:flex;align-items:center;gap:7px;min-width:0;">
+                        <div class="ovb-palette-swatches">
+                            <span class="ovb-palette-dot" style="background:${cp.accent || '#8b5cf6'};" title="Destaque: ${cp.accent}"></span>
+                            <span class="ovb-palette-dot" style="background:${cp.nebula1 || cp.accent};" title="Nebulosa 1"></span>
+                            <span class="ovb-palette-dot" style="background:${cp.nebula2 || cp.accentHover};" title="Nebulosa 2"></span>
+                        </div>
+                        <span style="font-size:11px;font-weight:700;color:#f8fafc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${safeName}</span>
+                    </div>
+                    <div style="display:flex;gap:4px;">
+                        <button type="button" class="ovb-mini-btn ovb-apply-pal-global" data-pal-id="${cp.id}" title="Definir como Paleta Global do Site">🌐 Global</button>
+                        <button type="button" class="ovb-mini-btn ovb-del-palette-btn" data-idx="${idx}" title="Remover Paleta">✕</button>
+                    </div>
+                </div>
+            `);
+            $list.append(card);
+        });
+    }
+
+    /**
+     * Executes Undo, Redo, and Adaptive Adobe Illustrator Keyboard Shortcuts (from Admin or Preview Iframe)
+     */
+    function executeShortcutCommand(cmd) {
+        if (!cmd) return;
+        switch (cmd) {
+            case 'undo':
+                $('#ovb-btn-undo').trigger('click');
+                break;
+            case 'redo':
+                $('#ovb-btn-redo').trigger('click');
+                break;
+            case 'save':
+                $('#ovb-btn-save').trigger('click');
+                break;
+            case 'duplicate':
+                if (currentSelector) {
+                    window.postMessage({ type: 'OVB_DUPLICATE_ELEMENT', selector: currentSelector }, '*');
+                }
+                break;
+            case 'delete-element': {
+                if (!currentSelector) break;
+                if (currentSelector.startsWith('#ovb_blk_')) {
+                    $('#ovb-btn-delete-block').trigger('click');
+                } else {
+                    const rec = ensureElementRecord(currentSelector);
+                    rec.styles[currentBucket].hidden = !rec.styles[currentBucket].hidden;
+                    pushHistory();
+                    syncPreview();
+                    populateSidebarFromSelection();
+                    renderNavigatorTree();
+                    showToast(rec.styles[currentBucket].hidden ? '👁️ Elemento ocultado neste dispositivo (Ctrl+Z para desfazer)' : '👁️ Elemento visível novamente');
+                }
+                break;
+            }
+            case 'tool-select':
+                $('.ovb-ai-tool-btn').removeClass('active');
+                $('.ovb-ai-tool-btn[data-ai-cmd="tool-select"]').addClass('active');
+                if ($('#ovb-toggle-interactive').hasClass('active')) {
+                    $('#ovb-toggle-interactive').trigger('click');
+                }
+                showToast('🖱️ Ferramenta Seleção (V) ativa');
+                break;
+            case 'tool-direct-select':
+                $('.ovb-ai-tool-btn').removeClass('active');
+                $('.ovb-ai-tool-btn[data-ai-cmd="tool-direct-select"]').addClass('active');
+                postToPreview({ type: 'OVB_SELECT_PARENT' });
+                showToast('↖ Seleção Direta / Nível Pai (A)');
+                break;
+            case 'tool-text':
+                $('.ovb-tab-btn[data-tab="tab-content"]').trigger('click');
+                if (currentSelector) {
+                    $('#ovb-content-text').focus();
+                    showToast('🔤 Editando texto do elemento (T)');
+                } else {
+                    insertNewBlock('heading');
+                }
+                break;
+            case 'tool-rect':
+                insertNewBlock('shape-square');
+                break;
+            case 'tool-ellipse':
+                insertNewBlock('shape-circle');
+                break;
+            case 'tool-rounded':
+                insertNewBlock('shape-bar');
+                break;
+            case 'tool-gradient':
+                if (!currentSelector) {
+                    showToast('Selecione um elemento primeiro para aplicar Degradê (G)!', true);
+                    break;
+                }
+                {
+                    const rec = ensureElementRecord(currentSelector);
+                    const st = rec.styles[currentBucket];
+                    st.bgGradientEnabled = !st.bgGradientEnabled;
+                    if (st.bgGradientEnabled && !st.bgGradientColor1) {
+                        st.bgGradientColor1 = '#8b5cf6';
+                        st.bgGradientColor2 = '#ec4899';
+                        st.bgGradientAngle = 135;
+                    }
+                    pushHistory();
+                    syncPreview();
+                    populateSidebarFromSelection();
+                    showToast(st.bgGradientEnabled ? '🌈 Degradê ativado no elemento (G)!' : 'Degradê desativado');
+                }
+                break;
+            case 'eyedropper-copy':
+                if (!currentSelector) {
+                    showToast('Selecione um elemento para copiar o estilo com o Conta-Gotas (I)!', true);
+                    break;
+                }
+                {
+                    const rec = ensureElementRecord(currentSelector);
+                    copiedElementStyle = {
+                        elUiStyle: rec.elUiStyle || '',
+                        bucketStyles: deepClone(rec.styles[currentBucket] || {})
+                    };
+                    showToast('💧 Conta-Gotas (I): Estilo copiado! Use Shift+I em outro item para colar.');
+                }
+                break;
+            case 'eyedropper-paste':
+                if (!currentSelector || !copiedElementStyle) {
+                    showToast('Copie o estilo de um elemento primeiro com a tecla I!', true);
+                    break;
+                }
+                {
+                    const rec = ensureElementRecord(currentSelector);
+                    if (copiedElementStyle.elUiStyle) {
+                        rec.elUiStyle = copiedElementStyle.elUiStyle;
+                    }
+                    const pasted = deepClone(copiedElementStyle.bucketStyles || {});
+                    delete pasted.translateX;
+                    delete pasted.translateY;
+                    Object.assign(rec.styles[currentBucket], pasted);
+                    pushHistory();
+                    syncPreview();
+                    populateSidebarFromSelection();
+                    showToast('🎨 Estilo colado com sucesso (Shift+I)!');
+                }
+                break;
+            case 'layer-back':
+                if (!currentSelector) break;
+                {
+                    const rec = ensureElementRecord(currentSelector);
+                    const curZ = parseInt(rec.styles[currentBucket].zIndex, 10) || 10;
+                    rec.styles[currentBucket].zIndex = Math.max(0, curZ - 1);
+                    pushHistory();
+                    syncPreview();
+                    populateSidebarFromSelection();
+                    renderNavigatorTree();
+                    showToast(`⬇ Camada enviada para trás (Z-Index: ${rec.styles[currentBucket].zIndex})`);
+                }
+                break;
+            case 'layer-forward':
+                if (!currentSelector) break;
+                {
+                    const rec = ensureElementRecord(currentSelector);
+                    const curZ = parseInt(rec.styles[currentBucket].zIndex, 10) || 10;
+                    rec.styles[currentBucket].zIndex = curZ + 1;
+                    pushHistory();
+                    syncPreview();
+                    populateSidebarFromSelection();
+                    renderNavigatorTree();
+                    showToast(`⬆ Camada trazida para frente (Z-Index: ${rec.styles[currentBucket].zIndex})`);
+                }
+                break;
+            case 'tool-hand':
+                $('#ovb-toggle-interactive').trigger('click');
+                break;
+        }
     }
 
     function updateCompiledCodeDisplay() {
@@ -608,10 +966,9 @@
 
         // Sync UI Design System & Icon Pack & Preset controls
         const activeUi = state.uiStyle || 'odysseexp';
-        $('.ovb-uistyle-card').removeClass('active');
-        $(`.ovb-uistyle-card[data-uistyle="${activeUi}"]`).addClass('active');
         $('#ovb-topbar-uistyle').val(activeUi);
         $('#ovb-iconpack-select').val(state.iconPack || 'default');
+        syncUiStyleCardsSelection();
 
         const pName = state.presetName || 'OdysseeXP';
         $('#ovb-preset-name-input').val(pName);
@@ -620,6 +977,7 @@
         renderPresetsDropdown();
         renderUserComponentPresets();
         renderPagePresetsDropdown();
+        renderColorPalettesUI();
         updateCompiledCodeDisplay();
     }
 
@@ -653,6 +1011,25 @@
                     currentSelector = msg.selector;
                     currentSnapshot = msg.snapshot || {};
                     populateSidebarFromSelection();
+                    break;
+                }
+                case 'OVB_SHORTCUT_COMMAND': {
+                    executeShortcutCommand(msg.command);
+                    break;
+                }
+                case 'OVB_TOGGLE_IMMUNE_ELEMENT': {
+                    const sel = msg.selector || currentSelector;
+                    if (!sel) break;
+                    currentSelector = sel;
+                    const rec = ensureElementRecord(sel);
+                    rec.elUiStyle = rec.elUiStyle === 'none' ? '' : 'none';
+                    pushHistory();
+                    syncPreview();
+                    populateSidebarFromSelection();
+                    renderNavigatorTree();
+                    showToast(rec.elUiStyle === 'none'
+                        ? '🛡️ Elemento marcado como "Tema Não Aplicável (Imune)"!'
+                        : '🎨 Imunidade removida: o elemento voltou a aceitar temas.');
                     break;
                 }
                 case 'OVB_CANVAS_TRANSFORMED': {
@@ -752,6 +1129,7 @@
                         pushHistory();
                         syncPreview();
                         populateSidebarFromSelection();
+                        renderNavigatorTree();
                         showToast('Elemento restaurado ao original!');
                     }
                     break;
@@ -1376,6 +1754,96 @@
             insertNewBlock(type);
         });
 
+        // Quick Shape Color & Gradient Swatches + Standalone Element Role/Interaction Controls
+        $(document).on('click', '.ovb-shape-swatch-btn', function () {
+            if (!currentSelector) {
+                showToast('Selecione ou crie uma forma primeiro!', true);
+                return;
+            }
+            const c1 = $(this).attr('data-c1') || '#8b5cf6';
+            const c2 = $(this).attr('data-c2') || '';
+            const useGrad = $(this).attr('data-grad') === '1';
+            const rec = ensureElementRecord(currentSelector);
+            const st = rec.styles[currentBucket];
+            st.backgroundColor = c1;
+            st.bgGradientEnabled = useGrad;
+            if (useGrad && c2) {
+                st.bgGradientColor1 = c1;
+                st.bgGradientColor2 = c2;
+                st.bgGradientType = 'linear';
+                st.bgGradientAngle = 135;
+            }
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+            showToast('🎨 Cor/Degradê da forma atualizado!');
+        });
+
+        $(document).on('change', '.ovb-el-role-select', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento primeiro!', true);
+                return;
+            }
+            const role = $(this).val() || '';
+            const rec = ensureElementRecord(currentSelector);
+            rec.elementRole = role;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+            const labels = {
+                '': 'Padrão nativo do elemento',
+                'none': '🚫 Sem interação do usuário (Apenas forma visual)',
+                'button': '🔘 Botão interativo clicável',
+                'link': '🔗 Hyperlink clicável',
+                'scroll': '⚓ Âncora de rolagem suave'
+            };
+            showToast(`Propriedade de interação: ${labels[role] || role}`);
+        });
+
+        $(document).on('input change', '.ovb-el-role-url', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.roleUrl = $(this).val().trim();
+            syncPreview();
+        });
+
+        $(document).on('change', '.ovb-el-role-newtab', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.roleNewTab = $(this).is(':checked');
+            pushHistory();
+            syncPreview();
+        });
+
+        $(document).on('change', '.ovb-el-pass-events', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.passEvents = $(this).is(':checked');
+            pushHistory();
+            syncPreview();
+        });
+
+        // Adaptive Illustrator Toolbar Buttons + Quick Hero Slogan + Quick Immune
+        $(document).on('click', '.ovb-ai-tool-btn[data-ai-cmd]', function () {
+            const cmd = $(this).attr('data-ai-cmd');
+            executeShortcutCommand(cmd);
+        });
+
+        $('#ovb-btn-quick-hero-slogan').on('click', function () {
+            currentSelector = '.hero-slogan';
+            postToPreview({ type: 'OVB_SELECT_SELECTOR', selector: '.hero-slogan', scroll: true });
+            populateSidebarFromSelection();
+            showToast('🔤 Título abaixo da Logo (.hero-slogan) selecionado! Agora você pode arrastar, redimensionar ou editar o texto.');
+        });
+
+        $('#ovb-btn-quick-immune, #ovb-btn-mark-immune, #ovb-layer-act-immune').on('click', function () {
+            if (!currentSelector) {
+                showToast('Selecione primeiro o elemento (ex: Logo SVG ou Banner SVG) que deseja tornar Imune!', true);
+                return;
+            }
+            window.postMessage({ type: 'OVB_TOGGLE_IMMUNE_ELEMENT', selector: currentSelector }, '*');
+        });
+
         // Insert any of the 21 Pre-Built Presets (1–12 Small/Modular & 13–21 Robust Full-Screen)
         $(document).on('click', '.ovb-preset-catalog-card', function () {
             const presetId = $(this).attr('data-preset-id');
@@ -1475,10 +1943,45 @@
         });
 
         // ==========================================
-        // GLOBAL UI DESIGN SYSTEM & ICON PACK SWITCHERS
+        // INDIVIDUAL ELEMENT UI STYLE vs GLOBAL UI DESIGN SYSTEM SWITCHERS
         // ==========================================
+        $(document).on('click', '.ovb-uistyle-target-btn', function () {
+            uiStyleTargetMode = $(this).attr('data-target-mode') || 'element';
+            $('.ovb-uistyle-target-btn').removeClass('active');
+            $(this).addClass('active');
+            if (uiStyleTargetMode === 'element') {
+                $('#ovb-uistyle-mode-hint').html('✅ <strong>Modo Individual Ativo:</strong> clicar em qualquer card abaixo muda o estilo <strong>apenas do elemento selecionado</strong> (ex: um botão da Header), sem alterar o resto do site!').css('color', '#a7f3d0');
+            } else {
+                $('#ovb-uistyle-mode-hint').html('🌐 <strong>Modo Global Ativo:</strong> clicar em um card abaixo mudará o Design System da <strong>página inteira</strong> (exceto itens marcados como Imunes).').css('color', '#fde68a');
+            }
+            syncUiStyleCardsSelection();
+        });
+
         $(document).on('click', '.ovb-uistyle-card', function () {
             const uiStyle = $(this).attr('data-uistyle') || 'odysseexp';
+            const cardTitle = $(this).find('.ovb-uistyle-card-title span').first().text();
+
+            // If "Tema Não Aplicável (Imune)" card is clicked, or if Individual Mode is active and an element is selected:
+            if (uiStyle === 'none' || (uiStyleTargetMode === 'element' && currentSelector)) {
+                if (!currentSelector) {
+                    showToast('Selecione primeiro um elemento na página para aplicar este estilo individualmente!', true);
+                    return;
+                }
+                const rec = ensureElementRecord(currentSelector);
+                rec.elUiStyle = uiStyle;
+                $('#ovb-el-uistyle-select').val(uiStyle);
+                syncUiStyleCardsSelection();
+                pushHistory();
+                syncPreview();
+                renderNavigatorTree();
+                updateCompiledCodeDisplay();
+                showToast(uiStyle === 'none'
+                    ? `🛡️ Item '${currentSelector}' marcado como Tema Não Aplicável (Imune)!`
+                    : `🎯 Estilo '${cardTitle}' aplicado SOMENTE ao item selecionado (${currentSelector})!`);
+                return;
+            }
+
+            // Otherwise (Global mode or no element selected), apply to the entire site
             $('.ovb-uistyle-card').removeClass('active');
             $(this).addClass('active');
             $('#ovb-topbar-uistyle').val(uiStyle);
@@ -1486,18 +1989,17 @@
             pushHistory();
             syncPreview();
             updateCompiledCodeDisplay();
-            showToast(`🎨 Estilo da Página alterado para: ${$(this).find('.ovb-uistyle-card-title span').first().text()}!`);
+            showToast(`🌐 Estilo Global da Página alterado para: ${cardTitle}!`);
         });
 
         $('#ovb-topbar-uistyle').on('change', function () {
             const uiStyle = $(this).val() || 'odysseexp';
-            $('.ovb-uistyle-card').removeClass('active');
-            $(`.ovb-uistyle-card[data-uistyle="${uiStyle}"]`).addClass('active');
             state.uiStyle = uiStyle;
+            syncUiStyleCardsSelection();
             pushHistory();
             syncPreview();
             updateCompiledCodeDisplay();
-            showToast(`🎨 Estilo da Página alterado para: ${uiStyle}!`);
+            showToast(`🌐 Estilo Global da Página alterado para: ${uiStyle}!`);
         });
 
         $('#ovb-iconpack-select').on('change', function () {
@@ -1611,7 +2113,7 @@
         });
 
         // ==========================================
-        // GLOBAL THEME VARIABLES & GLOBAL CSS NA LATA
+        // GLOBAL THEME VARIABLES, CUSTOM COLOR PALETTES & GLOBAL CSS NA LATA
         // ==========================================
         $(document).on('input change', '[data-ovb-gvar]', function () {
             const scope = $(this).attr('data-ovb-gscope') || 'all';
@@ -1627,6 +2129,87 @@
             pushHistory();
             syncPreview();
             showToast('Variáveis globais restauradas para o padrão do tema!');
+        });
+
+        // Custom Color Palettes: Visitor Cookie Switch Toggle, Global Palette, Per-Page Palette, Add/Delete Palette
+        $('#ovb-allow-visitor-color-switch').on('change', function () {
+            state.allowVisitorColorSwitch = $(this).is(':checked');
+            pushHistory();
+            syncPreview();
+            showToast(state.allowVisitorColorSwitch
+                ? '🍪 Visitantes podem alterar a cor global nos Settings (salvo em cookie do navegador)!'
+                : '🔒 Seletor de cor para visitantes desativado nos Settings.');
+        });
+
+        $('#ovb-global-palette-select').on('change', function () {
+            state.activeGlobalPalette = $(this).val() || '';
+            pushHistory();
+            syncPreview();
+            showToast(state.activeGlobalPalette ? `🌐 Paleta Global definida para: ${state.activeGlobalPalette}` : '🌐 Paleta Global restaurada ao padrão!');
+        });
+
+        $(document).on('change', '.ovb-page-palette-select', function () {
+            const pageKey = $(this).attr('data-page-key');
+            const val = $(this).val() || '';
+            if (!state.pagePalettes || typeof state.pagePalettes !== 'object') state.pagePalettes = {};
+            if (val) {
+                state.pagePalettes[pageKey] = val;
+            } else {
+                delete state.pagePalettes[pageKey];
+            }
+            pushHistory();
+            syncPreview();
+            showToast(`📄 Paleta da página (${pageKey}) atualizada!`);
+        });
+
+        $('#ovb-btn-add-palette').on('click', function () {
+            const name = $('#ovb-new-palette-name').val().trim();
+            if (!name) {
+                showToast('Digite um nome para a nova paleta de cor!', true);
+                return;
+            }
+            const id = 'pal_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + Math.random().toString(36).substring(2, 5);
+            const newPal = {
+                id: id,
+                name: name,
+                accent: $('#ovb-new-pal-accent').val() || '#10b981',
+                accentHover: $('#ovb-new-pal-hover').val() || '#059669',
+                nebula1: $('#ovb-new-pal-neb1').val() || '#047857',
+                nebula2: $('#ovb-new-pal-neb2').val() || '#06b6d4',
+                nebula3: $('#ovb-new-pal-neb3').val() || '#3b82f6',
+                bgDark: $('#ovb-new-pal-bg').val() || '#0b0f17'
+            };
+            if (!Array.isArray(state.colorPalettes)) state.colorPalettes = [];
+            state.colorPalettes.push(newPal);
+            state.activeGlobalPalette = id;
+            $('#ovb-new-palette-name').val('');
+            pushHistory();
+            renderColorPalettesUI();
+            syncPreview();
+            showToast(`🎨 Nova paleta '${name}' criada e aplicada! Também disponível nos Settings do site.`);
+        });
+
+        $(document).on('click', '.ovb-apply-pal-global', function () {
+            const palId = $(this).attr('data-pal-id');
+            if (!palId) return;
+            state.activeGlobalPalette = palId;
+            pushHistory();
+            renderColorPalettesUI();
+            syncPreview();
+            showToast('🌐 Paleta definida como Global para todo o site!');
+        });
+
+        $(document).on('click', '.ovb-del-palette-btn', function () {
+            const idx = parseInt($(this).attr('data-idx'), 10);
+            if (!Array.isArray(state.colorPalettes) || !state.colorPalettes[idx]) return;
+            const removed = state.colorPalettes.splice(idx, 1)[0];
+            if (removed && state.activeGlobalPalette === removed.id) {
+                state.activeGlobalPalette = '';
+            }
+            pushHistory();
+            renderColorPalettesUI();
+            syncPreview();
+            showToast('Paleta removida.');
         });
 
         // Global Custom CSS ("Editar CSS na lata")
@@ -1681,7 +2264,7 @@
             const comp = (state.componentPresets || [])[idx];
             if (!comp) return;
             const slug = (comp.name || 'conjunto').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            const blob = new Blob([JSON.stringify({ type: 'odyssee-component-preset', version: '26.10.7', preset: comp }, null, 2)], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify({ type: 'odyssee-component-preset', version: '26.10.8', preset: comp }, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1700,7 +2283,7 @@
         });
 
         $('#ovb-btn-export-all-comp-presets').on('click', function () {
-            const blob = new Blob([JSON.stringify({ type: 'odyssee-component-presets-collection', version: '26.10.7', componentPresets: state.componentPresets || [] }, null, 2)], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify({ type: 'odyssee-component-presets-collection', version: '26.10.8', componentPresets: state.componentPresets || [] }, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1786,7 +2369,7 @@
                 clones: state.clones
             };
             const slug = (pageData.name || 'pagina').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            const blob = new Blob([JSON.stringify({ type: 'odyssee-single-page-preset', version: '26.10.7', pagePreset: pageData }, null, 2)], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify({ type: 'odyssee-single-page-preset', version: '26.10.8', pagePreset: pageData }, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1858,7 +2441,7 @@
             const w3cTokens = {
                 "$schema": "https://tr.designtokens.org/format/",
                 "meta": {
-                    "generator": "Odyssee Visual Studio v26.10.7",
+                    "generator": "Odyssee Visual Studio v26.10.8",
                     "compatibleWith": ["Figma (Tokens Studio / Native Variables)", "Lunacy", "VS Code / Cursor"],
                     "presetName": state.presetName || "OdysseeXP",
                     "uiStyle": state.uiStyle || "odysseexp",
@@ -1872,6 +2455,7 @@
                     "dark-bg": { "$value": (state.globalVars && state.globalVars.dark && state.globalVars.dark['--bg-page']) || "#0d1538", "$type": "color" },
                     "light-bg": { "$value": (state.globalVars && state.globalVars.light && state.globalVars.light['--bg-page']) || "#f8fafc", "$type": "color" }
                 },
+                "colorPalettes": state.colorPalettes || [],
                 "elements": state.elements || {}
             };
             const blob = new Blob([JSON.stringify(w3cTokens, null, 2)], { type: 'application/json' });
@@ -1884,16 +2468,117 @@
             showToast('💎 W3C Design Tokens (.tokens.json) exportado para Figma & Lunacy!');
         });
 
-        // Layer Tree Click to Select Element
-        $(document).on('click', '.ovb-tree-item', function (e) {
-            if ($(e.target).closest('.ovb-del-rule, .ovb-insert-comp-preset, .ovb-export-single-comp, .ovb-del-comp-preset').length) return;
+        // ==========================================
+        // PHOTOSHOP / ILLUSTRATOR LAYERS PANEL INTERACTIONS (Thumbnails, Eye, Lock, Z-Index & Spotlight)
+        // ==========================================
+        $(document).on('click', '.ovb-layer-view-btn', function () {
+            layerViewMode = $(this).attr('data-layer-view') || 'sections';
+            $('.ovb-layer-view-btn').removeClass('active');
+            $(this).addClass('active');
+            renderNavigatorTree();
+        });
+
+        $('#ovb-btn-refresh-layers').on('click', function () {
+            postToPreview({ type: 'OVB_REQUEST_TREE' });
+            showToast('↻ Camadas e miniaturas atualizadas!');
+        });
+
+        $(document).on('click', '.ovb-ps-layer-row, .ovb-ps-group-header, .ovb-tree-item', function (e) {
+            if ($(e.target).closest('.ovb-ps-icon-toggle, .ovb-del-rule, .ovb-insert-comp-preset, .ovb-export-single-comp, .ovb-del-comp-preset').length) return;
             const sel = $(this).attr('data-sel');
             if (!sel) return;
+            currentSelector = sel;
+            $('.ovb-ps-layer-row').removeClass('is-selected');
+            $(this).closest('.ovb-ps-layer-row').addClass('is-selected');
             postToPreview({
                 type: 'OVB_SELECT_SELECTOR',
                 selector: sel,
                 scroll: true
             });
+        });
+
+        // Hovering a layer row spotlights the element directly on the live canvas!
+        $(document).on('mouseenter', '.ovb-ps-layer-row', function () {
+            const sel = $(this).attr('data-sel');
+            if (sel) {
+                postToPreview({ type: 'OVB_SPOTLIGHT_SELECTOR', selector: sel });
+            }
+        });
+
+        $(document).on('mouseleave', '.ovb-ps-layer-row', function () {
+            postToPreview({ type: 'OVB_SPOTLIGHT_SELECTOR', selector: '' });
+        });
+
+        // Eye icon toggle (Show / Hide layer)
+        $(document).on('click', '.ovb-ps-eye', function (e) {
+            e.stopPropagation();
+            const sel = $(this).attr('data-sel');
+            if (!sel) return;
+            const rec = ensureElementRecord(sel);
+            rec.styles[currentBucket].hidden = !rec.styles[currentBucket].hidden;
+            pushHistory();
+            syncPreview();
+            renderNavigatorTree();
+            if (currentSelector === sel) populateSidebarFromSelection();
+        });
+
+        // Lock icon toggle (Lock / Unlock layer from accidental canvas drag)
+        $(document).on('click', '.ovb-ps-lock', function (e) {
+            e.stopPropagation();
+            const sel = $(this).attr('data-sel');
+            if (!sel) return;
+            const rec = ensureElementRecord(sel);
+            rec.locked = !rec.locked;
+            pushHistory();
+            syncPreview();
+            renderNavigatorTree();
+            showToast(rec.locked ? `🔒 Camada '${sel}' trancada!` : `🔓 Camada '${sel}' destrancada!`);
+        });
+
+        // Z-Index Up / Down buttons inside layer row
+        $(document).on('click', '.ovb-ps-zup', function (e) {
+            e.stopPropagation();
+            const sel = $(this).attr('data-sel');
+            if (!sel) return;
+            currentSelector = sel;
+            executeShortcutCommand('layer-forward');
+        });
+
+        $(document).on('click', '.ovb-ps-zdown', function (e) {
+            e.stopPropagation();
+            const sel = $(this).attr('data-sel');
+            if (!sel) return;
+            currentSelector = sel;
+            executeShortcutCommand('layer-back');
+        });
+
+        // Quick Layer Bar Actions for Currently Selected Element
+        $('#ovb-layer-act-vis').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].hidden = !rec.styles[currentBucket].hidden;
+            pushHistory();
+            syncPreview();
+            renderNavigatorTree();
+            populateSidebarFromSelection();
+        });
+
+        $('#ovb-layer-act-lock').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.locked = !rec.locked;
+            pushHistory();
+            syncPreview();
+            renderNavigatorTree();
+            showToast(rec.locked ? '🔒 Camada trancada!' : '🔓 Camada destrancada!');
+        });
+
+        $('#ovb-layer-act-up').on('click', function () {
+            executeShortcutCommand('layer-forward');
+        });
+
+        $('#ovb-layer-act-down').on('click', function () {
+            executeShortcutCommand('layer-back');
         });
 
         // Delete Single Selector Rule from Modified List
@@ -1904,6 +2589,7 @@
                 delete state.elements[sel];
                 pushHistory();
                 syncPreview();
+                renderNavigatorTree();
                 if (currentSelector === sel) populateSidebarFromSelection();
                 showToast('Regra removida!');
             }
@@ -1918,6 +2604,8 @@
                 syncPreview();
                 populateSidebarFromSelection();
                 populateGlobalVariables();
+                renderNavigatorTree();
+                showToast('↺ Desfeito (Ctrl+Z)');
             }
         });
 
@@ -1929,21 +2617,54 @@
                 syncPreview();
                 populateSidebarFromSelection();
                 populateGlobalVariables();
+                renderNavigatorTree();
+                showToast('↻ Refeito (Ctrl+Shift+Z)');
             }
         });
 
+        // Parent Window Keyboard Shortcuts (Ctrl+Z, Ctrl+Shift+Z, and Adaptive Adobe Illustrator Shortcuts)
         $(document).on('keydown', function (e) {
-            if ((e.ctrlKey || e.metaKey) && !$(e.target).is('input, textarea')) {
-                if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+            if ($(e.target).is('input, textarea, select')) return;
+
+            const isMod = e.ctrlKey || e.metaKey;
+            const key = (e.key || '').toLowerCase();
+
+            if (isMod) {
+                if (key === 'z' && !e.shiftKey) {
                     e.preventDefault();
-                    $('#ovb-btn-undo').trigger('click');
-                } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
+                    executeShortcutCommand('undo');
+                } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
                     e.preventDefault();
-                    $('#ovb-btn-redo').trigger('click');
-                } else if (e.key.toLowerCase() === 's') {
+                    executeShortcutCommand('redo');
+                } else if (key === 's') {
                     e.preventDefault();
-                    $('#ovb-btn-save').trigger('click');
+                    executeShortcutCommand('save');
+                } else if (key === 'd') {
+                    e.preventDefault();
+                    executeShortcutCommand('duplicate');
                 }
+                return;
+            }
+
+            if (e.altKey) return;
+            const aiMap = {
+                'v': 'tool-select',
+                'a': 'tool-direct-select',
+                't': 'tool-text',
+                'm': 'tool-rect',
+                'l': 'tool-ellipse',
+                'u': 'tool-rounded',
+                'g': 'tool-gradient',
+                'i': e.shiftKey ? 'eyedropper-paste' : 'eyedropper-copy',
+                '[': 'layer-back',
+                ']': 'layer-forward',
+                'h': 'tool-hand',
+                'delete': 'delete-element',
+                'backspace': 'delete-element'
+            };
+            if (aiMap[key]) {
+                e.preventDefault();
+                executeShortcutCommand(aiMap[key]);
             }
         });
 

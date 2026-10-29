@@ -19,6 +19,61 @@
     let scrollObserver = null;
     let isApplyingDOM = false;
 
+    const DEFAULT_PALETTES = [
+        {
+            id: 'purple',
+            name: 'Roxo Odyssee',
+            nameEn: 'Odyssee Purple',
+            accent: '#8b5cf6',
+            accentHover: '#7c3aed',
+            nebula1: '#9333ea',
+            nebula2: '#c026d3',
+            nebula3: '#7c3aed',
+            bgDark: '#0d1538',
+            bgLight: '#f8fafc',
+            isBuiltin: true
+        },
+        {
+            id: 'red',
+            name: 'Vermelho Crimson',
+            nameEn: 'Crimson Red',
+            accent: '#ef4444',
+            accentHover: '#dc2626',
+            nebula1: '#dc2626',
+            nebula2: '#e11d48',
+            nebula3: '#991b1b',
+            bgDark: '#1f0910',
+            bgLight: '#fff5f5',
+            isBuiltin: true
+        }
+    ];
+
+    function normalizePalettesList(rawList) {
+        const list = Array.isArray(rawList) ? rawList.filter(p => p && p.id && p.accent) : [];
+        const result = [];
+        DEFAULT_PALETTES.forEach(def => {
+            const customOverride = list.find(p => p.id === def.id);
+            result.push(customOverride ? Object.assign({}, def, customOverride) : Object.assign({}, def));
+        });
+        list.forEach(p => {
+            if (!result.some(r => r.id === p.id)) {
+                result.push({
+                    id: String(p.id),
+                    name: p.name || 'Nova Paleta',
+                    nameEn: p.nameEn || p.name || 'Custom Palette',
+                    accent: p.accent || '#06b6d4',
+                    accentHover: p.accentHover || p.accent || '#0891b2',
+                    nebula1: p.nebula1 || p.accent || '#06b6d4',
+                    nebula2: p.nebula2 || p.accentHover || '#3b82f6',
+                    nebula3: p.nebula3 || p.accent || '#0ea5e9',
+                    bgDark: p.bgDark || '#0b132b',
+                    bgLight: p.bgLight || '#f8fafc'
+                });
+            }
+        });
+        return result;
+    }
+
     function normalizeData(raw) {
         const d = raw && typeof raw === 'object' ? raw : {};
         return {
@@ -35,8 +90,171 @@
             customJs: typeof d.customJs === 'string' ? d.customJs : '',
             componentPresets: Array.isArray(d.componentPresets) ? d.componentPresets : [],
             pagePresets: d.pagePresets && typeof d.pagePresets === 'object' ? d.pagePresets : {},
-            sitePresets: d.sitePresets && typeof d.sitePresets === 'object' ? d.sitePresets : {}
+            sitePresets: d.sitePresets && typeof d.sitePresets === 'object' ? d.sitePresets : {},
+            colorPalettes: normalizePalettesList(d.colorPalettes),
+            activeGlobalPalette: typeof d.activeGlobalPalette === 'string' && d.activeGlobalPalette ? d.activeGlobalPalette : 'purple',
+            pagePalettes: d.pagePalettes && typeof d.pagePalettes === 'object' && !Array.isArray(d.pagePalettes) ? d.pagePalettes : {},
+            allowVisitorColorSwitch: d.allowVisitorColorSwitch !== undefined ? !!d.allowVisitorColorSwitch : true
         };
+    }
+
+    function getCookieVal(name) {
+        try {
+            const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+            return match ? decodeURIComponent(match[2]) : '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function setCookieVal(name, value) {
+        try {
+            document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
+        } catch (e) {}
+    }
+
+    function getNormalizedPageKey() {
+        let p = (window.location.pathname || '/').toLowerCase();
+        if (p === '' || p === '/index.php') return '/';
+        if (!p.endsWith('/')) p += '/';
+        return p;
+    }
+
+    function applyColorPalettesEngine() {
+        const palettes = normalizePalettesList(builderData.colorPalettes);
+        const allowVisitor = builderData.allowVisitorColorSwitch !== false;
+        const pageKey = getNormalizedPageKey();
+        const pagePalettes = builderData.pagePalettes || {};
+
+        // 1. Check if current page has an individual per-page palette assigned
+        let pageSpecificId = pagePalettes[pageKey] || '';
+        if (!pageSpecificId) {
+            // Also check matching suffix (e.g., '/servicos/' inside subdirectory install)
+            Object.entries(pagePalettes).forEach(([k, v]) => {
+                if (v && k !== '/' && pageKey.endsWith(k)) {
+                    pageSpecificId = v;
+                }
+            });
+        }
+
+        // 2. Determine visitor session/cookie choice if allowed
+        let visitorChoice = '';
+        if (allowVisitor) {
+            visitorChoice = getCookieVal('odyssee_user_palette') || '';
+            if (!visitorChoice) {
+                try {
+                    visitorChoice = localStorage.getItem('userColor') || '';
+                } catch (e) {}
+            }
+        }
+
+        // Priority: Visitor Cookie/Session (if visitor explicitly switched and allowed, unless page forces a specific palette and visitor hasn't overridden on this session) -> Per-Page Palette -> Global Palette
+        let activeId = pageSpecificId || builderData.activeGlobalPalette || 'purple';
+        if (allowVisitor && visitorChoice && palettes.some(p => p.id === visitorChoice)) {
+            if (!pageSpecificId || window._ovbVisitorExplicitlyPickedColor) {
+                activeId = visitorChoice;
+            }
+        }
+
+        const pal = palettes.find(p => p.id === activeId) || palettes[0];
+        if (!pal) return;
+
+        // Update body classes for backward compatibility with style.css
+        document.body.classList.toggle('color-red', pal.id === 'red');
+        document.body.classList.toggle('color-purple', pal.id !== 'red');
+        document.body.setAttribute('data-ovb-palette', pal.id);
+
+        // Inject dynamic CSS variables for the active palette (supports unlimited custom palettes!)
+        let palStyleEl = document.getElementById('odyssee-vb-palette-css');
+        if (!palStyleEl) {
+            palStyleEl = document.createElement('style');
+            palStyleEl.id = 'odyssee-vb-palette-css';
+            document.head.appendChild(palStyleEl);
+        }
+
+        const accentRgbaGlow = hexToRgba(pal.accent, 0.45);
+        const n1Rgba = hexToRgba(pal.nebula1 || pal.accent, 0.55);
+        const n2Rgba = hexToRgba(pal.nebula2 || pal.accentHover || pal.accent, 0.5);
+        const n3Rgba = hexToRgba(pal.nebula3 || pal.accent, 0.45);
+
+        if (pal.id === 'purple' && !pal.customModified) {
+            palStyleEl.textContent = '';
+        } else if (pal.id === 'red' && !pal.customModified) {
+            palStyleEl.textContent = '';
+        } else {
+            palStyleEl.textContent = `
+                :root, body, body.color-purple, body.color-red {
+                    --color-accent: ${pal.accent} !important;
+                    --color-accent-hover: ${pal.accentHover || pal.accent} !important;
+                    --color-accent-glow: ${accentRgbaGlow} !important;
+                    --nebula-1: ${pal.nebula1 || pal.accent} !important;
+                    --nebula-2: ${pal.nebula2 || pal.accentHover || pal.accent} !important;
+                    --nebula-3: ${pal.nebula3 || pal.accent} !important;
+                }
+                ${pal.bgDark ? `body.theme-dark { --bg-page: ${pal.bgDark} !important; }` : ''}
+                ${pal.bgLight ? `body.theme-light { --bg-page: ${pal.bgLight} !important; }` : ''}
+                .gradients-container .g1, .onboarding-aurora .g1 {
+                    background: radial-gradient(circle at center, ${n1Rgba} 0, transparent 50%) no-repeat !important;
+                }
+                .gradients-container .g2, .onboarding-aurora .g2 {
+                    background: radial-gradient(circle at center, ${n2Rgba} 0, transparent 50%) no-repeat !important;
+                }
+                .gradients-container .g3, .onboarding-aurora .g3,
+                .gradients-container .g4, .onboarding-aurora .g4,
+                .gradients-container .g5, .onboarding-aurora .g5 {
+                    background: radial-gradient(circle at center, ${n3Rgba} 0, transparent 50%) no-repeat !important;
+                }
+            `;
+        }
+
+        // Update #settings-sidebar & #onboarding-container color-picker-grid for visitors
+        const isEn = document.documentElement.lang && document.documentElement.lang.toLowerCase().startsWith('en');
+        document.querySelectorAll('.color-picker-grid').forEach(grid => {
+            const settingGroup = grid.closest('.setting-group, .onboarding-step-color');
+            if (!allowVisitor) {
+                if (settingGroup) settingGroup.style.display = 'none';
+                else grid.style.display = 'none';
+                return;
+            } else {
+                if (settingGroup) settingGroup.style.display = '';
+                grid.style.display = 'grid';
+            }
+
+            // Rebuild palette buttons if palette count or IDs changed
+            const sig = palettes.map(p => `${p.id}:${p.name}:${p.accent}`).join('|') + `|lang:${isEn ? 'en' : 'pt'}`;
+            if (grid.getAttribute('data-ovb-pal-sig') !== sig) {
+                grid.setAttribute('data-ovb-pal-sig', sig);
+                grid.innerHTML = '';
+                palettes.forEach(p => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'color-option-btn' + (p.id === pal.id ? ' active' : '');
+                    btn.setAttribute('data-color', p.id);
+                    if (p.id === 'purple') btn.id = 'set-color-purple';
+                    if (p.id === 'red') btn.id = 'set-color-red';
+                    const label = isEn ? (p.nameEn || p.name) : p.name;
+                    btn.innerHTML = `
+                        <span class="color-dot" style="background:${p.accent};box-shadow:0 0 8px ${p.accent};"></span>
+                        <span class="color-name">${label}</span>
+                    `;
+                    btn.addEventListener('click', (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        window._ovbVisitorExplicitlyPickedColor = true;
+                        setCookieVal('odyssee_user_palette', p.id);
+                        try {
+                            localStorage.setItem('userColor', p.id);
+                        } catch (e) {}
+                        applyColorPalettesEngine();
+                    });
+                    grid.appendChild(btn);
+                });
+            } else {
+                grid.querySelectorAll('.color-option-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-color') === pal.id);
+                });
+            }
+        });
     }
 
     function hexToRgba(hex, alpha) {
@@ -601,31 +819,23 @@
                 break;
             }
             case 'shape-square': {
-                const sq = document.createElement('div');
-                sq.className = 'ovb-shape-square';
-                if (c.html) sq.innerHTML = c.html;
-                wrapper.appendChild(sq);
+                wrapper.className += ' ovb-shape-element ovb-shape-square';
+                wrapper.innerHTML = c.html || (c.text ? `<span>${c.text}</span>` : '');
                 break;
             }
             case 'shape-circle': {
-                const cir = document.createElement('div');
-                cir.className = 'ovb-shape-circle';
-                if (c.html) cir.innerHTML = c.html;
-                wrapper.appendChild(cir);
+                wrapper.className += ' ovb-shape-element ovb-shape-circle';
+                wrapper.innerHTML = c.html || (c.text ? `<span>${c.text}</span>` : '');
                 break;
             }
             case 'shape-bar': {
-                const bar = document.createElement('div');
-                bar.className = 'ovb-shape-bar';
-                if (c.html) bar.innerHTML = c.html;
-                wrapper.appendChild(bar);
+                wrapper.className += ' ovb-shape-element ovb-shape-bar';
+                wrapper.innerHTML = c.html || (c.text ? `<span>${c.text}</span>` : '');
                 break;
             }
             case 'shape-squircle': {
-                const sqc = document.createElement('div');
-                sqc.className = 'ovb-shape-squircle';
-                if (c.html) sqc.innerHTML = c.html;
-                wrapper.appendChild(sqc);
+                wrapper.className += ' ovb-shape-element ovb-shape-squircle';
+                wrapper.innerHTML = c.html || (c.text ? `<span>${c.text}</span>` : '');
                 break;
             }
             case 'html': {
@@ -693,7 +903,7 @@
     }
 
     /**
-     * Applies DOM-level features: Global UI Design System, Icon Pack, Blank Canvas Mode, text overrides (PT/EN), image src (Dark/Light), HTML attributes, overlay layers, entrance animations, hover presets, 3D tilt, and Special Configs (Carousel #5, Floating Orbit #6, Gradient Bridge #8)
+     * Applies DOM-level features: Global UI Design System, Icon Pack, Color Palettes, Blank Canvas Mode, text overrides (PT/EN), image src (Dark/Light), HTML attributes, Interactive Element Role (button/link/none), overlay layers, entrance animations, hover presets, 3D tilt, and Special Configs
      */
     function applyDOMFeatures() {
         if (isApplyingDOM) return;
@@ -711,6 +921,9 @@
                 document.body.setAttribute('data-ovb-icon-pack', activeIconPack);
             }
             document.body.classList.toggle('ovb-blank-canvas', !!builderData.blankMode);
+
+            // Apply Custom Color Palettes Engine (Global, Per-Page, and Visitor Cookie/Session)
+            applyColorPalettesEngine();
 
             if (!scrollObserver && 'IntersectionObserver' in window) {
                 scrollObserver = new IntersectionObserver((entries) => {
@@ -762,6 +975,13 @@
                         }
                     }
 
+                    // 0b. Layer Lock status (Photoshop/Illustrator layer lock)
+                    if (elConfig.locked) {
+                        el.setAttribute('data-ovb-locked', 'true');
+                    } else if (el.hasAttribute('data-ovb-locked')) {
+                        el.removeAttribute('data-ovb-locked');
+                    }
+
                     // 1. Content & Native Attributes Overrides
                     if (elConfig.content) {
                         const c = elConfig.content;
@@ -790,7 +1010,6 @@
                                     el.textContent = activeText;
                                 }
                             } else {
-                                // If element has icon + span (like buttons), update text node or span
                                 const textSpan = el.querySelector('span[data-key], span');
                                 if (textSpan && textSpan.textContent !== activeText) {
                                     textSpan.textContent = activeText;
@@ -835,17 +1054,59 @@
                     }
 
                     // 1b. Per-Element Individual UI Design System Override ([data-ovb-el-ui-style])
+                    // Supports 'none' ("Tema Não Aplicável / Imune") as well as specific UI themes!
                     if (elConfig.elUiStyle && elConfig.elUiStyle !== 'inherit') {
                         el.setAttribute('data-ovb-el-ui-style', elConfig.elUiStyle);
                     } else if (el.hasAttribute('data-ovb-el-ui-style')) {
                         el.removeAttribute('data-ovb-el-ui-style');
                     }
 
-                    // 2. Hover Animation Preset Class
+                    // 1c. Standalone Element Interactive Role (Button, Hyperlink, Scroll Anchor, or No User Interaction)
+                    if (elConfig.elementRole) {
+                        el.setAttribute('data-ovb-role', elConfig.elementRole);
+                        if (elConfig.elementRole === 'none' && elConfig.passEvents) {
+                            el.setAttribute('data-ovb-pass-events', 'true');
+                        } else {
+                            el.removeAttribute('data-ovb-pass-events');
+                        }
+                        el._ovbRoleType = elConfig.elementRole;
+                        el._ovbRoleUrl = elConfig.roleUrl || (elConfig.content && elConfig.content.href) || '';
+                        el._ovbRoleNewTab = !!elConfig.roleNewTab;
+
+                        if (['button', 'link', 'scroll'].includes(elConfig.elementRole) && !el._ovbRoleBound) {
+                            el._ovbRoleBound = true;
+                            el.addEventListener('click', function (ev) {
+                                if (config.isPreview && !isInteractiveMode) return;
+                                const rType = el._ovbRoleType;
+                                const rUrl = el._ovbRoleUrl;
+                                if (!rType || rType === 'none' || !rUrl) return;
+                                ev.preventDefault();
+                                if (rType === 'scroll' || rUrl.startsWith('#')) {
+                                    const targetSec = document.querySelector(rUrl);
+                                    if (targetSec) {
+                                        targetSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
+                                } else if (el._ovbRoleNewTab) {
+                                    window.open(rUrl, '_blank', 'noopener,noreferrer');
+                                } else {
+                                    window.location.href = rUrl;
+                                }
+                            });
+                        }
+                    } else if (el.hasAttribute('data-ovb-role')) {
+                        el.removeAttribute('data-ovb-role');
+                        el.removeAttribute('data-ovb-pass-events');
+                    }
+
+                    // 2. Hover Animation Preset Class (check active buckets & fallback)
                     ['ovb-hover-lift', 'ovb-hover-grow', 'ovb-hover-shrink', 'ovb-hover-tilt', 'ovb-hover-glow-boost'].forEach(cls => {
                         el.classList.remove(cls);
                     });
-                    const st = (elConfig.styles && (elConfig.styles.desktop || elConfig.styles.global)) || {};
+                    const st = Object.assign(
+                        {},
+                        (elConfig.styles && elConfig.styles.global) || {},
+                        (elConfig.styles && elConfig.styles.desktop) || {}
+                    );
                     if (st.hoverPreset && st.hoverPreset !== 'none') {
                         el.classList.add(st.hoverPreset);
                     }
@@ -1129,20 +1390,153 @@
     }
 
     /**
+     * Generates a rich Photoshop / Illustrator visual thumbnail descriptor for any DOM element
+     */
+    function getLayerVisualPreview(el) {
+        const cs = window.getComputedStyle(el);
+        const tag = el.tagName.toUpperCase();
+
+        // 1. Direct <img>
+        if (tag === 'IMG' && el.getAttribute('src')) {
+            return {
+                thumbType: 'image',
+                thumbSrc: el.getAttribute('src'),
+                thumbBg: '#0f172a'
+            };
+        }
+
+        // 2. SVG or SVG sub-layer (<g>, <path>, <text>)
+        if (el instanceof SVGElement) {
+            // Check if SVG group contains an embedded <image href="..."> (like in #dg-animated-banner!)
+            const svgImg = el.tagName.toLowerCase() === 'image' ? el : (el.querySelector && el.querySelector('image'));
+            if (svgImg) {
+                const href = svgImg.getAttribute('href') || svgImg.getAttribute('xlink:href');
+                if (href) {
+                    return {
+                        thumbType: 'image',
+                        thumbSrc: href,
+                        thumbBg: '#0f172a'
+                    };
+                }
+            }
+            if (el.tagName.toLowerCase() === 'text' || el.tagName.toLowerCase() === 'tspan') {
+                return {
+                    thumbType: 'text',
+                    thumbText: (el.textContent || ' SVG ').trim().slice(0, 8),
+                    thumbColor: cs.fill && cs.fill !== 'none' ? cs.fill : '#ffffff',
+                    thumbBg: '#1e1b4b'
+                };
+            }
+            // Serialize inline SVG vector preview (e.g., #header-logotype, .hero-symbol, .onboarding-logo)
+            if (el.tagName.toLowerCase() === 'svg') {
+                try {
+                    const clone = el.cloneNode(true);
+                    clone.removeAttribute('id');
+                    clone.setAttribute('width', '38');
+                    clone.setAttribute('height', '26');
+                    if (!clone.getAttribute('viewBox')) {
+                        clone.setAttribute('viewBox', '0 0 100 100');
+                    }
+                    // Ensure visible fill in thumbnail
+                    clone.style.fill = cs.fill && cs.fill !== 'none' && cs.fill !== 'rgb(0, 0, 0)' ? cs.fill : '#a855f7';
+                    clone.style.color = '#ffffff';
+                    const svgRaw = new XMLSerializer().serializeToString(clone);
+                    if (svgRaw.length < 18000) {
+                        return {
+                            thumbType: 'svg',
+                            thumbSrc: 'data:image/svg+xml;utf8,' + encodeURIComponent(svgRaw),
+                            thumbBg: '#0f172a'
+                        };
+                    }
+                } catch (e) {}
+            }
+            return {
+                thumbType: 'text',
+                thumbText: 'SVG',
+                thumbColor: '#38bdf8',
+                thumbBg: '#0f172a'
+            };
+        }
+
+        // 3. Element containing a direct visual <img> (e.g. .logo-link, .category-banner-wrapper, .ovb-block-image-wrap)
+        const childImg = el.querySelector && el.querySelector(':scope > img, :scope > .card-image-wrapper > img');
+        if (childImg && childImg.getAttribute('src')) {
+            return {
+                thumbType: 'image',
+                thumbSrc: childImg.getAttribute('src'),
+                thumbBg: '#0f172a'
+            };
+        }
+
+        // 4. Element containing a direct <svg> logo/icon
+        const childSvg = el.querySelector && el.querySelector(':scope > svg');
+        if (childSvg && el.children.length === 1) {
+            return getLayerVisualPreview(childSvg);
+        }
+
+        // 5. Text / Heading / Button / Link with text
+        const bgImg = cs.backgroundImage && cs.backgroundImage !== 'none' ? cs.backgroundImage : '';
+        const bgCol = cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent' ? cs.backgroundColor : '';
+        const effectiveBg = bgImg || bgCol || 'rgba(30, 41, 59, 0.85)';
+
+        if (['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'A', 'BUTTON', 'SPAN'].includes(tag)) {
+            const rawTxt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+            return {
+                thumbType: 'text',
+                thumbText: rawTxt ? rawTxt.slice(0, 9) : tag,
+                thumbColor: cs.color || '#ffffff',
+                thumbBg: effectiveBg,
+                thumbRadius: cs.borderRadius || '4px'
+            };
+        }
+
+        // 6. Shapes, Nebulas (.g1..g5), Cards, Sections
+        return {
+            thumbType: 'box',
+            thumbBg: effectiveBg,
+            thumbBorder: cs.borderTopColor && cs.borderTopStyle !== 'none' ? cs.borderTopColor : 'rgba(139, 92, 246, 0.45)',
+            thumbRadius: cs.borderRadius || '6px',
+            thumbText: el.classList.contains('ovb-shape-circle') ? '●' : (el.classList.contains('ovb-shape-square') ? '■' : '')
+        };
+    }
+
+    /**
      * Collects a complete, categorized Scene Graph of ALL base elements on the current page
+     * with Photoshop / Illustrator Layer Thumbnails, Z-Index, Eye (Visibility) & Lock state!
      */
     function collectPageTree() {
         const groups = [];
+        let domOrderCounter = 1;
 
-        function makeNode(el, customLabel) {
-            if (!el) return null;
+        function makeNode(el, customLabel, parentName) {
+            if (!el || el.nodeType !== 1) return null;
             const sel = generateSelector(el);
             if (!sel) return null;
+            const cs = window.getComputedStyle(el);
+            const rec = builderData.elements[sel] || {};
+            const st = Object.assign({}, (rec.styles && rec.styles.global) || {}, (rec.styles && rec.styles.desktop) || {});
+            const preview = getLayerVisualPreview(el);
+            const zVal = st.zIndex !== undefined && st.zIndex !== '' ? st.zIndex : (cs.zIndex !== 'auto' ? cs.zIndex : '');
+
             return {
                 selector: sel,
                 label: customLabel || getElementLabel(el),
+                parentLabel: parentName || '',
+                tagName: el.tagName.toUpperCase(),
                 hasCustom: !!builderData.elements[sel],
-                isBlock: el.hasAttribute('data-ovb-block-id') || el.hasAttribute('data-ovb-clone-id')
+                isBlock: el.hasAttribute('data-ovb-block-id') || el.hasAttribute('data-ovb-clone-id'),
+                hidden: !!(st.hidden || cs.display === 'none'),
+                locked: !!rec.locked,
+                elUiStyle: rec.elUiStyle || '',
+                zIndex: zVal,
+                stackOrder: domOrderCounter++,
+                thumbType: preview.thumbType,
+                thumbSrc: preview.thumbSrc || '',
+                thumbBg: preview.thumbBg || '#1e293b',
+                thumbBorder: preview.thumbBorder || '',
+                thumbRadius: preview.thumbRadius || '4px',
+                thumbText: preview.thumbText || '',
+                thumbColor: preview.thumbColor || '#ffffff'
             };
         }
 
@@ -1151,17 +1545,16 @@
         if (headerEl) {
             const hChildren = [];
             headerEl.querySelectorAll('#header-logotype, .logo-link, .main-nav, .main-nav a, .header-mobile-buttons a, #btn-faq, #btn-settings, #btn-mobile-menu').forEach(el => {
-                const n = makeNode(el);
+                const n = makeNode(el, null, 'Cabeçalho');
                 if (n) hChildren.push(n);
             });
             const sidebarEl = document.getElementById('settings-sidebar');
-            if (sidebarEl) hChildren.push(makeNode(sidebarEl, 'ASIDE #settings-sidebar (Gaveta Config)'));
-            groups.push({
-                selector: generateSelector(headerEl),
-                label: '🧭 Cabeçalho & Menu Principal',
-                hasCustom: !!builderData.elements[generateSelector(headerEl)],
-                children: hChildren
-            });
+            if (sidebarEl) hChildren.push(makeNode(sidebarEl, 'ASIDE #settings-sidebar (Gaveta Config)', 'Cabeçalho'));
+            const hGroup = makeNode(headerEl, '🧭 Camada: Cabeçalho & Menu Principal');
+            if (hGroup) {
+                hGroup.children = hChildren;
+                groups.push(hGroup);
+            }
         }
 
         // 2. Tela de Onboarding & Aurora
@@ -1169,19 +1562,18 @@
         if (onbEl) {
             const onbChildren = [];
             document.querySelectorAll('.onboarding-aurora, .onboarding-aurora .g1, .onboarding-aurora .g2, .onboarding-aurora .g3, .onboarding-aurora .g4, .onboarding-aurora .g5').forEach(el => {
-                const n = makeNode(el);
+                const n = makeNode(el, null, 'Onboarding');
                 if (n) onbChildren.push(n);
             });
             onbEl.querySelectorAll('.onboarding-logo, .onboarding-subtitle, #step-language, #lang-pt, #lang-en, #step-theme, #btn-light, #btn-dark, .color-option-btn, #btn-continuar').forEach(el => {
-                const n = makeNode(el);
+                const n = makeNode(el, null, 'Onboarding');
                 if (n) onbChildren.push(n);
             });
-            groups.push({
-                selector: '#onboarding-container',
-                label: '🚪 Tela de Onboarding & Aurora',
-                hasCustom: !!builderData.elements['#onboarding-container'],
-                children: onbChildren
-            });
+            const onbGroup = makeNode(onbEl, '🚪 Camada: Tela de Onboarding & Aurora');
+            if (onbGroup) {
+                onbGroup.children = onbChildren;
+                groups.push(onbGroup);
+            }
         }
 
         // 3. Nebulosas & Fundo Imersivo (Home)
@@ -1189,25 +1581,23 @@
         if (gradContainer) {
             const gChildren = [];
             gradContainer.querySelectorAll('.g1, .g2, .g3, .g4, .g5').forEach((el, idx) => {
-                const n = makeNode(el, `Nebulosa .g${idx + 1}`);
+                const n = makeNode(el, `Nebulosa .g${idx + 1}`, 'Nebulosas');
                 if (n) gChildren.push(n);
             });
             const fadeBot = document.querySelector('.gradient-fade-bottom');
-            if (fadeBot) gChildren.push(makeNode(fadeBot, 'Fade Inferior (.gradient-fade-bottom)'));
-            groups.push({
-                selector: generateSelector(gradContainer),
-                label: '🌌 Nebulosas de Fundo (.gradients-container)',
-                hasCustom: !!builderData.elements[generateSelector(gradContainer)],
-                children: gChildren
-            });
+            if (fadeBot) gChildren.push(makeNode(fadeBot, 'Fade Inferior (.gradient-fade-bottom)', 'Nebulosas'));
+            const gGroup = makeNode(gradContainer, '🌌 Camada: Nebulosas de Fundo (.gradients-container)');
+            if (gGroup) {
+                gGroup.children = gChildren;
+                groups.push(gGroup);
+            }
         }
 
         // 4. Todas as Seções da Página (<section>)
         document.querySelectorAll('section').forEach(sec => {
-            const secSel = generateSelector(sec);
+            const secLabel = `📦 Camada Seção: ${getElementLabel(sec)}`;
             const secChildren = [];
 
-            // Direct & key elements inside this section
             sec.querySelectorAll(
                 '#artcraft-orbit-container, .hero-content-centered, .hero-logo-container, .hero-symbol, .hero-slogan, .scroll-indicator, ' +
                 'h1, h2, h3, h4, p, .category-banner-wrapper, img.category-banner, svg#dg-animated-banner, ' +
@@ -1217,50 +1607,50 @@
             ).forEach(child => {
                 if (child.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box')) return;
                 let customName = null;
-                if (child.matches && child.matches('svg#dg-animated-banner g.dg-item[id]')) {
+                if (child.matches && child.matches('.hero-slogan')) {
+                    customName = `🔤 Título Principal Abaixo da Logo (.hero-slogan)`;
+                } else if (child.matches && child.matches('.hero-symbol')) {
+                    customName = `🎨 Logo Símbolo Central (.hero-symbol)`;
+                } else if (child.matches && child.matches('svg#dg-animated-banner g.dg-item[id]')) {
                     customName = `🎨 Ícone SVG: ${child.id.replace('.png', '')}`;
                 } else if (child.matches && child.matches('svg#dg-animated-banner text.dg-item')) {
                     customName = `🔤 Texto SVG: ${child.textContent.trim()}`;
                 }
-                const n = makeNode(child, customName);
+                const n = makeNode(child, customName, getElementLabel(sec));
                 if (n) secChildren.push(n);
             });
 
-            groups.push({
-                selector: secSel,
-                label: `📦 Seção: ${getElementLabel(sec)}`,
-                hasCustom: !!builderData.elements[secSel],
-                children: secChildren
-            });
+            const secGroup = makeNode(sec, secLabel);
+            if (secGroup) {
+                secGroup.children = secChildren;
+                groups.push(secGroup);
+            }
         });
 
-        // 5. Páginas sem <section> ou elementos de Currículo/FAQ/Blog
+        // 5. Páginas sem <section> ou elementos de Currículo/FAQ/Blog + Blocos Customizados na Raiz
         document.querySelectorAll('.cv-container, .faq-container, .posts-page-container, article, footer.site-footer').forEach(box => {
-            const bSel = generateSelector(box);
             const bChildren = [];
-            box.querySelectorAll('h1, h2, h3, h4, p, img, button, a, .faq-item, .cv-card, .cv-section').forEach(ch => {
-                const n = makeNode(ch);
+            box.querySelectorAll('h1, h2, h3, h4, p, img, button, a, .faq-item, .cv-card, .cv-section, .ovb-custom-block').forEach(ch => {
+                const n = makeNode(ch, null, getElementLabel(box));
                 if (n) bChildren.push(n);
             });
-            groups.push({
-                selector: bSel,
-                label: `📄 Bloco: ${getElementLabel(box)}`,
-                hasCustom: !!builderData.elements[bSel],
-                children: bChildren.slice(0, 40)
-            });
+            const bGroup = makeNode(box, `📄 Camada: ${getElementLabel(box)}`);
+            if (bGroup) {
+                bGroup.children = bChildren.slice(0, 50);
+                groups.push(bGroup);
+            }
         });
 
         return groups;
     }
 
     /**
-     * Initializes the Interactive Canvas Manipulation Engine (Drag-to-Move, 8 Resize Handles, Reorder, Duplicate)
-    /**
-     * Initializes the Interactive Canvas Manipulation Engine (Figma/Illustrator style Drag, 8 Resize Handles, Corner Radius Handle, Aspect Lock, Arrow Nudge)
+     * Initializes the Interactive Canvas Manipulation Engine (Figma/Illustrator style Drag, 8 Resize Handles, Corner Radius Handle, Aspect Lock, Adaptive Illustrator Shortcuts)
      */
     function initPreviewInspector() {
         document.body.classList.add('ovb-editor-active');
         let lockAspectRatio = true; // Constrain proportions by default so elements don't stretch accidentally!
+        let spotlightElement = null;
 
         try {
             localStorage.setItem('onboardingFeito', 'sim');
@@ -1295,12 +1685,13 @@
             <span class="ovb-badge-drag-handle" title="Arraste aqui (ou arraste o próprio elemento) para mover livremente em X/Y">
                 ✥ <span class="ovb-badge-title">Elemento</span>
             </span>
-            <button type="button" class="ovb-badge-btn" data-act="toggle-lock" title="Travar/Destravar Proporção ao Redimensionar (Evita esticar sem querer)">🔒 Proporção</button>
+            <button type="button" class="ovb-badge-btn" data-act="toggle-lock" title="Travar/Destravar Proporção ao Redimensionar">🔒 Proporção</button>
             <button type="button" class="ovb-badge-btn" data-act="unstretch" title="Desfazer Esticamento / Restaurar Proporção Original 1:1">1:1</button>
+            <button type="button" class="ovb-badge-btn" data-act="toggle-immune" title="Marcar/Desmarcar como 'Tema Não Aplicável (Imune a Temas)' — ideal para Logos e Banners SVG">🛡️ Imune</button>
             <button type="button" class="ovb-badge-btn" data-act="move-up" title="Mover Acima na Ordem da Página (HTML)">▲</button>
             <button type="button" class="ovb-badge-btn" data-act="move-down" title="Mover Abaixo na Ordem da Página (HTML)">▼</button>
-            <button type="button" class="ovb-badge-btn" data-act="parent" title="Selecionar Elemento Pai">⬆ Pai</button>
-            <button type="button" class="ovb-badge-btn" data-act="duplicate" title="Duplicar este Elemento (ou Alt+Arrastar)">⧉</button>
+            <button type="button" class="ovb-badge-btn" data-act="parent" title="Selecionar Elemento Pai (Atalho: A)">⬆ Pai</button>
+            <button type="button" class="ovb-badge-btn" data-act="duplicate" title="Duplicar Elemento (Atalho: Ctrl+D ou Alt+Arrastar)">⧉</button>
             <button type="button" class="ovb-badge-btn" data-act="hide" title="Ocultar Elemento">👁️</button>
             <button type="button" class="ovb-badge-btn" data-act="add-after" title="Inserir Novo Bloco Abaixo">＋</button>
             <button type="button" class="ovb-badge-btn" data-act="reset" title="Resetar Posição e Estilo deste Elemento">↺</button>
@@ -1331,7 +1722,7 @@
 
                 floatBadge.style.display = 'flex';
                 const badgeTop = rect.top > 38 ? rect.top - 34 : Math.min(window.innerHeight - 36, rect.bottom + 6);
-                const badgeLeft = Math.max(6, Math.min(window.innerWidth - 460, rect.left));
+                const badgeLeft = Math.max(6, Math.min(window.innerWidth - 520, rect.left));
                 floatBadge.style.top = `${badgeTop}px`;
                 floatBadge.style.left = `${badgeLeft}px`;
             } else {
@@ -1364,6 +1755,12 @@
             const titleSpan = floatBadge.querySelector('.ovb-badge-title');
             if (titleSpan) titleSpan.textContent = getElementLabel(el);
 
+            const immuneBtn = floatBadge.querySelector('[data-act="toggle-immune"]');
+            if (immuneBtn) {
+                const isImmune = el.getAttribute('data-ovb-el-ui-style') === 'none';
+                immuneBtn.style.background = isImmune ? '#10b981' : '';
+            }
+
             if (scrollToIt) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
@@ -1393,6 +1790,7 @@
 
         function startDraggingElement(e, el) {
             if (!el || el === document.body || el === document.documentElement) return;
+            if (el.getAttribute('data-ovb-locked') === 'true') return;
             const sel = generateSelector(el);
             const curT = getElementCurrentTranslate(el);
 
@@ -1415,11 +1813,11 @@
                 origX: curT.x,
                 origY: curT.y,
                 svgScale: svgScale,
+                altDuplicate: !!e.altKey,
                 moved: false
             };
         }
 
-        // Start drag from the floating badge handle OR directly on any element on the canvas
         floatBadge.querySelector('.ovb-badge-drag-handle').addEventListener('mousedown', (e) => {
             if (e.button !== 0 || !selectedElement) return;
             e.preventDefault();
@@ -1540,13 +1938,12 @@
                 hud.style.display = 'block';
                 hud.style.top = `${e.clientY + 16}px`;
                 hud.style.left = `${e.clientX + 16}px`;
-                hud.textContent = `X: ${newX >= 0 ? '+' : ''}${newX}px  |  Y: ${newY >= 0 ? '+' : ''}${newY}px`;
+                hud.textContent = `${dragState.altDuplicate ? '⧉ Duplicar  |  ' : ''}X: ${newX >= 0 ? '+' : ''}${newX}px  |  Y: ${newY >= 0 ? '+' : ''}${newY}px`;
                 updateSelectionOverlay();
             } else if (dragState.mode === 'resize') {
                 const constrain = lockAspectRatio || e.shiftKey;
 
                 if (dragState.el instanceof SVGElement || (dragState.isCorner && constrain)) {
-                    // Uniform proportional scale (never stretches or distorts!)
                     const sign = (dragState.dir === 'nw' || dragState.dir === 'sw') ? -1 : 1;
                     const delta = (dx * sign) / Math.max(80, dragState.origW);
                     const newScale = Math.max(0.1, Math.min(5, Number((dragState.origScale + delta).toFixed(2))));
@@ -1565,7 +1962,6 @@
                     if (dragState.dir.includes('s')) newH = Math.max(16, Math.round(dragState.origH + dy));
                     if (dragState.dir.includes('n')) newH = Math.max(16, Math.round(dragState.origH - dy));
 
-                    // If Aspect Ratio Lock is active on side handles, compute the partner dimension proportionally!
                     if (constrain && dragState.aspect > 0) {
                         if (dragState.dir === 'e' || dragState.dir === 'w') {
                             newH = Math.max(16, Math.round(newW / dragState.aspect));
@@ -1617,12 +2013,22 @@
             snapGuideH.style.display = 'none';
 
             if (st.moved) {
-                // CRITICAL: Remove temporary inline style properties from the DOM element so the per-device @media stylesheet is 100% in charge!
                 st.el.style.removeProperty('translate');
                 st.el.style.removeProperty('scale');
                 st.el.style.removeProperty('width');
                 st.el.style.removeProperty('height');
                 st.el.style.removeProperty('border-radius');
+
+                if (st.mode === 'move' && st.altDuplicate) {
+                    // Illustrator Alt+Drag: Duplicate element at the new coordinates while leaving original in place!
+                    window.parent.postMessage({
+                        type: 'OVB_DUPLICATE_ELEMENT',
+                        selector: st.selector,
+                        translateX: st.currentX,
+                        translateY: st.currentY
+                    }, '*');
+                    return;
+                }
 
                 const changes = {};
                 if (st.mode === 'move') {
@@ -1645,12 +2051,42 @@
             }
         }, true);
 
-        // Keyboard Arrow Nudging (↑ ↓ ← → by 1px, or 10px with Shift, just like Figma/Illustrator!)
+        // ==========================================
+        // ADOBE ILLUSTRATOR ADAPTIVE KEYBOARD SHORTCUTS + CTRL+Z / CTRL+SHIFT+Z + ARROW NUDGE
+        // ==========================================
         document.addEventListener('keydown', (e) => {
-            if (isInteractiveMode || !selectedElement || !selectedSelector) return;
-            if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target && e.target.tagName) || '')) return;
+            const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+            const isTyping = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || (e.target && e.target.isContentEditable);
 
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            // 1. Ctrl+Z (Undo), Ctrl+Shift+Z / Ctrl+Y (Redo), Ctrl+S (Save), Ctrl+D (Duplicate)
+            if (e.ctrlKey || e.metaKey) {
+                const k = e.key.toLowerCase();
+                if (k === 'z' && !e.shiftKey && !isTyping) {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'undo' }, '*');
+                    return;
+                }
+                if ((k === 'z' && e.shiftKey) || (k === 'y' && !isTyping)) {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'redo' }, '*');
+                    return;
+                }
+                if (k === 's') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'save' }, '*');
+                    return;
+                }
+                if (k === 'd' && !isTyping && selectedSelector) {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_DUPLICATE_ELEMENT', selector: selectedSelector }, '*');
+                    return;
+                }
+            }
+
+            if (isTyping) return;
+
+            // 2. Arrow Nudging (↑ ↓ ← → by 1px, or 10px with Shift)
+            if (!isInteractiveMode && selectedElement && selectedSelector && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
                 e.preventDefault();
                 const step = e.shiftKey ? 10 : 1;
                 const curT = getElementCurrentTranslate(selectedElement);
@@ -1669,6 +2105,57 @@
                         translateY: `${Math.round(ny)}px`
                     }
                 }, '*');
+                return;
+            }
+
+            // 3. Single-Key Adaptive Illustrator Shortcuts (when not holding Ctrl/Alt/Meta)
+            if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+                const key = e.key.toLowerCase();
+                if (key === 'v') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'tool-select' }, '*');
+                } else if (key === 'a') {
+                    e.preventDefault();
+                    if (selectedElement && selectedElement.parentElement && selectedElement.parentElement !== document.body) {
+                        selectElement(selectedElement.parentElement, false);
+                    }
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'tool-direct' }, '*');
+                } else if (key === 'm') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'insert-shape-square' }, '*');
+                } else if (key === 'l') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'insert-shape-circle' }, '*');
+                } else if (key === 'u') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'insert-shape-bar' }, '*');
+                } else if (key === 't') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'tool-text' }, '*');
+                } else if (key === 'g') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'tool-gradient' }, '*');
+                } else if (key === 'i') {
+                    e.preventDefault();
+                    window.parent.postMessage({
+                        type: 'OVB_SHORTCUT_COMMAND',
+                        command: e.shiftKey ? 'eyedropper-paste' : 'eyedropper-copy'
+                    }, '*');
+                } else if (key === 'h') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'toggle-hand' }, '*');
+                } else if (e.key === '[') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'z-backward' }, '*');
+                } else if (e.key === ']') {
+                    e.preventDefault();
+                    window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'z-forward' }, '*');
+                } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (selectedSelector) {
+                        e.preventDefault();
+                        window.parent.postMessage({ type: 'OVB_SHORTCUT_COMMAND', command: 'delete-or-hide' }, '*');
+                    }
+                }
             }
         });
 
@@ -1681,7 +2168,7 @@
             e.stopPropagation();
         }, true);
 
-        // Floating Badge Action Buttons (Lock Aspect, Un-stretch 1:1, Move Up/Down in DOM, Duplicate, Hide, Parent, Add Block, Reset)
+        // Floating Badge Action Buttons
         floatBadge.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -1702,6 +2189,11 @@
                 selectedElement.style.removeProperty('scale');
                 window.parent.postMessage({
                     type: 'OVB_UNSTRETCH_ELEMENT',
+                    selector: selectedSelector
+                }, '*');
+            } else if (act === 'toggle-immune') {
+                window.parent.postMessage({
+                    type: 'OVB_TOGGLE_IMMUNE_ELEMENT',
                     selector: selectedSelector
                 }, '*');
             } else if (act === 'parent' && selectedElement.parentElement && selectedElement.parentElement !== document.body) {
@@ -1812,6 +2304,22 @@
                     }, '*');
                     break;
                 }
+                case 'OVB_SPOTLIGHT_SELECTOR': {
+                    if (spotlightElement) {
+                        spotlightElement.removeAttribute('data-ovb-spotlight');
+                        spotlightElement = null;
+                    }
+                    if (msg.selector) {
+                        try {
+                            const el = document.querySelector(msg.selector);
+                            if (el) {
+                                spotlightElement = el;
+                                spotlightElement.setAttribute('data-ovb-spotlight', 'true');
+                            }
+                        } catch (err) {}
+                    }
+                    break;
+                }
                 case 'OVB_SET_ASPECT_LOCK': {
                     lockAspectRatio = !!msg.locked;
                     const lockBtn = floatBadge.querySelector('[data-act="toggle-lock"]');
@@ -1819,7 +2327,7 @@
                     break;
                 }
                 case 'OVB_TOGGLE_GRID': {
-                    document.body.classList.toggle('ovb-show-grid', !!msg.showGrid);
+                    document.body.classList.toggle('ovb-show-grid', !!(msg.showGrid || msg.show));
                     break;
                 }
                 case 'OVB_SELECT_SELECTOR': {
@@ -1873,14 +2381,10 @@
                         document.body.classList.add('theme-dark');
                         try { localStorage.setItem('userTheme', 'dark'); } catch (e) {}
                     }
-                    if (msg.color === 'red') {
-                        document.body.classList.remove('color-purple');
-                        document.body.classList.add('color-red');
-                        try { localStorage.setItem('userColor', 'red'); } catch (e) {}
-                    } else if (msg.color === 'purple') {
-                        document.body.classList.remove('color-red');
-                        document.body.classList.add('color-purple');
-                        try { localStorage.setItem('userColor', 'purple'); } catch (e) {}
+                    if (msg.color) {
+                        window._ovbVisitorExplicitlyPickedColor = true;
+                        setCookieVal('odyssee_user_palette', msg.color);
+                        try { localStorage.setItem('userColor', msg.color); } catch (e) {}
                     }
                     if (msg.onboarding !== undefined) {
                         document.body.classList.toggle('modo-onboarding', !!msg.onboarding);
@@ -1931,8 +2435,9 @@
         window.parent.postMessage({
             type: 'OVB_PREVIEW_READY',
             url: window.location.href,
+            pageKey: getNormalizedPageKey(),
             theme: document.body.classList.contains('theme-light') ? 'light' : 'dark',
-            color: document.body.classList.contains('color-red') ? 'red' : 'purple',
+            color: document.body.getAttribute('data-ovb-palette') || (document.body.classList.contains('color-red') ? 'red' : 'purple'),
             tree: collectPageTree(),
             compiledCss: compileAllCSS(builderData)
         }, '*');
