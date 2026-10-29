@@ -22,12 +22,17 @@
     function normalizeData(raw) {
         const d = raw && typeof raw === 'object' ? raw : {};
         return {
+            presetName: typeof d.presetName === 'string' && d.presetName ? d.presetName : 'OdysseeXP',
+            uiStyle: typeof d.uiStyle === 'string' && d.uiStyle ? d.uiStyle : 'odysseexp',
+            iconPack: typeof d.iconPack === 'string' && d.iconPack ? d.iconPack : 'default',
+            blankMode: !!d.blankMode,
             elements: d.elements && typeof d.elements === 'object' && !Array.isArray(d.elements) ? d.elements : {},
             blocks: Array.isArray(d.blocks) ? d.blocks : [],
             domMoves: Array.isArray(d.domMoves) ? d.domMoves : [],
             clones: Array.isArray(d.clones) ? d.clones : [],
             globalVars: d.globalVars && typeof d.globalVars === 'object' && !Array.isArray(d.globalVars) ? d.globalVars : { all: {}, dark: {}, light: {} },
-            customCss: typeof d.customCss === 'string' ? d.customCss : ''
+            customCss: typeof d.customCss === 'string' ? d.customCss : '',
+            customJs: typeof d.customJs === 'string' ? d.customJs : ''
         };
     }
 
@@ -565,6 +570,34 @@
                 wrapper.appendChild(hr);
                 break;
             }
+            case 'shape-square': {
+                const sq = document.createElement('div');
+                sq.className = 'ovb-shape-square';
+                if (c.html) sq.innerHTML = c.html;
+                wrapper.appendChild(sq);
+                break;
+            }
+            case 'shape-circle': {
+                const cir = document.createElement('div');
+                cir.className = 'ovb-shape-circle';
+                if (c.html) cir.innerHTML = c.html;
+                wrapper.appendChild(cir);
+                break;
+            }
+            case 'shape-bar': {
+                const bar = document.createElement('div');
+                bar.className = 'ovb-shape-bar';
+                if (c.html) bar.innerHTML = c.html;
+                wrapper.appendChild(bar);
+                break;
+            }
+            case 'shape-squircle': {
+                const sqc = document.createElement('div');
+                sqc.className = 'ovb-shape-squircle';
+                if (c.html) sqc.innerHTML = c.html;
+                wrapper.appendChild(sqc);
+                break;
+            }
             case 'html': {
                 const htmlBox = document.createElement('div');
                 htmlBox.className = 'ovb-block-html';
@@ -606,13 +639,25 @@
     }
 
     /**
-     * Applies DOM-level features: text overrides (PT/EN), image src (Dark/Light), HTML attributes, overlay layers, entrance animations, hover presets, 3D tilt
+     * Applies DOM-level features: Global UI Design System, Icon Pack, Blank Canvas Mode, text overrides (PT/EN), image src (Dark/Light), HTML attributes, overlay layers, entrance animations, hover presets, 3D tilt
      */
     function applyDOMFeatures() {
         if (isApplyingDOM) return;
         isApplyingDOM = true;
 
         try {
+            // Apply Global UI Design System & Icon Pack to <body> and <html>
+            const activeUiStyle = builderData.uiStyle || 'odysseexp';
+            const activeIconPack = builderData.iconPack || 'default';
+            if (document.body.getAttribute('data-ovb-ui-style') !== activeUiStyle) {
+                document.body.setAttribute('data-ovb-ui-style', activeUiStyle);
+                document.documentElement.setAttribute('data-ovb-ui-style', activeUiStyle);
+            }
+            if (document.body.getAttribute('data-ovb-icon-pack') !== activeIconPack) {
+                document.body.setAttribute('data-ovb-icon-pack', activeIconPack);
+            }
+            document.body.classList.toggle('ovb-blank-canvas', !!builderData.blankMode);
+
             if (!scrollObserver && 'IntersectionObserver' in window) {
                 scrollObserver = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
@@ -657,9 +702,23 @@
                     // 1. Content & Native Attributes Overrides
                     if (elConfig.content) {
                         const c = elConfig.content;
+
+                        // Direct Raw innerHTML Override (from Code Editor "Editar na Lata")
+                        if (c.innerHTML !== undefined && c.innerHTML !== '') {
+                            if (!el.hasAttribute('data-ovb-orig-html')) {
+                                el.setAttribute('data-ovb-orig-html', el.innerHTML);
+                            }
+                            if (el.innerHTML !== c.innerHTML) {
+                                el.innerHTML = c.innerHTML;
+                            }
+                        } else if (el.hasAttribute('data-ovb-orig-html')) {
+                            el.innerHTML = el.getAttribute('data-ovb-orig-html');
+                            el.removeAttribute('data-ovb-orig-html');
+                        }
+
                         const activeText = (curLang === 'en' && c.textEn) ? c.textEn : c.text;
 
-                        if (activeText !== undefined && activeText !== '') {
+                        if (activeText !== undefined && activeText !== '' && !c.innerHTML) {
                             if (!el.hasAttribute('data-ovb-orig-text')) {
                                 el.setAttribute('data-ovb-orig-text', el.textContent);
                             }
@@ -674,7 +733,7 @@
                                     textSpan.textContent = activeText;
                                 }
                             }
-                        } else if (el.hasAttribute('data-ovb-orig-text')) {
+                        } else if (el.hasAttribute('data-ovb-orig-text') && !c.innerHTML) {
                             if (el.children.length === 0) {
                                 el.textContent = el.getAttribute('data-ovb-orig-text');
                             }
@@ -927,6 +986,7 @@
             tagName: el.tagName.toLowerCase(),
             isSvg: el instanceof SVGElement,
             label: getElementLabel(el),
+            innerHTML: el.innerHTML || '',
             text: (el.children.length === 0 || el.tagName === 'TEXT' || el.tagName === 'TSPAN') ? (el.textContent || '').trim() : (el.querySelector('span[data-key], span') ? el.querySelector('span[data-key], span').textContent.trim() : ''),
             src: el.tagName === 'IMG' ? (el.getAttribute('src') || '') : '',
             href: el.tagName === 'A' ? (el.getAttribute('href') || '') : '',
@@ -1556,6 +1616,10 @@
                         } catch (err) {}
                     }
                     updateSelectionOverlay();
+                    window.parent.postMessage({
+                        type: 'OVB_COMPILED_CSS',
+                        compiledCss: compileAllCSS(builderData)
+                    }, '*');
                     break;
                 }
                 case 'OVB_SELECT_SELECTOR': {
@@ -1639,7 +1703,8 @@
             url: window.location.href,
             theme: document.body.classList.contains('theme-light') ? 'light' : 'dark',
             color: document.body.classList.contains('color-red') ? 'red' : 'purple',
-            tree: collectPageTree()
+            tree: collectPageTree(),
+            compiledCss: compileAllCSS(builderData)
         }, '*');
     }
 

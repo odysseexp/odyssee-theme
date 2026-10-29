@@ -1,0 +1,17 @@
+{
+  "presetName": "OdysseeXP",
+  "uiStyle": "odysseexp",
+  "iconPack": "default",
+  "blankMode": false,
+  "elements": {},
+  "blocks": [],
+  "domMoves": [],
+  "clones": [],
+  "globalVars": {
+    "all": {},
+    "dark": {},
+    "light": {}
+  },
+  "customCss": "",
+  "customJs": ""
+}

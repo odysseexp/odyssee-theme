@@ -8,17 +8,34 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'ODYSSEE_VB_OPTION_KEY', 'odyssee_visual_builder_data' );
+define( 'ODYSSEE_VB_PRESETS_KEY', 'odyssee_visual_builder_presets' );
 define( 'ODYSSEE_VB_REVISIONS_KEY', 'odyssee_visual_builder_revisions' );
 
 /**
- * Retrieves saved Visual Builder data with safe defaults
+ * Retrieves saved Visual Builder data with safe defaults.
+ * Falls back to presets/odysseexp.json inside the theme folder if the database option is empty,
+ * making the theme 100% portable when exported or moved to another site.
  */
 function odyssee_vb_get_data() {
     $data = get_option( ODYSSEE_VB_OPTION_KEY, array() );
+    if ( empty( $data ) || ! is_array( $data ) ) {
+        $preset_file = get_template_directory() . '/presets/odysseexp.json';
+        if ( file_exists( $preset_file ) ) {
+            $json_raw = file_get_contents( $preset_file );
+            $decoded  = json_decode( $json_raw, true );
+            if ( is_array( $decoded ) ) {
+                $data = $decoded;
+            }
+        }
+    }
     if ( ! is_array( $data ) ) {
         $data = array();
     }
     return wp_parse_args( $data, array(
+        'presetName' => 'OdysseeXP',
+        'uiStyle'    => 'odysseexp',
+        'iconPack'   => 'default',
+        'blankMode'  => false,
         'elements'   => array(),
         'blocks'     => array(),
         'domMoves'   => array(),
@@ -29,7 +46,61 @@ function odyssee_vb_get_data() {
             'light' => array(),
         ),
         'customCss'  => '',
+        'customJs'   => '',
     ) );
+}
+
+/**
+ * Retrieves all saved named Theme Presets (always includes 'OdysseeXP' and 'Tema em Branco')
+ */
+function odyssee_vb_get_presets_list() {
+    $saved = get_option( ODYSSEE_VB_PRESETS_KEY, array() );
+    if ( ! is_array( $saved ) ) {
+        $saved = array();
+    }
+
+    // Load any .json preset files from the theme's /presets/ directory
+    $presets_dir = get_template_directory() . '/presets';
+    if ( is_dir( $presets_dir ) ) {
+        $files = glob( $presets_dir . '/*.json' );
+        if ( is_array( $files ) ) {
+            foreach ( $files as $file ) {
+                $content = json_decode( file_get_contents( $file ), true );
+                if ( is_array( $content ) ) {
+                    $name = ! empty( $content['presetName'] ) ? $content['presetName'] : basename( $file, '.json' );
+                    if ( ! isset( $saved[ $name ] ) ) {
+                        $saved[ $name ] = $content;
+                    }
+                }
+            }
+        }
+    }
+
+    // Ensure OdysseeXP default preset is always present
+    if ( ! isset( $saved['OdysseeXP'] ) ) {
+        $saved['OdysseeXP'] = odyssee_vb_get_data();
+        $saved['OdysseeXP']['presetName'] = 'OdysseeXP';
+        $saved['OdysseeXP']['blankMode']  = false;
+    }
+
+    // Ensure "Tema em Branco" preset is always available for starting new sites from scratch
+    if ( ! isset( $saved['Tema em Branco'] ) ) {
+        $saved['Tema em Branco'] = array(
+            'presetName' => 'Tema em Branco',
+            'uiStyle'    => 'odysseexp',
+            'iconPack'   => 'default',
+            'blankMode'  => true,
+            'elements'   => array(),
+            'blocks'     => array(),
+            'domMoves'   => array(),
+            'clones'     => array(),
+            'globalVars' => array( 'all' => array(), 'dark' => array(), 'light' => array() ),
+            'customCss'  => '',
+            'customJs'   => '',
+        );
+    }
+
+    return $saved;
 }
 
 /**
@@ -108,7 +179,7 @@ function odyssee_vb_customizer_launch_banner() {
         var banner = $(
             '<li style="padding:14px;background:linear-gradient(135deg,#131926,#1e1b4b);border-bottom:2px solid #8b5cf6;list-style:none;">' +
                 '<div style="color:#f8fafc;font-weight:700;font-size:13px;margin-bottom:6px;">⚡ Odyssee Visual Studio (Estilo Elementor)</div>' +
-                '<p style="color:#cbd5e1;font-size:11.5px;margin:0 0 10px 0;line-height:1.45;">Arraste e mova qualquer elemento ao vivo, redimensione, edite todas as propriedades, adicione animações, efeitos de Glow Neon e Blend Modes sem quebrar o tema.</p>' +
+                '<p style="color:#cbd5e1;font-size:11.5px;margin:0 0 10px 0;line-height:1.45;">Altere o Design System da página (Frutiger Aero, GTK4, Breeze, MacTahoe, Material 3 Expressive), programe CSS na lata, arraste elementos e exporte predefinições.</p>' +
                 '<a href="<?php echo esc_url( $studio_url ); ?>" class="button button-primary" style="width:100%;text-align:center;background:linear-gradient(135deg,#8b5cf6,#d946ef);border:none;font-weight:700;height:34px;line-height:34px;">Abrir Odyssee Studio Visual &rarr;</a>' +
             '</li>'
         );
@@ -140,14 +211,14 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
         'odyssee-vb-admin',
         get_template_directory_uri() . '/inc/visual-builder-admin.css',
         array(),
-        '26.10.4'
+        '26.10.5'
     );
 
     wp_enqueue_script(
         'odyssee-vb-admin',
         get_template_directory_uri() . '/inc/visual-builder-admin.js',
         array( 'jquery' ),
-        '26.10.4',
+        '26.10.5',
         true
     );
 
@@ -156,29 +227,17 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
         'nonce'       => wp_create_nonce( 'odyssee_vb_nonce' ),
         'homeUrl'     => home_url( '/' ),
         'initialData' => odyssee_vb_get_data(),
+        'presets'     => odyssee_vb_get_presets_list(),
     ) );
 }
 
 /**
- * Enqueues Frontend Assets & Passes Saved Customization Data
+ * Enqueues Frontend Assets & Passes Saved Customization Data + Active Theme Preset CSS
  */
 add_action( 'wp_enqueue_scripts', 'odyssee_vb_enqueue_frontend_assets', 30 );
 function odyssee_vb_enqueue_frontend_assets() {
     $is_preview = odyssee_vb_is_preview();
     $data       = odyssee_vb_get_data();
-
-    $has_data = ! empty( $data['elements'] )
-             || ! empty( $data['blocks'] )
-             || ! empty( $data['domMoves'] )
-             || ! empty( $data['clones'] )
-             || ! empty( $data['customCss'] )
-             || ! empty( $data['globalVars']['all'] )
-             || ! empty( $data['globalVars']['dark'] )
-             || ! empty( $data['globalVars']['light'] );
-
-    if ( ! $is_preview && ! $has_data ) {
-        return;
-    }
 
     if ( $is_preview ) {
         show_admin_bar( false );
@@ -188,14 +247,25 @@ function odyssee_vb_enqueue_frontend_assets() {
         'odyssee-vb-frontend',
         get_template_directory_uri() . '/assets/css/visual-builder-frontend.css',
         array( 'odyssee-style' ),
-        '26.10.4'
+        '26.10.5'
     );
+
+    // Enqueue the physical compiled CSS file generated by the Visual Studio (so theme changes live in the codebase)
+    $compiled_css_path = get_template_directory() . '/assets/css/theme-preset-active.css';
+    if ( file_exists( $compiled_css_path ) && ! $is_preview ) {
+        wp_enqueue_style(
+            'odyssee-vb-preset-active',
+            get_template_directory_uri() . '/assets/css/theme-preset-active.css',
+            array( 'odyssee-vb-frontend' ),
+            filemtime( $compiled_css_path )
+        );
+    }
 
     wp_enqueue_script(
         'odyssee-vb-frontend',
         get_template_directory_uri() . '/assets/js/visual-builder-frontend.js',
         array( 'vanilla-tilt' ),
-        '26.10.4',
+        '26.10.5',
         true
     );
 
@@ -210,11 +280,6 @@ function odyssee_vb_enqueue_frontend_assets() {
  */
 add_action( 'wp_footer', 'odyssee_vb_print_svg_filters', 5 );
 function odyssee_vb_print_svg_filters() {
-    $is_preview = odyssee_vb_is_preview();
-    $data       = odyssee_vb_get_data();
-    if ( ! $is_preview && empty( $data['elements'] ) ) {
-        return;
-    }
     ?>
     <svg id="odyssee-vb-svg-filters" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true">
         <defs>
@@ -238,7 +303,7 @@ function odyssee_vb_print_svg_filters() {
 }
 
 /**
- * AJAX Handler: Save Visual Studio Customizations
+ * AJAX Handler: Save Visual Studio Customizations, Named Presets & Physical Theme Files
  */
 add_action( 'wp_ajax_odyssee_vb_save', 'odyssee_vb_ajax_save' );
 function odyssee_vb_ajax_save() {
@@ -248,23 +313,43 @@ function odyssee_vb_ajax_save() {
         wp_send_json_error( 'Sem permissão para salvar.' );
     }
 
-    $raw_json = isset( $_POST['data'] ) ? wp_unslash( $_POST['data'] ) : '';
-    $decoded  = json_decode( $raw_json, true );
+    $raw_json     = isset( $_POST['data'] ) ? wp_unslash( $_POST['data'] ) : '';
+    $compiled_css = isset( $_POST['compiledCss'] ) ? wp_unslash( $_POST['compiledCss'] ) : '';
+    $decoded      = json_decode( $raw_json, true );
 
     if ( ! is_array( $decoded ) ) {
         wp_send_json_error( 'Formato de dados inválido.' );
     }
 
+    $preset_name = isset( $decoded['presetName'] ) && trim( (string) $decoded['presetName'] ) !== ''
+        ? sanitize_text_field( $decoded['presetName'] )
+        : 'OdysseeXP';
+
+    $allowed_styles = array( 'odysseexp', 'frutiger-aero', 'gtk4', 'breeze', 'mactahoe', 'material', 'material-3-expressive' );
+    $ui_style = isset( $decoded['uiStyle'] ) && in_array( $decoded['uiStyle'], $allowed_styles, true )
+        ? $decoded['uiStyle']
+        : 'odysseexp';
+
+    $allowed_icons = array( 'default', 'glossy-3d', 'symbolic-thin', 'neon-glow', 'tonal-pill' );
+    $icon_pack = isset( $decoded['iconPack'] ) && in_array( $decoded['iconPack'], $allowed_icons, true )
+        ? $decoded['iconPack']
+        : 'default';
+
     $clean = array(
+        'presetName' => $preset_name,
+        'uiStyle'    => $ui_style,
+        'iconPack'   => $icon_pack,
+        'blankMode'  => ! empty( $decoded['blankMode'] ),
         'elements'   => isset( $decoded['elements'] ) && is_array( $decoded['elements'] ) ? $decoded['elements'] : array(),
         'blocks'     => isset( $decoded['blocks'] ) && is_array( $decoded['blocks'] ) ? $decoded['blocks'] : array(),
         'domMoves'   => isset( $decoded['domMoves'] ) && is_array( $decoded['domMoves'] ) ? $decoded['domMoves'] : array(),
         'clones'     => isset( $decoded['clones'] ) && is_array( $decoded['clones'] ) ? $decoded['clones'] : array(),
         'globalVars' => isset( $decoded['globalVars'] ) && is_array( $decoded['globalVars'] ) ? $decoded['globalVars'] : array( 'all' => array(), 'dark' => array(), 'light' => array() ),
         'customCss'  => isset( $decoded['customCss'] ) ? wp_strip_all_tags( (string) $decoded['customCss'] ) : '',
+        'customJs'   => isset( $decoded['customJs'] ) ? (string) $decoded['customJs'] : '',
     );
 
-    // Save revision backup (up to 10 revisions)
+    // 1. Save revision backup (up to 10 revisions)
     $revisions = get_option( ODYSSEE_VB_REVISIONS_KEY, array() );
     if ( ! is_array( $revisions ) ) {
         $revisions = array();
@@ -276,11 +361,45 @@ function odyssee_vb_ajax_save() {
     $revisions = array_slice( $revisions, 0, 10 );
     update_option( ODYSSEE_VB_REVISIONS_KEY, $revisions, false );
 
+    // 2. Save active data in DB
     update_option( ODYSSEE_VB_OPTION_KEY, $clean );
 
+    // 3. Save in Named Presets collection
+    $presets = odyssee_vb_get_presets_list();
+    $presets[ $preset_name ] = $clean;
+    update_option( ODYSSEE_VB_PRESETS_KEY, $presets, false );
+
+    // 4. Write physical files to theme directory so changes reflect directly in the theme codebase (for Git / Gemini / export)
+    $theme_dir   = get_template_directory();
+    $presets_dir = $theme_dir . '/presets';
+    if ( ! is_dir( $presets_dir ) ) {
+        wp_mkdir_p( $presets_dir );
+    }
+
+    $slug = sanitize_file_name( strtolower( str_replace( ' ', '-', $preset_name ) ) );
+    if ( empty( $slug ) ) {
+        $slug = 'odysseexp';
+    }
+    $json_pretty = wp_json_encode( $clean, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+    @file_put_contents( $presets_dir . '/' . $slug . '.json', $json_pretty );
+    if ( strtolower( $preset_name ) === 'odysseexp' ) {
+        @file_put_contents( $presets_dir . '/odysseexp.json', $json_pretty );
+    }
+
+    $css_header = "/**\n"
+        . " * Odyssee Theme — Predefinição Ativa Compilada pelo Odyssee Visual Studio\n"
+        . " * Predefinição (Preset): {$preset_name}\n"
+        . " * Design System (Estilo UI): {$ui_style}\n"
+        . " * Pacote de Ícones: {$icon_pack}\n"
+        . " * Este arquivo é sincronizado automaticamente ao salvar no Odyssee Studio e pode ser editado diretamente ou com o Gemini.\n"
+        . " */\n\n";
+    @file_put_contents( $theme_dir . '/assets/css/theme-preset-active.css', $css_header . $compiled_css );
+
     wp_send_json_success( array(
-        'message' => 'Salvo com sucesso!',
-        'time'    => current_time( 'H:i:s' ),
+        'message'    => "Salvo na predefinição '{$preset_name}' e sincronizado no tema!",
+        'presetName' => $preset_name,
+        'presets'    => $presets,
+        'time'       => current_time( 'H:i:s' ),
     ) );
 }
 
@@ -316,7 +435,7 @@ function odyssee_vb_render_admin_page() {
                 </a>
                 <div class="ovb-brand">
                     <span class="ovb-brand-badge">STUDIO</span>
-                    <span>Odyssee Visual Builder</span>
+                    <span>Odyssee</span>
                 </div>
                 <select id="ovb-page-switcher" class="ovb-select-page" title="Alternar página em edição">
                     <?php foreach ( $pages_list as $p_url => $p_label ) : ?>
@@ -325,19 +444,30 @@ function odyssee_vb_render_admin_page() {
                         </option>
                     <?php endforeach; ?>
                 </select>
+
+                <!-- Quick UI Design System Switcher in Topbar -->
+                <select id="ovb-topbar-uistyle" class="ovb-select-page" title="Estilo Global da Página (Design System UI)">
+                    <option value="odysseexp">🎨 UI: Padrão OdysseeXP</option>
+                    <option value="frutiger-aero">🫧 UI: Frutiger Aero</option>
+                    <option value="gtk4">🐧 UI: GTK4 (Libadwaita)</option>
+                    <option value="breeze">❄️ UI: KDE Breeze</option>
+                    <option value="mactahoe">🍎 UI: MacTahoe (Liquid Glass)</option>
+                    <option value="material">📐 UI: Material Design</option>
+                    <option value="material-3-expressive">🌸 UI: Material 3 Expressive</option>
+                </select>
             </div>
 
             <div class="ovb-topbar-center">
                 <!-- Device Switcher -->
                 <div class="ovb-btn-group" title="Visualização Responsiva">
                     <button type="button" class="ovb-icon-btn ovb-device-btn active" data-device="desktop">
-                        <i class="fas fa-desktop"></i> Desktop
+                        <i class="fas fa-desktop"></i>
                     </button>
                     <button type="button" class="ovb-icon-btn ovb-device-btn" data-device="tablet">
-                        <i class="fas fa-tablet-alt"></i> Tablet
+                        <i class="fas fa-tablet-alt"></i>
                     </button>
                     <button type="button" class="ovb-icon-btn ovb-device-btn" data-device="mobile">
-                        <i class="fas fa-mobile-alt"></i> Mobile
+                        <i class="fas fa-mobile-alt"></i>
                     </button>
                 </div>
 
@@ -365,7 +495,11 @@ function odyssee_vb_render_admin_page() {
                 </button>
 
                 <button type="button" id="ovb-toggle-interactive" class="ovb-icon-btn" style="border:1px solid rgba(255,255,255,0.1);" title="Alternar entre Modo Seleção/Arrastar e Navegação Livre">
-                    <i class="fas fa-mouse-pointer"></i> Navegar Livre
+                    <i class="fas fa-mouse-pointer"></i> Navegar
+                </button>
+
+                <button type="button" id="ovb-toggle-code-drawer" class="ovb-icon-btn" style="border:1px solid #a855f7;color:#e9d5ff;background:rgba(168,85,247,0.16);font-weight:700;" title="Programar por Código — Editar CSS/HTML na lata e Exportar para o Gemini">
+                    <i class="fas fa-terminal"></i> Código na Lata (CSS)
                 </button>
             </div>
 
@@ -380,7 +514,7 @@ function odyssee_vb_render_admin_page() {
                 </div>
 
                 <button type="button" id="ovb-btn-save" class="ovb-save-btn">
-                    <i class="fas fa-check-circle"></i> Salvar & Publicar
+                    <i class="fas fa-check-circle"></i> Salvar (<span id="ovb-active-preset-badge">OdysseeXP</span>)
                 </button>
             </div>
         </header>
@@ -576,6 +710,22 @@ function odyssee_vb_render_admin_page() {
                                         <i class="fas fa-id-card"></i>
                                         <span>Card Glassmorphism</span>
                                     </div>
+                                    <div class="ovb-widget-card" data-widget="shape-square">
+                                        <i class="fas fa-vector-square"></i>
+                                        <span>Quadrado Adaptativo</span>
+                                    </div>
+                                    <div class="ovb-widget-card" data-widget="shape-circle">
+                                        <i class="fas fa-circle"></i>
+                                        <span>Círculo Adaptativo</span>
+                                    </div>
+                                    <div class="ovb-widget-card" data-widget="shape-bar">
+                                        <i class="fas fa-grip-lines"></i>
+                                        <span>Barra / Painel</span>
+                                    </div>
+                                    <div class="ovb-widget-card" data-widget="shape-squircle">
+                                        <i class="fas fa-shapes"></i>
+                                        <span>Squircle / Orgânico</span>
+                                    </div>
                                     <div class="ovb-widget-card" data-widget="glow-orb">
                                         <i class="fas fa-sun"></i>
                                         <span>Luz / Orbe de Glow</span>
@@ -594,9 +744,93 @@ function odyssee_vb_render_admin_page() {
                     </div>
 
                     <!-- ==========================================
-                         TAB 2: MOVER, LAYOUT & ESTILO COMPLETO
+                         TAB 2: MOVER, LAYOUT, DESIGN SYSTEM DA PÁGINA & ESTILO COMPLETO
                          ========================================== -->
                     <div class="ovb-tab-panel active" id="tab-style">
+
+                        <!-- 0. ESTILO GLOBAL DA PÁGINA (UI DESIGN SYSTEM) & PACOTE DE ÍCONES -->
+                        <div class="ovb-section">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-swatchbook"></i> Estilo da Página (Design System UI & Ícones)</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <p style="font-size:11px;color:#cbd5e1;margin:0;line-height:1.4;">
+                                    Transforma automaticamente <strong>botões, barras, cabeçalho, quadrados, círculos, cards, ícones e o scroll da página</strong>:
+                                </p>
+
+                                <div class="ovb-uistyle-grid">
+                                    <div class="ovb-uistyle-card active" data-uistyle="odysseexp">
+                                        <div class="ovb-uistyle-card-title">
+                                            <span>⚡ OdysseeXP</span>
+                                            <span style="font-size:9.5px;color:#c084fc;">Padrão</span>
+                                        </div>
+                                        <div class="ovb-uistyle-card-desc">Glassmorphism escuro, aura roxa/crimson e cantos suaves.</div>
+                                        <div class="ovb-uistyle-swatch" style="background:linear-gradient(90deg,#8b5cf6,#ec4899);"></div>
+                                    </div>
+
+                                    <div class="ovb-uistyle-card" data-uistyle="frutiger-aero">
+                                        <div class="ovb-uistyle-card-title">
+                                            <span>🫧 Frutiger Aero</span>
+                                        </div>
+                                        <div class="ovb-uistyle-card-desc">Vidro glossy aqua, reflexo especular 3D, ciano/esmeralda e scroll glossy.</div>
+                                        <div class="ovb-uistyle-swatch" style="background:linear-gradient(90deg,#00d4ff,#10b981);"></div>
+                                    </div>
+
+                                    <div class="ovb-uistyle-card" data-uistyle="gtk4">
+                                        <div class="ovb-uistyle-card-title">
+                                            <span>🐧 GTK4</span>
+                                        </div>
+                                        <div class="ovb-uistyle-card-desc">GNOME Libadwaita flat, headerbar limpa, anel de foco e scroll fino.</div>
+                                        <div class="ovb-uistyle-swatch" style="background:linear-gradient(90deg,#3584e4,#62a0ea);"></div>
+                                    </div>
+
+                                    <div class="ovb-uistyle-card" data-uistyle="breeze">
+                                        <div class="ovb-uistyle-card-title">
+                                            <span>❄️ KDE Breeze</span>
+                                        </div>
+                                        <div class="ovb-uistyle-card-desc">Cantos precisos 5px, contorno highlight #3daee9 1px e scroll Plasma.</div>
+                                        <div class="ovb-uistyle-swatch" style="background:linear-gradient(90deg,#3daee9,#1d99f3);"></div>
+                                    </div>
+
+                                    <div class="ovb-uistyle-card" data-uistyle="mactahoe">
+                                        <div class="ovb-uistyle-card-title">
+                                            <span>🍎 MacTahoe</span>
+                                        </div>
+                                        <div class="ovb-uistyle-card-desc">macOS Tahoe Liquid Glass, barra dock flutuante, blur profundo e refração.</div>
+                                        <div class="ovb-uistyle-swatch" style="background:linear-gradient(90deg,#38bdf8,#a855f7);"></div>
+                                    </div>
+
+                                    <div class="ovb-uistyle-card" data-uistyle="material">
+                                        <div class="ovb-uistyle-card-title">
+                                            <span>📐 Material</span>
+                                        </div>
+                                        <div class="ovb-uistyle-card-desc">Material Design clássico, sombras Z-depth em camadas e superfície tátil.</div>
+                                        <div class="ovb-uistyle-swatch" style="background:linear-gradient(90deg,#6200ee,#03dac6);"></div>
+                                    </div>
+
+                                    <div class="ovb-uistyle-card" data-uistyle="material-3-expressive" style="grid-column: span 2;">
+                                        <div class="ovb-uistyle-card-title">
+                                            <span>🌸 Material 3 Expressive (Material You)</span>
+                                            <span style="font-size:9.5px;color:#f472b6;">Morphing</span>
+                                        </div>
+                                        <div class="ovb-uistyle-card-desc">Formas super-arredondadas (32px/pílula) que mudam de raio no hover com física elástica e containers tonais.</div>
+                                        <div class="ovb-uistyle-swatch" style="background:linear-gradient(90deg,#d0bcff,#f472b6,#38bdf8);"></div>
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field" style="margin-top:6px;">
+                                    <label class="ovb-label">✨ Pacote de Ícones do Tema (Icon Pack):</label>
+                                    <select id="ovb-iconpack-select" class="ovb-select">
+                                        <option value="default">Padrão do Tema (Automático conforme o Estilo UI)</option>
+                                        <option value="glossy-3d">🫧 Aero 3D Glossy (Reflexo vítreo + sombra profunda)</option>
+                                        <option value="symbolic-thin">🐧 Symbolic Thin (Traço fino monocromático GTK4 / Breeze)</option>
+                                        <option value="neon-glow">⚡ Cyber Neon Glow (Brilho neon intenso nos ícones)</option>
+                                        <option value="tonal-pill">🌸 Tonal Squircle Badge (Pastilha arredondada M3 / Tahoe)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- 1. MOVER ELEMENTO, ESCALA & ORDEM NA PÁGINA -->
                         <div class="ovb-section">
@@ -1480,30 +1714,62 @@ function odyssee_vb_render_admin_page() {
                             </div>
                         </div>
 
-                        <!-- GLOBAL CUSTOM CSS & BACKUP -->
-                        <div class="ovb-section collapsed">
+                        <!-- PREDEFINIÇÕES DE TEMA (PRESETS: OdysseeXP / Tema em Branco / Exportar para Gemini) -->
+                        <div class="ovb-section">
                             <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-shield-alt"></i> CSS Global & Backup Seguro</span>
+                                <span class="ovb-sec-title"><i class="fas fa-bookmark"></i> Predefinições de Tema (OdysseeXP & Exportação)</span>
                                 <i class="fas fa-chevron-down ovb-chevron"></i>
                             </div>
                             <div class="ovb-section-body">
+                                <p style="font-size:11px;color:#cbd5e1;margin:0;line-height:1.4;">
+                                    Sua predefinição principal está salva como <strong>OdysseeXP</strong>. Tudo o que você faz aqui reflete diretamente nos arquivos do tema (<code>presets/odysseexp.json</code> e <code>assets/css/theme-preset-active.css</code>) para editar no Gemini ou exportar para novos sites.
+                                </p>
+
                                 <div class="ovb-field">
-                                    <label class="ovb-label">CSS Global do Site</label>
-                                    <textarea id="ovb-global-custom-css" class="ovb-textarea" rows="4" style="font-family:monospace;font-size:11px;" placeholder="/* CSS global aplicado em todo o site */"></textarea>
+                                    <label class="ovb-label">Carregar Predefinição Salva:</label>
+                                    <div class="ovb-field-row">
+                                        <select id="ovb-preset-selector" class="ovb-select" style="flex:1;">
+                                            <option value="OdysseeXP">⚡ OdysseeXP (Tema Principal)</option>
+                                            <option value="Tema em Branco">📄 Tema em Branco (Criar Site do Zero)</option>
+                                        </select>
+                                        <button type="button" id="ovb-btn-load-preset" class="ovb-mini-btn">Carregar</button>
+                                    </div>
                                 </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Nome da Predefinição Atual (para Salvar):</label>
+                                    <div class="ovb-field-row">
+                                        <input type="text" id="ovb-preset-name-input" class="ovb-input" value="OdysseeXP" placeholder="Ex: OdysseeXP">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field-row">
+                                    <label class="ovb-label">Modo "Tema em Branco" (Ocultar seções base do site)</label>
+                                    <input type="checkbox" id="ovb-blank-mode-toggle">
+                                </div>
+
+                                <button type="button" id="ovb-btn-open-code-export" class="ovb-action-btn" style="margin-top:4px;background:linear-gradient(135deg,rgba(139,92,246,0.3),rgba(236,72,153,0.25));">
+                                    <i class="fas fa-terminal"></i> Abrir Editor de Código na Lata / Exportar p/ Gemini
+                                </button>
 
                                 <div class="ovb-field-row" style="margin-top:6px;">
                                     <button type="button" id="ovb-btn-export" class="ovb-action-btn" style="flex:1;">
-                                        <i class="fas fa-download"></i> Exportar JSON
+                                        <i class="fas fa-download"></i> Baixar Preset (.JSON)
                                     </button>
+                                    <button type="button" id="ovb-btn-export-css" class="ovb-action-btn" style="flex:1;">
+                                        <i class="fas fa-file-code"></i> Baixar CSS (.CSS)
+                                    </button>
+                                </div>
+
+                                <div class="ovb-field-row" style="margin-top:4px;">
                                     <button type="button" id="ovb-btn-import-trigger" class="ovb-action-btn" style="flex:1;">
-                                        <i class="fas fa-upload"></i> Importar JSON
+                                        <i class="fas fa-upload"></i> Importar Predefinição (.JSON)
                                     </button>
                                     <input type="file" id="ovb-import-file" accept=".json" style="display:none;">
                                 </div>
 
-                                <button type="button" id="ovb-btn-reset-all" class="ovb-action-btn ovb-danger-btn" style="margin-top:8px;">
-                                    <i class="fas fa-trash-restore"></i> Limpar Todas as Personalizações
+                                <button type="button" id="ovb-btn-reset-all" class="ovb-action-btn ovb-danger-btn" style="margin-top:6px;">
+                                    <i class="fas fa-trash-restore"></i> Limpar Customizações Visuais
                                 </button>
                             </div>
                         </div>
@@ -1512,10 +1778,79 @@ function odyssee_vb_render_admin_page() {
                 </div>
             </aside>
 
-            <!-- RIGHT LIVE PREVIEW CANVAS -->
+            <!-- RIGHT LIVE PREVIEW CANVAS + BOTTOM LIVE CODE IDE DRAWER -->
             <main class="ovb-canvas-area">
                 <div id="ovb-iframe-container" class="ovb-iframe-container device-desktop">
                     <iframe id="ovb-preview-iframe" src="<?php echo esc_url( $iframe_src ); ?>" title="Odyssee Visual Preview"></iframe>
+                </div>
+
+                <!-- LIVE CODE EDITOR IDE ("PROGRAMAR POR CÓDIGO / EDITAR CSS NA LATA!") -->
+                <div id="ovb-code-drawer" class="ovb-code-drawer">
+                    <div class="ovb-code-header">
+                        <div class="ovb-code-tabs">
+                            <button type="button" class="ovb-code-tab active" data-codetab="pane-global-css">
+                                <i class="fas fa-bolt"></i> CSS Global na Lata (Ao Vivo)
+                            </button>
+                            <button type="button" class="ovb-code-tab" data-codetab="pane-el-css">
+                                <i class="fas fa-crosshairs"></i> CSS do Elemento Selecionado
+                            </button>
+                            <button type="button" class="ovb-code-tab" data-codetab="pane-el-html">
+                                <i class="fas fa-code"></i> HTML / SVG do Elemento na Lata
+                            </button>
+                            <button type="button" class="ovb-code-tab" data-codetab="pane-gemini-export">
+                                <i class="fas fa-robot"></i> Código Compilado do Tema (Para Editar no Gemini)
+                            </button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <button type="button" id="ovb-code-maximize" class="ovb-mini-btn" title="Expandir / Restaurar Altura do Editor de Código">
+                                ⤢ Expandir
+                            </button>
+                            <button type="button" id="ovb-code-close" class="ovb-mini-btn" title="Fechar Editor de Código">
+                                ✕ Fechar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ovb-code-body">
+                        <!-- PANE 1: GLOBAL CSS NA LATA -->
+                        <div class="ovb-code-pane active" id="pane-global-css">
+                            <div class="ovb-code-statusbar">
+                                <span>💡 Digite qualquer regra CSS abaixo e veja o resultado em tempo real na página (sem precisar recarregar!):</span>
+                                <span style="color:#c084fc;font-family:monospace;">Salvo em: assets/css/theme-preset-active.css</span>
+                            </div>
+                            <textarea id="ovb-global-custom-css" class="ovb-code-editor-textarea" spellcheck="false" placeholder="/* Digite seu CSS na lata aqui! Tudo reflete ao vivo na página.&#10;Exemplo:&#10;.hero-slogan {&#10;  text-shadow: 0 0 25px #a855f7;&#10;}&#10;*/"></textarea>
+                        </div>
+
+                        <!-- PANE 2: ELEMENT CSS NA LATA -->
+                        <div class="ovb-code-pane" id="pane-el-css">
+                            <div class="ovb-code-statusbar">
+                                <span>🎯 Editando CSS exclusivo do elemento: <strong id="ovb-code-el-label" style="color:#38bdf8;font-family:monospace;">(Selecione um elemento)</strong> — Use a palavra <code>selector</code>:</span>
+                                <button type="button" id="ovb-btn-insert-selector-tpl" class="ovb-mini-btn">＋ Inserir bloco selector { }</button>
+                            </div>
+                            <textarea id="ovb-code-el-css-editor" class="ovb-code-editor-textarea" spellcheck="false" placeholder="selector {&#10;  /* Estilos aplicados diretamente neste elemento */&#10;  border: 2px solid #a855f7;&#10;}&#10;&#10;selector:hover {&#10;  transform: scale(1.05);&#10;}"></textarea>
+                        </div>
+
+                        <!-- PANE 3: ELEMENT HTML / SVG NA LATA -->
+                        <div class="ovb-code-pane" id="pane-el-html">
+                            <div class="ovb-code-statusbar">
+                                <span>🧩 Editando o código HTML / SVG interno (<code>innerHTML</code>) do elemento selecionado ao vivo:</span>
+                                <button type="button" id="ovb-btn-restore-el-html" class="ovb-mini-btn">↺ Restaurar HTML Original</button>
+                            </div>
+                            <textarea id="ovb-code-el-html-editor" class="ovb-code-editor-textarea" spellcheck="false" placeholder="Selecione qualquer elemento da página para editar seu HTML ou SVG diretamente no código..."></textarea>
+                        </div>
+
+                        <!-- PANE 4: FULL COMPILED CODE & PRESET EXPORT FOR GEMINI -->
+                        <div class="ovb-code-pane" id="pane-gemini-export">
+                            <div class="ovb-code-statusbar">
+                                <span>🤖 Este código reúne todo o CSS compilado + Predefinição JSON do tema (também salvo automaticamente em <code>presets/odysseexp.json</code> e <code>assets/css/theme-preset-active.css</code>):</span>
+                                <div style="display:flex;gap:6px;">
+                                    <button type="button" id="ovb-btn-copy-compiled-css" class="ovb-mini-btn">📋 Copiar CSS Compilado</button>
+                                    <button type="button" id="ovb-btn-copy-preset-json" class="ovb-mini-btn">📋 Copiar Preset JSON (p/ Gemini)</button>
+                                </div>
+                            </div>
+                            <textarea id="ovb-code-compiled-readonly" class="ovb-code-editor-textarea" readonly spellcheck="false"></textarea>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>

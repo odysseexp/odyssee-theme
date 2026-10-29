@@ -9,12 +9,15 @@
         ajaxurl: '',
         nonce: '',
         homeUrl: '/',
-        initialData: { elements: {}, blocks: [], domMoves: [], clones: [], globalVars: {}, customCss: '' }
+        initialData: { presetName: 'OdysseeXP', uiStyle: 'odysseexp', iconPack: 'default', blankMode: false, elements: {}, blocks: [], domMoves: [], clones: [], globalVars: {}, customCss: '', customJs: '' },
+        presets: {}
     };
 
+    let savedPresets = adminCfg.presets || {};
     let state = deepClone(normalizeData(adminCfg.initialData));
     let history = [deepClone(state)];
     let historyIdx = 0;
+    let latestCompiledCss = '';
 
     let currentSelector = null;
     let currentSnapshot = null;
@@ -28,12 +31,17 @@
     function normalizeData(raw) {
         const d = raw && typeof raw === 'object' ? raw : {};
         return {
+            presetName: typeof d.presetName === 'string' && d.presetName ? d.presetName : 'OdysseeXP',
+            uiStyle: typeof d.uiStyle === 'string' && d.uiStyle ? d.uiStyle : 'odysseexp',
+            iconPack: typeof d.iconPack === 'string' && d.iconPack ? d.iconPack : 'default',
+            blankMode: !!d.blankMode,
             elements: d.elements && typeof d.elements === 'object' && !Array.isArray(d.elements) ? d.elements : {},
             blocks: Array.isArray(d.blocks) ? d.blocks : [],
             domMoves: Array.isArray(d.domMoves) ? d.domMoves : [],
             clones: Array.isArray(d.clones) ? d.clones : [],
             globalVars: d.globalVars && typeof d.globalVars === 'object' && !Array.isArray(d.globalVars) ? d.globalVars : { all: {}, dark: {}, light: {} },
-            customCss: typeof d.customCss === 'string' ? d.customCss : ''
+            customCss: typeof d.customCss === 'string' ? d.customCss : '',
+            customJs: typeof d.customJs === 'string' ? d.customJs : ''
         };
     }
 
@@ -206,8 +214,14 @@
         $('.ovb-blend-pill').removeClass('active');
         $(`.ovb-blend-pill[data-blend="${activeBlend}"]`).addClass('active');
 
-        // Element Custom CSS
+        // Element Custom CSS (both sidebar & Code IDE Drawer)
         $('#ovb-element-custom-css').val(rec.customCss || '');
+        $('#ovb-code-el-css-editor').val(rec.customCss || '');
+        $('#ovb-code-el-label').text(currentSelector);
+
+        // Element Raw innerHTML in Code IDE Drawer
+        const rawHtml = content.innerHTML !== undefined ? content.innerHTML : ((currentSnapshot && currentSnapshot.innerHTML) || '');
+        $('#ovb-code-el-html-editor').val(rawHtml);
     }
 
     /**
@@ -383,6 +397,10 @@
             'button': { text: 'Explorar Agora', url: '#contato', icon: 'fas fa-bolt' },
             'image': { src: '/wp-content/uploads/2025/11/typewhite.webp', alt: 'Imagem Odyssee' },
             'card': { icon: 'fas fa-wand-magic-sparkles', title: 'Card em Destaque', desc: 'Personalize este card com glassmorphism, glow neon, blend modes e tilt 3D.' },
+            'shape-square': {},
+            'shape-circle': {},
+            'shape-bar': {},
+            'shape-squircle': {},
             'glow-orb': {},
             'divider': {},
             'html': { html: '<div style="padding:1.5rem;text-align:center;border:1px dashed rgba(139,92,246,0.5);border-radius:12px;">Bloco HTML / SVG Livre</div>' }
@@ -425,7 +443,37 @@
             postToPreview({ type: 'OVB_REQUEST_TREE' });
         }, 120);
 
-        showToast('Novo bloco inserido! Arraste-o com o mouse para posicionar onde quiser.');
+        showToast('Novo elemento inserido! Arraste-o com o mouse para posicionar onde quiser.');
+    }
+
+    function updateCompiledCodeDisplay() {
+        const header = `/* ==========================================================================\n` +
+            ` * PREDEFINIÇÃO ATIVA: ${state.presetName || 'OdysseeXP'}\n` +
+            ` * DESIGN SYSTEM UI:   ${state.uiStyle || 'odysseexp'}\n` +
+            ` * PACOTE DE ÍCONES:   ${state.iconPack || 'default'}\n` +
+            ` * ==========================================================================\n` +
+            ` * 1) CSS COMPILADO DO TEMA (assets/css/theme-preset-active.css):\n` +
+            ` * ========================================================================== */\n\n` +
+            (latestCompiledCss || '/* Nenhuma regra CSS customizada ainda */') +
+            `\n\n/* ==========================================================================\n` +
+            ` * 2) PREDEFINIÇÃO JSON COMPLETA (presets/${(state.presetName || 'odysseexp').toLowerCase().replace(/\s+/g, '-')}.json):\n` +
+            ` * ==========================================================================\n` +
+            JSON.stringify(state, null, 2) +
+            `\n*/`;
+        $('#ovb-code-compiled-readonly').val(header);
+    }
+
+    function renderPresetsDropdown() {
+        const $sel = $('#ovb-preset-selector');
+        $sel.empty();
+        Object.keys(savedPresets).forEach(name => {
+            const label = name === 'OdysseeXP' ? '⚡ OdysseeXP (Tema Principal)' : (name === 'Tema em Branco' ? '📄 Tema em Branco (Criar do Zero)' : `🎨 ${name}`);
+            const opt = $('<option></option>').val(name).text(label);
+            if (name === (state.presetName || 'OdysseeXP')) {
+                opt.prop('selected', true);
+            }
+            $sel.append(opt);
+        });
     }
 
     function populateGlobalVariables() {
@@ -439,6 +487,20 @@
             }
         });
         $('#ovb-global-custom-css').val(state.customCss || '');
+
+        // Sync UI Design System & Icon Pack & Preset controls
+        const activeUi = state.uiStyle || 'odysseexp';
+        $('.ovb-uistyle-card').removeClass('active');
+        $(`.ovb-uistyle-card[data-uistyle="${activeUi}"]`).addClass('active');
+        $('#ovb-topbar-uistyle').val(activeUi);
+        $('#ovb-iconpack-select').val(state.iconPack || 'default');
+
+        const pName = state.presetName || 'OdysseeXP';
+        $('#ovb-preset-name-input').val(pName);
+        $('#ovb-active-preset-badge').text(pName);
+        $('#ovb-blank-mode-toggle').prop('checked', !!state.blankMode);
+        renderPresetsDropdown();
+        updateCompiledCodeDisplay();
     }
 
     $(document).ready(function () {
@@ -453,8 +515,17 @@
             switch (msg.type) {
                 case 'OVB_PREVIEW_READY': {
                     pageTree = msg.tree || [];
+                    if (msg.compiledCss !== undefined) {
+                        latestCompiledCss = msg.compiledCss;
+                        updateCompiledCodeDisplay();
+                    }
                     renderNavigatorTree();
                     syncPreview();
+                    break;
+                }
+                case 'OVB_COMPILED_CSS': {
+                    latestCompiledCss = msg.compiledCss || '';
+                    updateCompiledCodeDisplay();
                     break;
                 }
                 case 'OVB_ELEMENT_SELECTED': {
@@ -920,15 +991,145 @@
             insertNewBlock(type);
         });
 
-        // Element Custom CSS
-        $('#ovb-element-custom-css').on('input', function () {
-            if (!currentSelector) return;
+        // ==========================================
+        // GLOBAL UI DESIGN SYSTEM & ICON PACK SWITCHERS
+        // ==========================================
+        $(document).on('click', '.ovb-uistyle-card', function () {
+            const uiStyle = $(this).attr('data-uistyle') || 'odysseexp';
+            $('.ovb-uistyle-card').removeClass('active');
+            $(this).addClass('active');
+            $('#ovb-topbar-uistyle').val(uiStyle);
+            state.uiStyle = uiStyle;
+            pushHistory();
+            syncPreview();
+            updateCompiledCodeDisplay();
+            showToast(`🎨 Estilo da Página alterado para: ${$(this).find('.ovb-uistyle-card-title span').first().text()}!`);
+        });
+
+        $('#ovb-topbar-uistyle').on('change', function () {
+            const uiStyle = $(this).val() || 'odysseexp';
+            $('.ovb-uistyle-card').removeClass('active');
+            $(`.ovb-uistyle-card[data-uistyle="${uiStyle}"]`).addClass('active');
+            state.uiStyle = uiStyle;
+            pushHistory();
+            syncPreview();
+            updateCompiledCodeDisplay();
+            showToast(`🎨 Estilo da Página alterado para: ${uiStyle}!`);
+        });
+
+        $('#ovb-iconpack-select').on('change', function () {
+            state.iconPack = $(this).val() || 'default';
+            pushHistory();
+            syncPreview();
+            updateCompiledCodeDisplay();
+            showToast('✨ Pacote de Ícones atualizado em toda a página!');
+        });
+
+        // ==========================================
+        // LIVE CODE EDITOR IDE ("PROGRAMAR POR CÓDIGO / NA LATA")
+        // ==========================================
+        $('#ovb-toggle-code-drawer, #ovb-btn-open-code-export').on('click', function () {
+            const drawer = $('#ovb-code-drawer');
+            drawer.toggleClass('open');
+            $('#ovb-toggle-code-drawer').toggleClass('active', drawer.hasClass('open'));
+            if (drawer.hasClass('open')) {
+                updateCompiledCodeDisplay();
+            }
+        });
+
+        $('#ovb-code-close').on('click', function () {
+            $('#ovb-code-drawer').removeClass('open maximized');
+            $('#ovb-toggle-code-drawer').removeClass('active');
+        });
+
+        $('#ovb-code-maximize').on('click', function () {
+            const drawer = $('#ovb-code-drawer');
+            drawer.toggleClass('maximized');
+            $(this).text(drawer.hasClass('maximized') ? '⤡ Restaurar' : '⤢ Expandir');
+        });
+
+        $(document).on('click', '.ovb-code-tab', function () {
+            const paneId = $(this).attr('data-codetab');
+            $('.ovb-code-tab').removeClass('active');
+            $(this).addClass('active');
+            $('.ovb-code-pane').removeClass('active');
+            $('#' + paneId).addClass('active');
+            if (paneId === 'pane-gemini-export') {
+                updateCompiledCodeDisplay();
+            }
+        });
+
+        // Support Tab key indentation inside Code Editor textareas
+        $(document).on('keydown', '.ovb-code-editor-textarea', function (e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                const val = $(this).val();
+                $(this).val(val.substring(0, start) + '  ' + val.substring(end));
+                this.selectionStart = this.selectionEnd = start + 2;
+                $(this).trigger('input');
+            }
+        });
+
+        // Element Custom CSS (synced between sidebar and Code IDE Drawer)
+        $('#ovb-element-custom-css, #ovb-code-el-css-editor').on('input', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento na página primeiro!', true);
+                return;
+            }
+            const val = $(this).val();
+            $('#ovb-element-custom-css').not(this).val(val);
+            $('#ovb-code-el-css-editor').not(this).val(val);
             const rec = ensureElementRecord(currentSelector);
-            rec.customCss = $(this).val();
+            rec.customCss = val;
             syncPreview();
         });
 
-        // Global Theme Variables
+        $('#ovb-btn-insert-selector-tpl').on('click', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento na página primeiro!', true);
+                return;
+            }
+            const cur = $('#ovb-code-el-css-editor').val();
+            const tpl = (cur ? cur + '\n\n' : '') + `selector {\n  \n}`;
+            $('#ovb-code-el-css-editor').val(tpl).trigger('input').focus();
+        });
+
+        // Element Raw innerHTML editing in Code IDE Drawer
+        $('#ovb-code-el-html-editor').on('input', function () {
+            if (!currentSelector) {
+                showToast('Selecione um elemento na página primeiro!', true);
+                return;
+            }
+            const rec = ensureElementRecord(currentSelector);
+            rec.content.innerHTML = $(this).val();
+            syncPreview();
+        });
+
+        $('#ovb-btn-restore-el-html').on('click', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            delete rec.content.innerHTML;
+            pushHistory();
+            syncPreview();
+            showToast('HTML original do elemento restaurado!');
+        });
+
+        // Copy Compiled CSS & Copy Preset JSON for Gemini
+        $('#ovb-btn-copy-compiled-css').on('click', function () {
+            navigator.clipboard.writeText(latestCompiledCss || '');
+            showToast('📋 CSS Compilado copiado para a área de transferência!');
+        });
+
+        $('#ovb-btn-copy-preset-json').on('click', function () {
+            navigator.clipboard.writeText(JSON.stringify(state, null, 2));
+            showToast('📋 Predefinição JSON copiada! Pronta para colar no Gemini.');
+        });
+
+        // ==========================================
+        // GLOBAL THEME VARIABLES & GLOBAL CSS NA LATA
+        // ==========================================
         $(document).on('input change', '[data-ovb-gvar]', function () {
             const scope = $(this).attr('data-ovb-gscope') || 'all';
             const varName = $(this).attr('data-ovb-gvar');
@@ -945,10 +1146,39 @@
             showToast('Variáveis globais restauradas para o padrão do tema!');
         });
 
-        // Global Custom CSS
+        // Global Custom CSS ("Editar CSS na lata")
         $('#ovb-global-custom-css').on('input', function () {
             state.customCss = $(this).val();
             syncPreview();
+        });
+
+        // ==========================================
+        // PRESETS MANAGER (OdysseeXP / Tema em Branco / Named Presets)
+        // ==========================================
+        $('#ovb-preset-name-input').on('input change', function () {
+            const name = $(this).val().trim() || 'OdysseeXP';
+            state.presetName = name;
+            $('#ovb-active-preset-badge').text(name);
+            updateCompiledCodeDisplay();
+        });
+
+        $('#ovb-blank-mode-toggle').on('change', function () {
+            state.blankMode = $(this).is(':checked');
+            pushHistory();
+            syncPreview();
+            showToast(state.blankMode ? 'Modo Tema em Branco ativado (seções originais ocultas para criar do zero)!' : 'Modo Tema OdysseeXP completo ativado!');
+        });
+
+        $('#ovb-btn-load-preset').on('click', function () {
+            const chosen = $('#ovb-preset-selector').val();
+            if (!chosen || !savedPresets[chosen]) return;
+            state = deepClone(normalizeData(savedPresets[chosen]));
+            state.presetName = chosen;
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+            populateGlobalVariables();
+            showToast(`Predefinição '${chosen}' carregada com sucesso!`);
         });
 
         // Layer Tree Click to Select Element
@@ -1014,18 +1244,32 @@
             }
         });
 
-        // Export JSON Backup
+        // Export Preset JSON
         $('#ovb-btn-export').on('click', function () {
+            const slug = (state.presetName || 'odysseexp').toLowerCase().replace(/\s+/g, '-');
             const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `odyssee-visual-studio-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            a.download = `preset-${slug}.json`;
             a.click();
             URL.revokeObjectURL(url);
         });
 
-        // Import JSON Backup
+        // Export Compiled Theme CSS
+        $('#ovb-btn-export-css').on('click', function () {
+            const slug = (state.presetName || 'odysseexp').toLowerCase().replace(/\s+/g, '-');
+            const cssContent = `/**\n * Odyssee Theme Preset: ${state.presetName || 'OdysseeXP'}\n * Design System UI: ${state.uiStyle || 'odysseexp'}\n * Icon Pack: ${state.iconPack || 'default'}\n */\n\n` + (latestCompiledCss || '');
+            const blob = new Blob([cssContent], { type: 'text/css' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `theme-preset-${slug}.css`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Import JSON Preset
         $('#ovb-btn-import-trigger').on('click', function () {
             $('#ovb-import-file').trigger('click');
         });
@@ -1038,11 +1282,12 @@
                 try {
                     const parsed = JSON.parse(ev.target.result);
                     state = normalizeData(parsed);
+                    savedPresets[state.presetName] = deepClone(state);
                     pushHistory();
                     syncPreview();
                     populateSidebarFromSelection();
                     populateGlobalVariables();
-                    showToast('Backup importado com sucesso!');
+                    showToast(`Predefinição '${state.presetName}' importada com sucesso!`);
                 } catch (err) {
                     showToast('Arquivo JSON inválido', true);
                 }
@@ -1052,36 +1297,43 @@
 
         // Reset Everything
         $('#ovb-btn-reset-all').on('click', function () {
-            if (!confirm('Tem certeza que deseja limpar todas as personalizações visuais do Odyssee Studio? O tema original permanecerá intacto.')) {
+            if (!confirm('Tem certeza que deseja limpar todas as personalizações visuais? O tema padrão OdysseeXP permanecerá intacto.')) {
                 return;
             }
-            state = { elements: {}, blocks: [], domMoves: [], clones: [], globalVars: { all: {}, dark: {}, light: {} }, customCss: '' };
+            state = normalizeData({ presetName: 'OdysseeXP', uiStyle: 'odysseexp', iconPack: 'default', blankMode: false });
             pushHistory();
             syncPreview();
             populateSidebarFromSelection();
             populateGlobalVariables();
-            showToast('Todas as customizações foram limpas. Clique em Salvar para confirmar.');
+            showToast('Personalizações resetadas para o padrão OdysseeXP. Clique em Salvar para confirmar.');
         });
 
-        // Save & Publish via AJAX
+        // Save & Publish via AJAX (Also writes presets/odysseexp.json and assets/css/theme-preset-active.css!)
         $('#ovb-btn-save').on('click', function () {
             const $btn = $(this);
+            const pName = $('#ovb-preset-name-input').val().trim() || state.presetName || 'OdysseeXP';
+            state.presetName = pName;
             $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Salvando...');
 
             $.post(adminCfg.ajaxurl, {
                 action: 'odyssee_vb_save',
                 nonce: adminCfg.nonce,
-                data: JSON.stringify(state)
+                data: JSON.stringify(state),
+                compiledCss: latestCompiledCss || ''
             }).done(function (res) {
                 if (res && res.success) {
-                    showToast('✨ Alterações salvas e publicadas com sucesso!');
+                    if (res.data && res.data.presets) {
+                        savedPresets = res.data.presets;
+                        renderPresetsDropdown();
+                    }
+                    showToast(res.data && res.data.message ? `✨ ${res.data.message}` : '✨ Salvo com sucesso!');
                 } else {
                     showToast((res && res.data) || 'Erro ao salvar.', true);
                 }
             }).fail(function () {
                 showToast('Falha de conexão ao salvar.', true);
             }).always(function () {
-                $btn.prop('disabled', false).html('<i class="fas fa-check-circle"></i> Salvar & Publicar');
+                $btn.prop('disabled', false).html(`<i class="fas fa-check-circle"></i> Salvar (<span id="ovb-active-preset-badge">${$('<div>').text(state.presetName).html()}</span>)`);
             });
         });
     });

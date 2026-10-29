@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Odyssee Visual Studio — Frontend Runtime, Animations & Interactive Canvas
+   Odyssee Visual Studio — Frontend Runtime, Design Systems, Shapes & Animations
    ========================================================================== */
 
 /* --- Keyframe Animations: Entrance --- */
@@ -7,52 +7,42 @@
     from { opacity: 0; }
     to { opacity: 1; }
 }
-
 @keyframes ovbFadeInUp {
     from { opacity: 0; transform: translate3d(0, 42px, 0); }
     to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-
 @keyframes ovbFadeInDown {
     from { opacity: 0; transform: translate3d(0, -42px, 0); }
     to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-
 @keyframes ovbFadeInLeft {
     from { opacity: 0; transform: translate3d(-48px, 0, 0); }
     to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-
 @keyframes ovbFadeInRight {
     from { opacity: 0; transform: translate3d(48px, 0, 0); }
     to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
-
 @keyframes ovbZoomIn {
     from { opacity: 0; transform: scale3d(0.78, 0.78, 0.78); }
     to { opacity: 1; transform: scale3d(1, 1, 1); }
 }
-
 @keyframes ovbZoomOut {
     from { opacity: 0; transform: scale3d(1.22, 1.22, 1.22); }
     to { opacity: 1; transform: scale3d(1, 1, 1); }
 }
-
 @keyframes ovbBlurIn {
     0% { opacity: 0; filter: blur(18px); transform: translateY(18px) scale(0.96); }
     100% { opacity: 1; filter: blur(0px); transform: translateY(0) scale(1); }
 }
-
 @keyframes ovbFlipX {
     from { opacity: 0; transform: perspective(800px) rotateX(65deg); }
     to { opacity: 1; transform: perspective(800px) rotateX(0deg); }
 }
-
 @keyframes ovbFlipY {
     from { opacity: 0; transform: perspective(800px) rotateY(65deg); }
     to { opacity: 1; transform: perspective(800px) rotateY(0deg); }
 }
-
 @keyframes ovbBounceIn {
     0% { opacity: 0; transform: scale3d(0.3, 0.3, 0.3); }
     40% { opacity: 1; transform: scale3d(1.08, 1.08, 1.08); }
@@ -60,19 +50,16 @@
     82% { transform: scale3d(1.03, 1.03, 1.03); }
     100% { opacity: 1; transform: scale3d(1, 1, 1); }
 }
-
 @keyframes ovbElasticPop {
     0% { opacity: 0; transform: scale(0.5) translateY(30px); }
     60% { opacity: 1; transform: scale(1.06) translateY(-6px); }
     80% { transform: scale(0.98) translateY(2px); }
     100% { opacity: 1; transform: scale(1) translateY(0); }
 }
-
 @keyframes ovbSlideUpReveal {
     0% { opacity: 0; transform: translateY(60px) skewY(3deg); }
     100% { opacity: 1; transform: translateY(0) skewY(0deg); }
 }
-
 @keyframes ovbGlitchIn {
     0% { opacity: 0; transform: translate(-10px, 4px) skewX(12deg); filter: hue-rotate(90deg); }
     25% { opacity: 0.7; transform: translate(8px, -4px) skewX(-10deg); }
@@ -86,33 +73,27 @@
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(calc(-1 * var(--ovb-loop-amp, 12px))); }
 }
-
 @keyframes ovbLoopPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(var(--ovb-loop-scale, 1.06)); }
 }
-
 @keyframes ovbLoopBreathe {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(var(--ovb-loop-scale, 1.035)); opacity: 0.86; }
 }
-
 @keyframes ovbLoopLevitate {
     0%, 100% { transform: translateY(0px) rotate(0deg); }
     33% { transform: translateY(calc(-0.8 * var(--ovb-loop-amp, 12px))) rotate(1.5deg); }
     66% { transform: translateY(calc(-0.4 * var(--ovb-loop-amp, 12px))) rotate(-1.5deg); }
 }
-
 @keyframes ovbLoopSpin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
-
 @keyframes ovbLoopSwing {
     0%, 100% { transform: rotate(-4deg); }
     50% { transform: rotate(4deg); }
 }
-
 @keyframes ovbLoopJitter {
     0%, 100% { transform: translate(0, 0) rotate(0deg); }
     20% { transform: translate(-2px, 1px) rotate(-0.8deg); }
@@ -130,7 +111,6 @@
         filter: var(--ovb-base-filter, none) drop-shadow(0 0 calc(var(--ovb-glow-blur, 20px) * 1.65) var(--ovb-glow-color, #8b5cf6)) drop-shadow(0 0 calc(var(--ovb-glow-blur, 20px) * 0.6) var(--ovb-glow-color-2, #d946ef));
     }
 }
-
 @keyframes ovbBoxGlowPulse {
     0%, 100% {
         box-shadow: 0 0 var(--ovb-glow-blur, 20px) var(--ovb-glow-spread, 0px) var(--ovb-glow-color, rgba(139, 92, 246, 0.7));
@@ -139,69 +119,32 @@
         box-shadow: 0 0 calc(var(--ovb-glow-blur, 20px) * 1.7) calc(var(--ovb-glow-spread, 0px) + 4px) var(--ovb-glow-color, rgba(139, 92, 246, 0.95)), 0 0 calc(var(--ovb-glow-blur, 20px) * 2.4) var(--ovb-glow-color-2, rgba(217, 70, 239, 0.55));
     }
 }
-
 @keyframes ovbGlowFlicker {
     0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
     20%, 24%, 55% { opacity: 0.65; }
 }
 
 /* --- SVG Sub-Elements Transform Box Support --- */
-svg g,
-svg path,
-svg text,
-svg rect,
-svg circle {
+svg g, svg path, svg text, svg rect, svg circle {
     transform-box: fill-box;
     transform-origin: center center;
 }
 
-/* --- Entrance Animation Helper Classes --- */
-.ovb-anim-Wait {
-    opacity: 0 !important;
-}
-
-.ovb-anim-Triggered {
-    animation-fill-mode: both;
-}
+.ovb-anim-Wait { opacity: 0 !important; }
+.ovb-anim-Triggered { animation-fill-mode: both; }
 
 /* --- Hover Effect Classes --- */
-.ovb-hover-lift {
-    transition: translate 0.32s cubic-bezier(0.22, 1, 0.36, 1), scale 0.32s ease, box-shadow 0.32s ease, filter 0.32s ease !important;
-}
-.ovb-hover-lift:hover {
-    translate: 0px -8px !important;
-}
+.ovb-hover-lift { transition: translate 0.32s cubic-bezier(0.22, 1, 0.36, 1), scale 0.32s ease, box-shadow 0.32s ease, filter 0.32s ease !important; }
+.ovb-hover-lift:hover { translate: 0px -8px !important; }
+.ovb-hover-grow { transition: scale 0.32s cubic-bezier(0.22, 1, 0.36, 1), filter 0.32s ease !important; }
+.ovb-hover-grow:hover { scale: 1.07 !important; }
+.ovb-hover-shrink { transition: scale 0.32s cubic-bezier(0.22, 1, 0.36, 1) !important; }
+.ovb-hover-shrink:hover { scale: 0.94 !important; }
+.ovb-hover-tilt { transition: rotate 0.32s cubic-bezier(0.22, 1, 0.36, 1), scale 0.32s ease !important; }
+.ovb-hover-tilt:hover { rotate: 3deg !important; scale: 1.04 !important; }
+.ovb-hover-glow-boost { transition: filter 0.35s ease, box-shadow 0.35s ease !important; }
+.ovb-hover-glow-boost:hover { filter: brightness(1.18) drop-shadow(0 0 24px var(--ovb-glow-color, var(--color-accent, #8b5cf6))) !important; }
 
-.ovb-hover-grow {
-    transition: scale 0.32s cubic-bezier(0.22, 1, 0.36, 1), filter 0.32s ease !important;
-}
-.ovb-hover-grow:hover {
-    scale: 1.07 !important;
-}
-
-.ovb-hover-shrink {
-    transition: scale 0.32s cubic-bezier(0.22, 1, 0.36, 1) !important;
-}
-.ovb-hover-shrink:hover {
-    scale: 0.94 !important;
-}
-
-.ovb-hover-tilt {
-    transition: rotate 0.32s cubic-bezier(0.22, 1, 0.36, 1), scale 0.32s ease !important;
-}
-.ovb-hover-tilt:hover {
-    rotate: 3deg !important;
-    scale: 1.04 !important;
-}
-
-.ovb-hover-glow-boost {
-    transition: filter 0.35s ease, box-shadow 0.35s ease !important;
-}
-.ovb-hover-glow-boost:hover {
-    filter: brightness(1.18) drop-shadow(0 0 24px var(--ovb-glow-color, var(--color-accent, #8b5cf6))) !important;
-}
-
-/* --- Layer Overlay Child Element --- */
 .ovb-layer-overlay {
     position: absolute !important;
     inset: 0 !important;
@@ -210,11 +153,53 @@ svg circle {
     z-index: 2 !important;
 }
 
-/* --- Custom Inserted Widgets / Blocks --- */
+/* ==========================================================================
+   GEOMETRIC SHAPE WIDGETS & BLOCKS (Quadrado, Círculo, Barra, Squircle, etc.)
+   ========================================================================== */
 .ovb-custom-block {
     position: relative;
     box-sizing: border-box;
     max-width: 100%;
+}
+
+.ovb-shape-element {
+    margin: 1.2rem auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-card, rgba(19, 25, 38, 0.85));
+    border: 1px solid var(--border-medium, rgba(255, 255, 255, 0.16));
+    color: var(--color-title);
+    transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.ovb-shape-square {
+    width: 180px;
+    height: 180px;
+    border-radius: 18px;
+}
+
+.ovb-shape-circle {
+    width: 180px;
+    height: 180px;
+    border-radius: 50% !important;
+}
+
+.ovb-shape-bar {
+    width: 100%;
+    max-width: 860px;
+    height: 64px;
+    border-radius: 16px;
+    padding: 0 1.5rem;
+    justify-content: space-between;
+}
+
+.ovb-shape-squircle {
+    width: 210px;
+    height: 210px;
+    border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
 }
 
 .ovb-block-heading {
@@ -224,7 +209,6 @@ svg circle {
     text-align: center;
     font-weight: 700;
 }
-
 .ovb-block-text {
     font-family: var(--font-ubuntu, sans-serif);
     color: var(--color-subtitle);
@@ -233,14 +217,12 @@ svg circle {
     margin: 0.75rem auto;
     text-align: center;
 }
-
 .ovb-block-button-wrap {
     display: flex;
     justify-content: center;
     align-items: center;
     margin: 1.25rem auto;
 }
-
 .ovb-block-button {
     display: inline-flex;
     align-items: center;
@@ -258,12 +240,6 @@ svg circle {
     transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
     cursor: pointer;
 }
-
-.ovb-block-button:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 12px 32px var(--color-accent-glow, rgba(139, 92, 246, 0.55));
-}
-
 .ovb-block-card {
     background: var(--bg-card, rgba(19, 25, 38, 0.8));
     border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
@@ -276,40 +252,11 @@ svg circle {
     text-align: center;
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
 }
-
-.ovb-block-card-icon {
-    font-size: 2.2rem;
-    color: var(--color-accent, #8b5cf6);
-    margin-bottom: 0.85rem;
-}
-
-.ovb-block-card-title {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: var(--color-title);
-    margin: 0 0 0.5rem 0;
-}
-
-.ovb-block-card-desc {
-    font-size: 0.96rem;
-    color: var(--color-subtitle);
-    margin: 0;
-    line-height: 1.6;
-}
-
-.ovb-block-image-wrap {
-    text-align: center;
-    margin: 1.5rem auto;
-    max-width: 900px;
-}
-
-.ovb-block-image-wrap img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 14px;
-    display: inline-block;
-}
-
+.ovb-block-card-icon { font-size: 2.2rem; color: var(--color-accent, #8b5cf6); margin-bottom: 0.85rem; }
+.ovb-block-card-title { font-size: 1.35rem; font-weight: 700; color: var(--color-title); margin: 0 0 0.5rem 0; }
+.ovb-block-card-desc { font-size: 0.96rem; color: var(--color-subtitle); margin: 0; line-height: 1.6; }
+.ovb-block-image-wrap { text-align: center; margin: 1.5rem auto; max-width: 900px; }
+.ovb-block-image-wrap img { max-width: 100%; height: auto; border-radius: 14px; display: inline-block; }
 .ovb-block-glow-orb {
     width: 320px;
     height: 320px;
@@ -317,12 +264,10 @@ svg circle {
     background: radial-gradient(circle, rgba(139, 92, 246, 0.65) 0%, rgba(217, 70, 239, 0.25) 45%, transparent 72%);
     filter: blur(36px);
     mix-blend-mode: plus-lighter;
-    pointer-events: auto;
     margin: 0 auto;
     position: relative;
     z-index: 1;
 }
-
 .ovb-block-divider {
     height: 2px;
     max-width: 420px;
@@ -330,6 +275,554 @@ svg circle {
     background: linear-gradient(90deg, transparent, var(--color-accent, #8b5cf6), transparent);
     border: 0;
     opacity: 0.7;
+}
+
+/* ==========================================================================
+   GLOBAL PAGE DESIGN SYSTEMS (UI STYLES)
+   Applies to Buttons, Bars, Cards, Squares, Circles, Icons & Page Scrollbar!
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. FRUTIGER AERO (Windows Vista/7 Glossy Aqua Glass, Specular Shine, 3D Icons)
+   -------------------------------------------------------------------------- */
+body[data-ovb-ui-style="frutiger-aero"] {
+    --ovb-aero-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.22) 48%, rgba(255, 255, 255, 0.0) 50%, rgba(255, 255, 255, 0.18) 100%);
+    --ovb-aero-shine-dark: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.12) 48%, rgba(0, 0, 0, 0.22) 50%, rgba(56, 189, 248, 0.18) 100%);
+}
+
+/* Frutiger Aero Scrollbar */
+html:has(body[data-ovb-ui-style="frutiger-aero"]) ::-webkit-scrollbar,
+body[data-ovb-ui-style="frutiger-aero"] ::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+html:has(body[data-ovb-ui-style="frutiger-aero"]) ::-webkit-scrollbar-track,
+body[data-ovb-ui-style="frutiger-aero"] ::-webkit-scrollbar-track {
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.4), rgba(56, 189, 248, 0.12), rgba(15, 23, 42, 0.4));
+    border-left: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.4);
+}
+html:has(body[data-ovb-ui-style="frutiger-aero"]) ::-webkit-scrollbar-thumb,
+body[data-ovb-ui-style="frutiger-aero"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0%, rgba(56, 189, 248, 0.85) 50%, rgba(14, 165, 233, 0.95) 51%, rgba(125, 211, 252, 0.8) 100%);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+/* Frutiger Aero Bars (Header, Sidebar, Custom Bars) */
+body[data-ovb-ui-style="frutiger-aero"] .main-header,
+body[data-ovb-ui-style="frutiger-aero"] #settings-sidebar,
+body[data-ovb-ui-style="frutiger-aero"] .ovb-shape-bar,
+body[data-ovb-ui-style="frutiger-aero"] .service-notice {
+    background-image: var(--ovb-aero-shine-dark) !important;
+    background-color: rgba(14, 116, 144, 0.42) !important;
+    backdrop-filter: blur(18px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.55) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.85), 0 8px 28px rgba(6, 182, 212, 0.32) !important;
+}
+
+/* Frutiger Aero Buttons & Interactive Controls */
+body[data-ovb-ui-style="frutiger-aero"] .btn-primary,
+body[data-ovb-ui-style="frutiger-aero"] .category-image-placeholder,
+body[data-ovb-ui-style="frutiger-aero"] .category-posts-link,
+body[data-ovb-ui-style="frutiger-aero"] .ovb-block-button,
+body[data-ovb-ui-style="frutiger-aero"] .btn-header-about,
+body[data-ovb-ui-style="frutiger-aero"] #btn-continuar,
+body[data-ovb-ui-style="frutiger-aero"] .lang-btn,
+body[data-ovb-ui-style="frutiger-aero"] .color-option-btn {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(125, 211, 252, 0.45) 48%, rgba(2, 132, 199, 0.75) 51%, rgba(56, 189, 248, 0.9) 100%) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.88) !important;
+    border-radius: 999px !important;
+    box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.95), inset 0 -2px 4px rgba(16, 185, 129, 0.35), 0 6px 20px rgba(14, 165, 233, 0.48) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
+    color: #ffffff !important;
+}
+body[data-ovb-ui-style="frutiger-aero"] .btn-primary:hover,
+body[data-ovb-ui-style="frutiger-aero"] .category-image-placeholder:hover,
+body[data-ovb-ui-style="frutiger-aero"] .category-posts-link:hover,
+body[data-ovb-ui-style="frutiger-aero"] .ovb-block-button:hover {
+    filter: brightness(1.12) drop-shadow(0 0 14px rgba(56, 189, 248, 0.85)) !important;
+    transform: translateY(-2px) scale(1.02) !important;
+}
+
+/* Frutiger Aero Cards, Squares, Circles & Containers */
+body[data-ovb-ui-style="frutiger-aero"] .service-card,
+body[data-ovb-ui-style="frutiger-aero"] .package-card,
+body[data-ovb-ui-style="frutiger-aero"] .carousel-item,
+body[data-ovb-ui-style="frutiger-aero"] .ovb-block-card,
+body[data-ovb-ui-style="frutiger-aero"] .ovb-shape-element,
+body[data-ovb-ui-style="frutiger-aero"] .category-banner-wrapper,
+body[data-ovb-ui-style="frutiger-aero"] .ilustracao-tutorial-box,
+body[data-ovb-ui-style="frutiger-aero"] .faq-item,
+body[data-ovb-ui-style="frutiger-aero"] .cv-card {
+    background-image: linear-gradient(165deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 46%, rgba(6, 182, 212, 0.06) 47%, rgba(16, 185, 129, 0.14) 100%) !important;
+    backdrop-filter: blur(16px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.55) !important;
+    border-radius: 20px !important;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.7), 0 12px 32px rgba(2, 132, 199, 0.25) !important;
+}
+
+/* Frutiger Aero Icons (Glossy Aqua 3D Drop Shadow) */
+body[data-ovb-ui-style="frutiger-aero"] i.fas,
+body[data-ovb-ui-style="frutiger-aero"] i.far,
+body[data-ovb-ui-style="frutiger-aero"] .icon-svg {
+    filter: drop-shadow(0 2px 3px rgba(2, 132, 199, 0.65)) drop-shadow(0 -1px 1px rgba(255, 255, 255, 0.8)) !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. GTK4 (GNOME Libadwaita Flat Surface, Clean Headerbar, Subtle Pill Focus)
+   -------------------------------------------------------------------------- */
+html:has(body[data-ovb-ui-style="gtk4"]) ::-webkit-scrollbar,
+body[data-ovb-ui-style="gtk4"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+html:has(body[data-ovb-ui-style="gtk4"]) ::-webkit-scrollbar-track,
+body[data-ovb-ui-style="gtk4"] ::-webkit-scrollbar-track {
+    background: transparent;
+}
+html:has(body[data-ovb-ui-style="gtk4"]) ::-webkit-scrollbar-thumb,
+body[data-ovb-ui-style="gtk4"] ::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.45);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+html:has(body[data-ovb-ui-style="gtk4"]) ::-webkit-scrollbar-thumb:hover,
+body[data-ovb-ui-style="gtk4"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(180, 180, 180, 0.75);
+}
+
+body[data-ovb-ui-style="gtk4"].theme-dark {
+    --bg-page: #1e1e1e;
+    --bg-card: #303030;
+    --bg-card-hover: #383838;
+    --border-subtle: rgba(255, 255, 255, 0.07);
+}
+body[data-ovb-ui-style="gtk4"].theme-light {
+    --bg-page: #fafafa;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f0f0f0;
+    --border-subtle: rgba(0, 0, 0, 0.08);
+}
+
+/* GTK4 Headerbar & Bars */
+body[data-ovb-ui-style="gtk4"] .main-header,
+body[data-ovb-ui-style="gtk4"] #settings-sidebar,
+body[data-ovb-ui-style="gtk4"] .ovb-shape-bar {
+    background: var(--bg-card) !important;
+    backdrop-filter: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.11) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22) !important;
+    border-radius: 0 !important;
+}
+
+/* GTK4 Buttons */
+body[data-ovb-ui-style="gtk4"] .btn-primary,
+body[data-ovb-ui-style="gtk4"] .category-image-placeholder,
+body[data-ovb-ui-style="gtk4"] .category-posts-link,
+body[data-ovb-ui-style="gtk4"] .ovb-block-button,
+body[data-ovb-ui-style="gtk4"] .btn-header-about,
+body[data-ovb-ui-style="gtk4"] .lang-btn,
+body[data-ovb-ui-style="gtk4"] .color-option-btn {
+    border-radius: 9px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+    transition: background 0.15s ease, outline 0.15s ease !important;
+}
+body[data-ovb-ui-style="gtk4"] .btn-primary,
+body[data-ovb-ui-style="gtk4"] .ovb-block-button {
+    background: var(--color-accent, #3584e4) !important;
+    color: #ffffff !important;
+}
+body[data-ovb-ui-style="gtk4"] .btn-primary:hover,
+body[data-ovb-ui-style="gtk4"] .category-image-placeholder:hover,
+body[data-ovb-ui-style="gtk4"] .category-posts-link:hover,
+body[data-ovb-ui-style="gtk4"] .ovb-block-button:hover {
+    filter: brightness(1.1) !important;
+    outline: 2px solid rgba(53, 132, 228, 0.55) !important;
+    outline-offset: 2px !important;
+    transform: none !important;
+}
+
+/* GTK4 Cards & Shapes */
+body[data-ovb-ui-style="gtk4"] .service-card,
+body[data-ovb-ui-style="gtk4"] .package-card,
+body[data-ovb-ui-style="gtk4"] .carousel-item,
+body[data-ovb-ui-style="gtk4"] .ovb-block-card,
+body[data-ovb-ui-style="gtk4"] .ovb-shape-element,
+body[data-ovb-ui-style="gtk4"] .category-banner-wrapper,
+body[data-ovb-ui-style="gtk4"] .faq-item,
+body[data-ovb-ui-style="gtk4"] .cv-card {
+    background: var(--bg-card) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14) !important;
+    backdrop-filter: none !important;
+}
+
+/* GTK4 Symbolic Icons */
+body[data-ovb-ui-style="gtk4"] i.fas,
+body[data-ovb-ui-style="gtk4"] i.far,
+body[data-ovb-ui-style="gtk4"] .icon-svg {
+    opacity: 0.92;
+    filter: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. KDE BREEZE (Crisp 5px Borders, Subtle 1px Highlight Outlines, Plasma Scrollbar)
+   -------------------------------------------------------------------------- */
+html:has(body[data-ovb-ui-style="breeze"]) ::-webkit-scrollbar,
+body[data-ovb-ui-style="breeze"] ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+html:has(body[data-ovb-ui-style="breeze"]) ::-webkit-scrollbar-track,
+body[data-ovb-ui-style="breeze"] ::-webkit-scrollbar-track {
+    background: rgba(35, 38, 41, 0.65);
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+html:has(body[data-ovb-ui-style="breeze"]) ::-webkit-scrollbar-thumb,
+body[data-ovb-ui-style="breeze"] ::-webkit-scrollbar-thumb {
+    background: #3daee9;
+    border-radius: 3px;
+    border: 2px solid rgba(35, 38, 41, 0.8);
+}
+
+body[data-ovb-ui-style="breeze"].theme-dark {
+    --bg-page: #232629;
+    --bg-card: #2a2e32;
+    --bg-card-hover: #31363b;
+}
+body[data-ovb-ui-style="breeze"].theme-light {
+    --bg-page: #eff0f1;
+    --bg-card: #fcfcfc;
+    --bg-card-hover: #f4f5f6;
+}
+
+/* Breeze Bars */
+body[data-ovb-ui-style="breeze"] .main-header,
+body[data-ovb-ui-style="breeze"] #settings-sidebar,
+body[data-ovb-ui-style="breeze"] .ovb-shape-bar {
+    background: linear-gradient(180deg, rgba(49, 54, 59, 0.96), rgba(35, 38, 41, 0.96)) !important;
+    border-bottom: 1px solid #3daee9 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28) !important;
+    border-radius: 4px !important;
+}
+
+/* Breeze Buttons */
+body[data-ovb-ui-style="breeze"] .btn-primary,
+body[data-ovb-ui-style="breeze"] .category-image-placeholder,
+body[data-ovb-ui-style="breeze"] .category-posts-link,
+body[data-ovb-ui-style="breeze"] .ovb-block-button,
+body[data-ovb-ui-style="breeze"] .btn-header-about,
+body[data-ovb-ui-style="breeze"] .lang-btn,
+body[data-ovb-ui-style="breeze"] .color-option-btn {
+    border-radius: 4px !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08)) !important;
+    background-color: var(--bg-card) !important;
+    border: 1px solid rgba(255, 255, 255, 0.24) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+body[data-ovb-ui-style="breeze"] .btn-primary:hover,
+body[data-ovb-ui-style="breeze"] .category-image-placeholder:hover,
+body[data-ovb-ui-style="breeze"] .category-posts-link:hover,
+body[data-ovb-ui-style="breeze"] .ovb-block-button:hover,
+body[data-ovb-ui-style="breeze"] .btn-header-about:hover {
+    border-color: #3daee9 !important;
+    box-shadow: 0 0 0 1px rgba(61, 174, 233, 0.55) !important;
+}
+
+/* Breeze Cards & Shapes */
+body[data-ovb-ui-style="breeze"] .service-card,
+body[data-ovb-ui-style="breeze"] .package-card,
+body[data-ovb-ui-style="breeze"] .carousel-item,
+body[data-ovb-ui-style="breeze"] .ovb-block-card,
+body[data-ovb-ui-style="breeze"] .ovb-shape-element,
+body[data-ovb-ui-style="breeze"] .category-banner-wrapper,
+body[data-ovb-ui-style="breeze"] .faq-item,
+body[data-ovb-ui-style="breeze"] .cv-card {
+    border-radius: 5px !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+}
+body[data-ovb-ui-style="breeze"] .service-card:hover,
+body[data-ovb-ui-style="breeze"] .package-card:hover,
+body[data-ovb-ui-style="breeze"] .ovb-shape-element:hover {
+    border-color: #3daee9 !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. MACTAHOE (macOS Tahoe Liquid Glass, Specular Rim, Floating Dock & Pills)
+   -------------------------------------------------------------------------- */
+html:has(body[data-ovb-ui-style="mactahoe"]) ::-webkit-scrollbar,
+body[data-ovb-ui-style="mactahoe"] ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+html:has(body[data-ovb-ui-style="mactahoe"]) ::-webkit-scrollbar-track,
+body[data-ovb-ui-style="mactahoe"] ::-webkit-scrollbar-track {
+    background: transparent;
+}
+html:has(body[data-ovb-ui-style="mactahoe"]) ::-webkit-scrollbar-thumb,
+body[data-ovb-ui-style="mactahoe"] ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+/* MacTahoe Floating Liquid Glass Header & Bars */
+body[data-ovb-ui-style="mactahoe"] .main-header {
+    width: calc(100% - 32px) !important;
+    max-width: 1360px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: 12px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(32px) saturate(210%) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(210%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.32) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.55), inset 0 -1px 1px rgba(255, 255, 255, 0.15), 0 16px 40px rgba(0, 0, 0, 0.32) !important;
+}
+
+body[data-ovb-ui-style="mactahoe"] #settings-sidebar,
+body[data-ovb-ui-style="mactahoe"] .ovb-shape-bar {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(34px) saturate(210%) !important;
+    -webkit-backdrop-filter: blur(34px) saturate(210%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.34) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 20px 50px rgba(0, 0, 0, 0.38) !important;
+    border-radius: 26px !important;
+}
+
+/* MacTahoe Liquid Glass Buttons */
+body[data-ovb-ui-style="mactahoe"] .btn-primary,
+body[data-ovb-ui-style="mactahoe"] .category-image-placeholder,
+body[data-ovb-ui-style="mactahoe"] .category-posts-link,
+body[data-ovb-ui-style="mactahoe"] .ovb-block-button,
+body[data-ovb-ui-style="mactahoe"] .btn-header-about,
+body[data-ovb-ui-style="mactahoe"] .lang-btn,
+body[data-ovb-ui-style="mactahoe"] .color-option-btn {
+    border-radius: 999px !important;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.07) 100%) !important;
+    backdrop-filter: blur(24px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.38) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.65), 0 10px 28px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* MacTahoe Liquid Glass Cards & Shapes */
+body[data-ovb-ui-style="mactahoe"] .service-card,
+body[data-ovb-ui-style="mactahoe"] .package-card,
+body[data-ovb-ui-style="mactahoe"] .carousel-item,
+body[data-ovb-ui-style="mactahoe"] .ovb-block-card,
+body[data-ovb-ui-style="mactahoe"] .ovb-shape-element,
+body[data-ovb-ui-style="mactahoe"] .category-banner-wrapper,
+body[data-ovb-ui-style="mactahoe"] .faq-item,
+body[data-ovb-ui-style="mactahoe"] .cv-card {
+    border-radius: 26px !important;
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
+    backdrop-filter: blur(30px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.32) !important;
+    box-shadow: inset 0 1.5px 1px rgba(255, 255, 255, 0.5), 0 18px 42px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. MATERIAL (Google Material Design 2 — Elevation Shadows, Crisp 6px Corners)
+   -------------------------------------------------------------------------- */
+html:has(body[data-ovb-ui-style="material"]) ::-webkit-scrollbar,
+body[data-ovb-ui-style="material"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+html:has(body[data-ovb-ui-style="material"]) ::-webkit-scrollbar-track,
+body[data-ovb-ui-style="material"] ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+html:has(body[data-ovb-ui-style="material"]) ::-webkit-scrollbar-thumb,
+body[data-ovb-ui-style="material"] ::-webkit-scrollbar-thumb {
+    background: var(--color-accent, #6200ee);
+    border-radius: 0px;
+}
+
+body[data-ovb-ui-style="material"] .main-header,
+body[data-ovb-ui-style="material"] #settings-sidebar,
+body[data-ovb-ui-style="material"] .ovb-shape-bar {
+    background: var(--bg-card) !important;
+    border: none !important;
+    border-radius: 4px !important;
+    box-shadow: 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12), 0 2px 4px -1px rgba(0,0,0,0.2) !important;
+}
+
+body[data-ovb-ui-style="material"] .btn-primary,
+body[data-ovb-ui-style="material"] .category-image-placeholder,
+body[data-ovb-ui-style="material"] .category-posts-link,
+body[data-ovb-ui-style="material"] .ovb-block-button,
+body[data-ovb-ui-style="material"] .btn-header-about {
+    border-radius: 4px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    font-weight: 700 !important;
+    border: none !important;
+    box-shadow: 0 3px 1px -2px rgba(0,0,0,0.2), 0 2px 2px 0 rgba(0,0,0,0.14), 0 1px 5px 0 rgba(0,0,0,0.12) !important;
+}
+body[data-ovb-ui-style="material"] .btn-primary:hover,
+body[data-ovb-ui-style="material"] .category-image-placeholder:hover,
+body[data-ovb-ui-style="material"] .category-posts-link:hover,
+body[data-ovb-ui-style="material"] .ovb-block-button:hover {
+    box-shadow: 0 5px 5px -3px rgba(0,0,0,0.2), 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12) !important;
+}
+
+body[data-ovb-ui-style="material"] .service-card,
+body[data-ovb-ui-style="material"] .package-card,
+body[data-ovb-ui-style="material"] .carousel-item,
+body[data-ovb-ui-style="material"] .ovb-block-card,
+body[data-ovb-ui-style="material"] .ovb-shape-element,
+body[data-ovb-ui-style="material"] .category-banner-wrapper,
+body[data-ovb-ui-style="material"] .faq-item,
+body[data-ovb-ui-style="material"] .cv-card {
+    border-radius: 6px !important;
+    border: none !important;
+    background: var(--bg-card) !important;
+    box-shadow: 0 2px 2px 0 rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.12), 0 1px 5px 0 rgba(0,0,0,0.2) !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. MATERIAL 3 EXPRESSIVE (Material You M3 Expressive — Squircle/Pill Morphing,
+      Tonal Containers, Bouncy Spring Physics, Pill Scrollbar & Icon Badges)
+   -------------------------------------------------------------------------- */
+html:has(body[data-ovb-ui-style="material-3-expressive"]) ::-webkit-scrollbar,
+body[data-ovb-ui-style="material-3-expressive"] ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+html:has(body[data-ovb-ui-style="material-3-expressive"]) ::-webkit-scrollbar-track,
+body[data-ovb-ui-style="material-3-expressive"] ::-webkit-scrollbar-track {
+    background: rgba(139, 92, 246, 0.08);
+    border-radius: 999px;
+    margin: 6px;
+}
+html:has(body[data-ovb-ui-style="material-3-expressive"]) ::-webkit-scrollbar-thumb,
+body[data-ovb-ui-style="material-3-expressive"] ::-webkit-scrollbar-thumb {
+    background: var(--color-accent, #8b5cf6);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+body[data-ovb-ui-style="material-3-expressive"] .main-header,
+body[data-ovb-ui-style="material-3-expressive"] #settings-sidebar,
+body[data-ovb-ui-style="material-3-expressive"] .ovb-shape-bar {
+    background: color-mix(in srgb, var(--bg-card) 86%, var(--color-accent, #8b5cf6) 14%) !important;
+    border: none !important;
+    border-radius: 0 0 28px 28px !important;
+    box-shadow: none !important;
+}
+
+/* M3 Expressive Morphing Buttons */
+body[data-ovb-ui-style="material-3-expressive"] .btn-primary,
+body[data-ovb-ui-style="material-3-expressive"] .category-image-placeholder,
+body[data-ovb-ui-style="material-3-expressive"] .category-posts-link,
+body[data-ovb-ui-style="material-3-expressive"] .ovb-block-button,
+body[data-ovb-ui-style="material-3-expressive"] .btn-header-about,
+body[data-ovb-ui-style="material-3-expressive"] .lang-btn,
+body[data-ovb-ui-style="material-3-expressive"] .color-option-btn {
+    border-radius: 999px !important;
+    background: color-mix(in srgb, var(--color-accent, #8b5cf6) 24%, var(--bg-card) 76%) !important;
+    color: var(--color-title) !important;
+    border: none !important;
+    padding: 0.95rem 1.85rem !important;
+    font-weight: 800 !important;
+    box-shadow: none !important;
+    transition: border-radius 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s ease !important;
+}
+body[data-ovb-ui-style="material-3-expressive"] .btn-primary:hover,
+body[data-ovb-ui-style="material-3-expressive"] .category-image-placeholder:hover,
+body[data-ovb-ui-style="material-3-expressive"] .category-posts-link:hover,
+body[data-ovb-ui-style="material-3-expressive"] .ovb-block-button:hover {
+    border-radius: 16px !important;
+    transform: scale(1.05) !important;
+    background: var(--color-accent, #8b5cf6) !important;
+    color: #ffffff !important;
+}
+
+/* M3 Expressive Super-Rounded Tonal Cards & Shapes */
+body[data-ovb-ui-style="material-3-expressive"] .service-card,
+body[data-ovb-ui-style="material-3-expressive"] .package-card,
+body[data-ovb-ui-style="material-3-expressive"] .carousel-item,
+body[data-ovb-ui-style="material-3-expressive"] .ovb-block-card,
+body[data-ovb-ui-style="material-3-expressive"] .ovb-shape-element,
+body[data-ovb-ui-style="material-3-expressive"] .category-banner-wrapper,
+body[data-ovb-ui-style="material-3-expressive"] .faq-item,
+body[data-ovb-ui-style="material-3-expressive"] .cv-card {
+    border-radius: 32px !important;
+    background: color-mix(in srgb, var(--bg-card) 88%, var(--color-accent, #8b5cf6) 12%) !important;
+    border: none !important;
+    box-shadow: none !important;
+    transition: border-radius 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+body[data-ovb-ui-style="material-3-expressive"] .service-card:hover,
+body[data-ovb-ui-style="material-3-expressive"] .package-card:hover,
+body[data-ovb-ui-style="material-3-expressive"] .ovb-shape-element:hover {
+    border-radius: 42px 20px 42px 20px !important;
+    transform: translateY(-4px) scale(1.015) !important;
+}
+
+/* M3 Expressive Icon Pill Badges */
+body[data-ovb-ui-style="material-3-expressive"] .category-image-placeholder i,
+body[data-ovb-ui-style="material-3-expressive"] .category-posts-link i,
+body[data-ovb-ui-style="material-3-expressive"] .ovb-block-card-icon i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 14px;
+    background: rgba(139, 92, 246, 0.22);
+}
+
+/* ==========================================================================
+   ICON PACKS (Adaptables across the site via body[data-ovb-icon-pack])
+   ========================================================================== */
+/* Glossy 3D Icons */
+body[data-ovb-icon-pack="glossy-3d"] i.fas,
+body[data-ovb-icon-pack="glossy-3d"] i.far,
+body[data-ovb-icon-pack="glossy-3d"] .icon-svg {
+    filter: drop-shadow(0 3px 4px rgba(14, 165, 233, 0.65)) drop-shadow(0 -1px 1px rgba(255, 255, 255, 0.9)) !important;
+    transform: scale(1.08);
+}
+
+/* Symbolic Thin Outline (GTK4 / Breeze style) */
+body[data-ovb-icon-pack="symbolic-thin"] i.fas,
+body[data-ovb-icon-pack="symbolic-thin"] i.far {
+    -webkit-text-stroke: 0.6px currentColor;
+    color: transparent !important;
+    opacity: 0.9;
+}
+
+/* Neon Cyber Glow Icons */
+body[data-ovb-icon-pack="neon-glow"] i.fas,
+body[data-ovb-icon-pack="neon-glow"] i.far,
+body[data-ovb-icon-pack="neon-glow"] .icon-svg {
+    color: var(--color-accent, #a855f7) !important;
+    fill: var(--color-accent, #a855f7) !important;
+    filter: drop-shadow(0 0 8px var(--color-accent, #a855f7)) drop-shadow(0 0 16px rgba(217, 70, 239, 0.6)) !important;
+}
+
+/* Tonal Squircle Badge Icons (Material 3 Expressive / macOS Tahoe) */
+body[data-ovb-icon-pack="tonal-pill"] i.fas,
+body[data-ovb-icon-pack="tonal-pill"] i.far {
+    background: rgba(139, 92, 246, 0.2);
+    padding: 0.42em;
+    border-radius: 38%;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35);
 }
 
 /* ==========================================================================
@@ -351,7 +844,6 @@ body.ovb-editor-active.ovb-is-dragging * {
     transition: none !important;
 }
 
-/* Interactive Selection Frame Overlay */
 #ovb-Selection-Box {
     position: fixed;
     z-index: 2147483644;
@@ -362,7 +854,6 @@ body.ovb-editor-active.ovb-is-dragging * {
     box-sizing: border-box;
 }
 
-/* 8 Resize Handles around Selection Box */
 #ovb-Selection-Box .ovb-resize-handle {
     position: absolute;
     width: 10px;
@@ -390,7 +881,6 @@ body.ovb-editor-active.ovb-is-dragging * {
 #ovb-Selection-Box .ovb-rh-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
 #ovb-Selection-Box .ovb-rh-w  { top: calc(50% - 5px); left: -6px; cursor: ew-resize; }
 
-/* Floating Element Action Bar */
 #ovb-Floating-Badge {
     position: fixed;
     z-index: 2147483646;
@@ -458,7 +948,6 @@ body.ovb-editor-active.ovb-is-dragging * {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
 }
 
-/* Live Coordinates & Dimensions HUD while dragging/resizing */
 #ovb-Transform-HUD {
     position: fixed;
     z-index: 2147483647;
@@ -475,7 +964,6 @@ body.ovb-editor-active.ovb-is-dragging * {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
-/* Center Alignment Guide Lines */
 #ovb-Snap-Guide-V {
     position: fixed;
     top: 0;

@@ -1,0 +1,17 @@
+{
+  "presetName": "Tema em Branco",
+  "uiStyle": "odysseexp",
+  "iconPack": "default",
+  "blankMode": true,
+  "elements": {},
+  "blocks": [],
+  "domMoves": [],
+  "clones": [],
+  "globalVars": {
+    "all": {},
+    "dark": {},
+    "light": {}
+  },
+  "customCss": "",
+  "customJs": ""
+}
