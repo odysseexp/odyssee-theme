@@ -903,6 +903,143 @@
     }
 
     /**
+     * Motor de Evasão Suave do Mouse (Repel Physics — igual aos cards da Home)
+     */
+    let evadeBound = false;
+    function initEvadeMouseEngine() {
+        if (evadeBound) return;
+        evadeBound = true;
+        document.addEventListener('mousemove', function (e) {
+            const evaders = document.querySelectorAll('[data-ovb-evade-mouse="1"]');
+            if (!evaders.length) return;
+            const mx = e.clientX;
+            const my = e.clientY;
+            const RADIUS = 140;
+
+            evaders.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                const dx = mx - cx;
+                const dy = my - cy;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < RADIUS && dist > 0) {
+                    const force = (RADIUS - dist) / RADIUS;
+                    const angle = Math.atan2(dy, dx);
+                    const pushX = Math.round(-Math.cos(angle) * force * 52);
+                    const pushY = Math.round(-Math.sin(angle) * force * 52);
+                    el.style.transform = `translate3d(${pushX}px, ${pushY}px, 0)`;
+                } else if (el.style.transform && el.style.transform.includes('translate3d')) {
+                    el.style.transform = '';
+                }
+            });
+        }, { passive: true });
+    }
+
+    /**
+     * Modal Lightbox para Imagem Única e Galeria
+     */
+    function openLightbox(images, startIndex) {
+        if (!Array.isArray(images) || !images.length) return;
+        const validUrls = images.filter(u => typeof u === 'string' && u.trim().length > 0);
+        if (!validUrls.length) return;
+
+        let currentIndex = startIndex || 0;
+        if (currentIndex >= validUrls.length) currentIndex = 0;
+
+        let overlay = document.querySelector('.ovb-lightbox-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'ovb-lightbox-overlay';
+            overlay.innerHTML = `
+                <div class="ovb-lightbox-backdrop" style="position:absolute;inset:0;cursor:pointer;"></div>
+                <div class="ovb-lightbox-container" style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;max-width:92vw;max-height:90vh;">
+                    <button type="button" class="ovb-lightbox-close" title="Fechar (Esc)" style="position:absolute;top:-40px;right:0;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:24px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+                    <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+                        <button type="button" class="ovb-lightbox-nav ovb-lb-prev" title="Anterior" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:28px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&#8249;</button>
+                        <div class="ovb-lightbox-content" style="max-width:82vw;max-height:80vh;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,0.7);">
+                            <img src="" alt="" class="ovb-lightbox-img" style="max-width:100%;max-height:80vh;object-fit:contain;border-radius:12px;display:block;">
+                        </div>
+                        <button type="button" class="ovb-lightbox-nav ovb-lb-next" title="Próxima" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:28px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&#8250;</button>
+                    </div>
+                    <div class="ovb-lightbox-counter" style="margin-top:12px;color:#cbd5e1;font-size:13px;font-weight:600;text-shadow:0 1px 3px #000;"></div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            const closeBtn = overlay.querySelector('.ovb-lightbox-close');
+            const backdrop = overlay.querySelector('.ovb-lightbox-backdrop');
+            const prevBtn = overlay.querySelector('.ovb-lb-prev');
+            const nextBtn = overlay.querySelector('.ovb-lb-next');
+
+            const closeLb = () => {
+                overlay.classList.remove('is-open');
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                setTimeout(() => { overlay.style.display = 'none'; }, 260);
+            };
+
+            closeBtn.addEventListener('click', closeLb);
+            backdrop.addEventListener('click', closeLb);
+
+            prevBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (validUrls.length <= 1) return;
+                currentIndex = (currentIndex - 1 + validUrls.length) % validUrls.length;
+                updateLb();
+            });
+
+            nextBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (validUrls.length <= 1) return;
+                currentIndex = (currentIndex + 1) % validUrls.length;
+                updateLb();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (!overlay.classList.contains('is-open')) return;
+                if (e.key === 'Escape') closeLb();
+                if (e.key === 'ArrowLeft' && validUrls.length > 1) {
+                    currentIndex = (currentIndex - 1 + validUrls.length) % validUrls.length;
+                    updateLb();
+                }
+                if (e.key === 'ArrowRight' && validUrls.length > 1) {
+                    currentIndex = (currentIndex + 1) % validUrls.length;
+                    updateLb();
+                }
+            });
+        }
+
+        function updateLb() {
+            const img = overlay.querySelector('.ovb-lightbox-img');
+            const counter = overlay.querySelector('.ovb-lightbox-counter');
+            const prevBtn = overlay.querySelector('.ovb-lb-prev');
+            const nextBtn = overlay.querySelector('.ovb-lb-next');
+
+            img.src = validUrls[currentIndex];
+            if (validUrls.length > 1) {
+                counter.textContent = `${currentIndex + 1} / ${validUrls.length}`;
+                counter.style.display = 'block';
+                prevBtn.style.display = 'flex';
+                nextBtn.style.display = 'flex';
+            } else {
+                counter.style.display = 'none';
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+            }
+        }
+
+        updateLb();
+        overlay.style.display = 'flex';
+        requestAnimationFrame(() => {
+            overlay.classList.add('is-open');
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+        });
+    }
+
+    /**
      * Applies DOM-level features: Global UI Design System, Icon Pack, Color Palettes, Blank Canvas Mode, text overrides (PT/EN), image src (Dark/Light), HTML attributes, Interactive Element Role (button/link/none), overlay layers, entrance animations, hover presets, 3D tilt, and Special Configs
      */
     function applyDOMFeatures() {
@@ -910,6 +1047,7 @@
         isApplyingDOM = true;
 
         try {
+            initEvadeMouseEngine();
             // Apply Global UI Design System & Icon Pack to <body> and <html>
             const activeUiStyle = builderData.uiStyle || 'odysseexp';
             const activeIconPack = builderData.iconPack || 'default';
@@ -1168,35 +1306,52 @@
                         el.removeAttribute('data-ovb-el-ui-style');
                     }
 
-                    // 1c. Standalone Element Interactive Role (Button, Hyperlink, Scroll Anchor, or No User Interaction)
-                    if (elConfig.elementRole) {
-                        el.setAttribute('data-ovb-role', elConfig.elementRole);
-                        if (elConfig.elementRole === 'none' && elConfig.passEvents) {
+                    // 1c. Standalone Element Interactive Role (Button, Hyperlink, Page Direct, Lightbox, or No User Interaction)
+                    const st = Object.assign(
+                        {},
+                        (elConfig.styles && elConfig.styles.global) || {},
+                        (elConfig.styles && elConfig.styles.desktop) || {}
+                    );
+                    const effectiveRole = elConfig.elementRole || st.elementRole;
+
+                    if (effectiveRole) {
+                        el.setAttribute('data-ovb-role', effectiveRole);
+                        if (effectiveRole === 'none' && (elConfig.passEvents || st.passEvents)) {
                             el.setAttribute('data-ovb-pass-events', 'true');
                         } else {
                             el.removeAttribute('data-ovb-pass-events');
                         }
-                        el._ovbRoleType = elConfig.elementRole;
-                        el._ovbRoleUrl = elConfig.roleUrl || (elConfig.content && elConfig.content.href) || '';
-                        el._ovbRoleNewTab = !!elConfig.roleNewTab;
+                        el._ovbRoleType = effectiveRole;
+                        el._ovbRoleUrl = elConfig.roleUrl || st.roleUrl || (elConfig.content && elConfig.content.href) || '';
+                        el._ovbRoleNewTab = !!(elConfig.roleNewTab || st.roleNewTab);
+                        el._ovbRolePage = elConfig.roleSitePage || st.roleSitePage || '/';
+                        el._ovbLightboxImages = elConfig.lightboxImages || st.lightboxImages || '';
 
-                        if (['button', 'link', 'scroll'].includes(elConfig.elementRole) && !el._ovbRoleBound) {
+                        if (['button', 'link', 'page', 'lightbox-image', 'lightbox-gallery', 'scroll'].includes(effectiveRole) && !el._ovbRoleBound) {
                             el._ovbRoleBound = true;
                             el.addEventListener('click', function (ev) {
                                 if (config.isPreview && !isInteractiveMode) return;
                                 const rType = el._ovbRoleType;
-                                const rUrl = el._ovbRoleUrl;
-                                if (!rType || rType === 'none' || !rUrl) return;
+                                if (!rType || rType === 'none') return;
                                 ev.preventDefault();
-                                if (rType === 'scroll' || rUrl.startsWith('#')) {
-                                    const targetSec = document.querySelector(rUrl);
-                                    if (targetSec) {
-                                        targetSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    }
+
+                                if (rType === 'page') {
+                                    window.location.href = el._ovbRolePage || '/';
+                                } else if (rType === 'lightbox-image') {
+                                    const src = el._ovbRoleUrl || el.getAttribute('src') || el.getAttribute('href') || (el.querySelector('img') && el.querySelector('img').src) || '';
+                                    if (src) openLightbox([src], 0);
+                                } else if (rType === 'lightbox-gallery') {
+                                    const raw = el._ovbLightboxImages || el._ovbRoleUrl || '';
+                                    const list = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+                                    if (!list.length && el.getAttribute('src')) list.push(el.getAttribute('src'));
+                                    if (list.length) openLightbox(list, 0);
+                                } else if (rType === 'scroll' || (el._ovbRoleUrl && el._ovbRoleUrl.startsWith('#'))) {
+                                    const targetSec = document.querySelector(el._ovbRoleUrl);
+                                    if (targetSec) targetSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                 } else if (el._ovbRoleNewTab) {
-                                    window.open(rUrl, '_blank', 'noopener,noreferrer');
-                                } else {
-                                    window.location.href = rUrl;
+                                    window.open(el._ovbRoleUrl, '_blank', 'noopener,noreferrer');
+                                } else if (el._ovbRoleUrl) {
+                                    window.location.href = el._ovbRoleUrl;
                                 }
                             });
                         }
@@ -1205,17 +1360,103 @@
                         el.removeAttribute('data-ovb-pass-events');
                     }
 
-                    // 2. Hover Animation Preset Class (check active buckets & fallback)
-                    ['ovb-hover-lift', 'ovb-hover-grow', 'ovb-hover-shrink', 'ovb-hover-tilt', 'ovb-hover-glow-boost'].forEach(cls => {
-                        el.classList.remove(cls);
-                    });
-                    const st = Object.assign(
-                        {},
-                        (elConfig.styles && elConfig.styles.global) || {},
-                        (elConfig.styles && elConfig.styles.desktop) || {}
-                    );
-                    if (st.hoverPreset && st.hoverPreset !== 'none') {
-                        el.classList.add(st.hoverPreset);
+                    // 1d. Cross-Element Triggers (Disparar exibição ou animação em outro elemento)
+                    const clickTargetSel = elConfig.clickTargetSelector || st.clickTargetSelector;
+                    const clickTargetAct = elConfig.clickTargetAction || st.clickTargetAction;
+                    if (clickTargetSel && clickTargetAct && !el._ovbCrossClickBound) {
+                        el._ovbCrossClickBound = true;
+                        el.addEventListener('click', function (ev) {
+                            if (config.isPreview && !isInteractiveMode) return;
+                            try {
+                                const targets = document.querySelectorAll(clickTargetSel);
+                                targets.forEach(tgt => {
+                                    if (clickTargetAct === 'toggle-show') {
+                                        const isHidden = (tgt.style.display === 'none' || window.getComputedStyle(tgt).display === 'none');
+                                        tgt.style.display = isHidden ? '' : 'none';
+                                    } else if (clickTargetAct === 'show') {
+                                        tgt.style.display = '';
+                                    } else if (clickTargetAct === 'hide') {
+                                        tgt.style.display = 'none';
+                                    } else if (clickTargetAct === 'trigger-anim') {
+                                        tgt.classList.remove('ovb-click-pop', 'ovb-hover-jelly', 'ovb-hover-soft-hop');
+                                        void tgt.offsetWidth;
+                                        tgt.classList.add('ovb-click-pop');
+                                    }
+                                });
+                            } catch (e) {}
+                        });
+                    }
+
+                    const hoverTargetSel = elConfig.hoverTargetSelector || st.hoverTargetSelector;
+                    const hoverTargetAct = elConfig.hoverTargetAction || st.hoverTargetAction;
+                    if (hoverTargetSel && hoverTargetAct && !el._ovbCrossHoverBound) {
+                        el._ovbCrossHoverBound = true;
+                        el.addEventListener('mouseenter', function () {
+                            try {
+                                const targets = document.querySelectorAll(hoverTargetSel);
+                                targets.forEach(tgt => {
+                                    if (hoverTargetAct === 'show-while-hover') {
+                                        tgt.style.display = '';
+                                    } else if (hoverTargetAct === 'toggle-show') {
+                                        const isHidden = (tgt.style.display === 'none' || window.getComputedStyle(tgt).display === 'none');
+                                        tgt.style.display = isHidden ? '' : 'none';
+                                    } else if (hoverTargetAct === 'trigger-anim') {
+                                        tgt.classList.remove('ovb-click-pop', 'ovb-hover-jelly');
+                                        void tgt.offsetWidth;
+                                        tgt.classList.add('ovb-hover-jelly');
+                                    }
+                                });
+                            } catch (e) {}
+                        });
+                        el.addEventListener('mouseleave', function () {
+                            try {
+                                if (hoverTargetAct === 'show-while-hover') {
+                                    const targets = document.querySelectorAll(hoverTargetSel);
+                                    targets.forEach(tgt => { tgt.style.display = 'none'; });
+                                }
+                            } catch (e) {}
+                        });
+                    }
+
+                    // 2. Hover Animation Preset Class & Evade Mouse Physics
+                    const hoverClasses = [
+                        'ovb-hover-lift', 'ovb-hover-grow', 'ovb-hover-shrink', 'ovb-hover-tilt', 'ovb-hover-glow-boost',
+                        'ovb-hover-scale-up', 'ovb-hover-scale-down', 'ovb-hover-soft-hop', 'ovb-hover-spin',
+                        'ovb-hover-slide-side', 'ovb-hover-slide-up', 'ovb-hover-slide-corner', 'ovb-hover-jelly'
+                    ];
+                    hoverClasses.forEach(cls => el.classList.remove(cls));
+                    el.removeAttribute('data-ovb-evade-mouse');
+
+                    const isHoverEnabled = !!(elConfig.enableHoverAnim !== undefined ? elConfig.enableHoverAnim : st.enableHoverAnim);
+                    const hoverPreset = st.hoverAnimPreset || st.hoverPreset;
+                    if (isHoverEnabled && hoverPreset && hoverPreset !== 'none') {
+                        if (hoverPreset === 'evade-mouse') {
+                            el.setAttribute('data-ovb-evade-mouse', '1');
+                        } else {
+                            el.classList.add(hoverPreset.startsWith('ovb-hover-') ? hoverPreset : `ovb-hover-${hoverPreset}`);
+                        }
+                    }
+
+                    // 2b. Click or Touch Animation
+                    const isClickEnabled = !!(elConfig.enableClickAnim !== undefined ? elConfig.enableClickAnim : st.enableClickAnim);
+                    const clickPreset = st.clickAnimPreset;
+                    if (isClickEnabled && clickPreset && clickPreset !== 'none' && !el._ovbClickAnimBound) {
+                        el._ovbClickAnimBound = true;
+                        el.addEventListener('click', function () {
+                            const animClass = (clickPreset === 'jelly') ? 'ovb-hover-jelly'
+                                : (clickPreset === 'soft-hop') ? 'ovb-hover-soft-hop'
+                                : (clickPreset === 'spin') ? 'ovb-hover-spin'
+                                : (clickPreset === 'scale-down') ? 'ovb-click-pop'
+                                : 'ovb-click-pop';
+                            el.classList.remove(animClass);
+                            void el.offsetWidth;
+                            el.classList.add(animClass);
+                            const onEnd = () => {
+                                el.classList.remove(animClass);
+                                el.removeEventListener('animationend', onEnd);
+                            };
+                            el.addEventListener('animationend', onEnd);
+                        });
                     }
 
                     // 3. Extra Layer Overlay (Blend Mode Layer inside HTML Element)
@@ -2563,6 +2804,77 @@
                 }
                 case 'OVB_TEST_ANIMATION': {
                     triggerAnimationPreview(msg.selector || selectedSelector, msg.anim, msg.duration, msg.delay, msg.easing);
+                    break;
+                }
+                case 'OVB_ALIGN_ELEMENT': {
+                    const sel = msg.selector || selectedSelector;
+                    if (!sel) break;
+                    let el = null;
+                    try { el = document.querySelector(sel); } catch (e) { break; }
+                    if (!el) break;
+
+                    const align = msg.align;
+                    const scope = msg.scope || 'parent';
+                    const elRect = el.getBoundingClientRect();
+
+                    let containerRect;
+                    if (scope === 'global' || !el.parentElement || el.parentElement === document.body || el.parentElement === document.documentElement) {
+                        containerRect = {
+                            top: 0,
+                            left: 0,
+                            width: window.innerWidth,
+                            height: window.innerHeight,
+                            right: window.innerWidth,
+                            bottom: window.innerHeight
+                        };
+                    } else {
+                        containerRect = el.parentElement.getBoundingClientRect();
+                    }
+
+                    let curTx = 0;
+                    let curTy = 0;
+                    const transformMatch = (el.style.transform || '').match(/translate(?:3d)?\(([-0-9.]+)px,\s*([-0-9.]+)px/);
+                    if (transformMatch) {
+                        curTx = parseFloat(transformMatch[1]) || 0;
+                        curTy = parseFloat(transformMatch[2]) || 0;
+                    }
+
+                    let newTx = curTx;
+                    let newTy = curTy;
+
+                    if (align === 'left') {
+                        const deltaX = containerRect.left - elRect.left;
+                        newTx = Math.round(curTx + deltaX);
+                    } else if (align === 'center-h') {
+                        const containerCenter = containerRect.left + (containerRect.width / 2);
+                        const elCenter = elRect.left + (elRect.width / 2);
+                        const deltaX = containerCenter - elCenter;
+                        newTx = Math.round(curTx + deltaX);
+                    } else if (align === 'right') {
+                        const deltaX = containerRect.right - elRect.right;
+                        newTx = Math.round(curTx + deltaX);
+                    } else if (align === 'top') {
+                        const deltaY = containerRect.top - elRect.top;
+                        newTy = Math.round(curTy + deltaY);
+                    } else if (align === 'center-v') {
+                        const containerCenter = containerRect.top + (containerRect.height / 2);
+                        const elCenter = elRect.top + (elRect.height / 2);
+                        const deltaY = containerCenter - elCenter;
+                        newTy = Math.round(curTy + deltaY);
+                    } else if (align === 'bottom') {
+                        const deltaY = containerRect.bottom - elRect.bottom;
+                        newTy = Math.round(curTy + deltaY);
+                    }
+
+                    el.style.transform = `translate(${newTx}px, ${newTy}px)`;
+                    updateSelectionOverlay();
+
+                    window.parent.postMessage({
+                        type: 'OVB_ELEMENT_ALIGNED',
+                        selector: sel,
+                        translateX: newTx + 'px',
+                        translateY: newTy + 'px'
+                    }, '*');
                     break;
                 }
                 case 'OVB_SET_INTERACTIVE_MODE': {

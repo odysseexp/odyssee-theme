@@ -27,6 +27,9 @@
     let layerViewMode = 'sections'; // 'sections' or 'zstack'
     let copiedElementStyle = null;
     let pageTree = [];
+    let currentAlignScope = 'parent'; // 'parent' (camada pai) or 'global' (página inteira)
+    let isPickingTarget = false;
+    let targetPickerProp = null;
 
     const BUCKET_LABELS = {
         desktop: '🖥️ Só Desktop (≥1025px)',
@@ -200,22 +203,71 @@
         $('#ovb-el-uistyle-select').val(rec.elUiStyle || '');
         syncUiStyleCardsSelection();
 
+        // Detecção de Tipo: Vetor SVG / CSS vs Imagem Raster (PNG/JPEG)
+        const isImgTag = (currentSnapshot && currentSnapshot.tag === 'IMG');
+        const isRasterSrc = (currentSnapshot && currentSnapshot.src && /\.(jpe?g|png|webp|gif|bmp)(\?.*)?$/i.test(currentSnapshot.src));
+        const isRasterBg = (comp && comp.backgroundImage && !comp.backgroundImage.includes('none') && !comp.backgroundImage.includes('data:image/svg'));
+        const isRaster = isImgTag || isRasterSrc || isRasterBg;
+
+        if (isRaster) {
+            $('#ovb-info-detected-type').text('Imagem Raster (PNG/JPEG)');
+            $('#ovb-behavior-type-tag').text('Imagem Raster (Pixels fixos)').css('color', '#f87171');
+            $('#ovb-allow-color-edit').prop('checked', false);
+            $('#ovb-raster-color-lock-notice').show();
+            $('#ovb-color-controls-wrap').css({ 'opacity': '0.35', 'pointer-events': 'none' });
+        } else {
+            const isSvg = (currentSnapshot && (currentSnapshot.tag === 'SVG' || currentSnapshot.isSvg || currentSnapshot.tag === 'path'));
+            $('#ovb-info-detected-type').text(isSvg ? 'Vetor SVG Editável' : 'Elemento CSS / HTML');
+            $('#ovb-behavior-type-tag').text(isSvg ? 'Vetor SVG Editável' : 'Elemento CSS / HTML').css('color', '#34d399');
+            $('#ovb-allow-color-edit').prop('checked', true);
+            $('#ovb-raster-color-lock-notice').hide();
+            $('#ovb-color-controls-wrap').css({ 'opacity': '1', 'pointer-events': 'auto' });
+        }
+
         // Standalone Element / Shape Interactive Role & Behavior
-        const roleVal = rec.elementRole || '';
+        const roleVal = rec.elementRole || st.elementRole || 'none';
+        $('#ovb-element-role-select').val(roleVal);
         $('.ovb-el-role-select').val(roleVal);
-        $('.ovb-el-role-url').val(rec.roleUrl || '');
-        $('.ovb-el-role-newtab').prop('checked', !!rec.roleNewTab);
-        $('.ovb-el-pass-events').prop('checked', !!rec.passEvents);
-        if (roleVal === 'link' || roleVal === 'scroll' || roleVal === 'button') {
-            $('.ovb-role-url-box').show();
+        $('.ovb-el-role-url').val(rec.roleUrl || st.roleUrl || '');
+        $('.ovb-el-role-newtab').prop('checked', !!(rec.roleNewTab || st.roleNewTab));
+        $('.ovb-el-pass-events').prop('checked', !!(rec.passEvents || st.passEvents));
+
+        $('#ovb-role-link-box').toggle(roleVal === 'link' || roleVal === 'button');
+        $('#ovb-role-page-box').toggle(roleVal === 'page');
+        $('#ovb-role-lightbox-box').toggle(roleVal === 'lightbox-image' || roleVal === 'lightbox-gallery');
+
+        // Sincronização e Travas de Animações de Hover & Clique
+        const hoverEnabled = !!(rec.enableHoverAnim !== undefined ? rec.enableHoverAnim : st.enableHoverAnim);
+        $('#ovb-chk-enable-hover').prop('checked', hoverEnabled);
+        if (hoverEnabled) {
+            $('#ovb-hover-anim-preset-select').prop('disabled', false);
+            $('#ovb-hover-lock-badge')
+                .text('✅ Ativo pelo Comportamento')
+                .css({ 'background': 'rgba(16,185,129,0.2)', 'color': '#6ee7b7' });
         } else {
-            $('.ovb-role-url-box').hide();
+            $('#ovb-hover-anim-preset-select').prop('disabled', true);
+            $('#ovb-hover-lock-badge')
+                .text('🔒 Bloqueado no Comportamento')
+                .css({ 'background': 'rgba(239,68,68,0.2)', 'color': '#fca5a5' });
         }
-        if (roleVal === 'none') {
-            $('.ovb-role-none-box').show();
+
+        const clickEnabled = !!(rec.enableClickAnim !== undefined ? rec.enableClickAnim : st.enableClickAnim);
+        $('#ovb-chk-enable-click').prop('checked', clickEnabled);
+        if (clickEnabled) {
+            $('#ovb-click-anim-preset-select').prop('disabled', false);
+            $('#ovb-click-lock-badge')
+                .text('✅ Ativo pelo Comportamento')
+                .css({ 'background': 'rgba(16,185,129,0.2)', 'color': '#6ee7b7' });
         } else {
-            $('.ovb-role-none-box').hide();
+            $('#ovb-click-anim-preset-select').prop('disabled', true);
+            $('#ovb-click-lock-badge')
+                .text('🔒 Bloqueado no Comportamento')
+                .css({ 'background': 'rgba(239,68,68,0.2)', 'color': '#fca5a5' });
         }
+
+        // Código CSS do Elemento no final da Aba 1 (Propriedades)
+        const customCssVal = st.customCss || rec.customCss || '';
+        $('#ovb-element-custom-css').val(customCssVal);
 
         // Content Tab (PT + EN text, Image URLs, Href, Attributes)
         const textVal = content.text !== undefined ? content.text : ((currentSnapshot && currentSnapshot.text) || '');
@@ -334,25 +386,9 @@
         $('#ovb-cbar-val-h').val(String(curH).replace(/px$/, ''));
         $('#ovb-cbar-aspect-lock').toggleClass('unlocked', !aspectRatioLocked);
 
-        // Smart Lock for Raster Images (JPEG/PNG) — blocks color insertion to avoid confusion
-        const isRaster = currentSnapshot && (
-            (currentSnapshot.tagName && currentSnapshot.tagName.toLowerCase() === 'img') ||
-            (currentSnapshot.src && /\.(jpe?g|png|webp|avif|gif)(\?|$)/i.test(currentSnapshot.src)) ||
-            (currentSnapshot.computed && currentSnapshot.computed.bgImage && !currentSnapshot.computed.bgImage.includes('<svg') && /\.(jpe?g|png|webp|avif|gif)/i.test(currentSnapshot.computed.bgImage))
-        );
-
-        if (isRaster) {
-            $('#ovb-raster-color-lock-notice').show();
-            $('#ovb-color-controls-wrap').css({ 'opacity': '0.38', 'pointer-events': 'none' });
-        } else {
-            $('#ovb-raster-color-lock-notice').hide();
-            $('#ovb-color-controls-wrap').css({ 'opacity': '1', 'pointer-events': 'auto' });
-        }
-
-        // Element Custom CSS (both sidebar & Code IDE Drawer)
-        $('#ovb-element-custom-css').val(rec.customCss || '');
+        // Sync Code IDE Drawer with custom CSS
         if (!$('#ovb-code-el-css-editor').is(':focus')) {
-            $('#ovb-code-el-css-editor').val(rec.customCss || '');
+            $('#ovb-code-el-css-editor').val(rec.customCss || (st && st.customCss) || '');
         }
         $('#ovb-code-el-label').text(currentSelector);
         $('#ovb-code-el-html-label').text(currentSelector);
@@ -1139,6 +1175,13 @@
                     break;
                 }
                 case 'OVB_ELEMENT_SELECTED': {
+                    if (isPickingTarget && targetPickerProp) {
+                        isPickingTarget = false;
+                        const pickedSel = msg.selector;
+                        $(`[data-ovb-prop="${targetPickerProp}"]`).val(pickedSel).trigger('change');
+                        showToast(`🎯 Elemento alvo vinculado: ${pickedSel}`);
+                        break;
+                    }
                     currentSelector = msg.selector;
                     currentSnapshot = msg.snapshot || {};
                     populateSidebarFromSelection();
@@ -1171,6 +1214,17 @@
                     if (msg.snapshot) currentSnapshot = msg.snapshot;
                     const rec = ensureElementRecord(sel);
                     Object.assign(rec.styles[currentBucket], msg.changes || {});
+                    pushHistory();
+                    syncPreview();
+                    populateSidebarFromSelection();
+                    break;
+                }
+                case 'OVB_ELEMENT_ALIGNED': {
+                    const sel = msg.selector || currentSelector;
+                    if (!sel) break;
+                    const rec = ensureElementRecord(sel);
+                    if (msg.translateX !== undefined) rec.styles[currentBucket].translateX = msg.translateX;
+                    if (msg.translateY !== undefined) rec.styles[currentBucket].translateY = msg.translateY;
                     pushHistory();
                     syncPreview();
                     populateSidebarFromSelection();
@@ -1453,7 +1507,15 @@
             showToast(`${dim === 'width' ? 'Largura' : 'Altura'} redefinida para Auto!`);
         });
 
-        // Quick 6-Button Alignment Bar (Figma / Illustrator style)
+        // Flag de Escopo do Ajuste de Alinhamento (Apenas na Camada Pai vs No Global da Página)
+        $(document).on('click', '.ovb-align-scope-btn', function () {
+            $('.ovb-align-scope-btn').removeClass('active');
+            $(this).addClass('active');
+            currentAlignScope = $(this).attr('data-align-scope') || 'parent';
+            showToast(`🎯 Escopo do alinhamento: ${currentAlignScope === 'parent' ? 'Apenas Dentro da Camada Pai' : 'Global na Página'}`);
+        });
+
+        // Quick 6-Button Alignment Bar (com cálculo geométrico no Preview)
         $(document).on('click', '.ovb-align-btn', function () {
             if (!currentSelector) {
                 showToast('Selecione um elemento na página primeiro!', true);
@@ -1463,36 +1525,128 @@
             const rec = ensureElementRecord(currentSelector);
             const st = rec.styles[currentBucket];
 
+            // Envia ao preview para medição exata do Bounding Box do Pai ou Viewport
+            postToPreview({
+                type: 'OVB_ALIGN_ELEMENT',
+                selector: currentSelector,
+                align: align,
+                scope: currentAlignScope
+            });
+
+            // Fallback imediato de alinhamento no estilo do bucket ativo
             if (align === 'left') {
-                st.translateX = '0px';
                 st.marginLeft = '0px';
                 st.marginRight = 'auto';
                 st.textAlign = 'left';
             } else if (align === 'center-h') {
-                st.translateX = '0px';
                 st.marginLeft = 'auto';
                 st.marginRight = 'auto';
                 st.textAlign = 'center';
             } else if (align === 'right') {
-                st.translateX = '0px';
                 st.marginLeft = 'auto';
                 st.marginRight = '0px';
                 st.textAlign = 'right';
             } else if (align === 'top') {
-                st.translateY = '0px';
                 st.alignSelf = 'flex-start';
             } else if (align === 'center-v') {
-                st.translateY = '0px';
                 st.alignSelf = 'center';
             } else if (align === 'bottom') {
-                st.translateY = '0px';
                 st.alignSelf = 'flex-end';
             }
 
             pushHistory();
             syncPreview();
             populateSidebarFromSelection();
-            showToast('📐 Alinhamento aplicado neste dispositivo!');
+            showToast(`📐 Alinhamento ${align} (${currentAlignScope === 'parent' ? 'Camada Pai' : 'Global'}) aplicado!`);
+        });
+
+        // Listeners da Aba Comportamento & Estilo
+        $(document).on('change', '#ovb-allow-color-edit', function () {
+            const isAllowed = $(this).is(':checked');
+            if (isAllowed) {
+                $('#ovb-raster-color-lock-notice').hide();
+                $('#ovb-color-controls-wrap').css({ 'opacity': '1', 'pointer-events': 'auto' });
+            } else {
+                $('#ovb-raster-color-lock-notice').show();
+                $('#ovb-color-controls-wrap').css({ 'opacity': '0.35', 'pointer-events': 'none' });
+            }
+        });
+
+        $(document).on('change', '#ovb-element-role-select', function () {
+            const roleVal = $(this).val();
+            $('#ovb-role-link-box').toggle(roleVal === 'link' || roleVal === 'button');
+            $('#ovb-role-page-box').toggle(roleVal === 'page');
+            $('#ovb-role-lightbox-box').toggle(roleVal === 'lightbox-image' || roleVal === 'lightbox-gallery');
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.elementRole = roleVal;
+            rec.styles[currentBucket].elementRole = roleVal;
+            pushHistory();
+            syncPreview();
+        });
+
+        $(document).on('change', '#ovb-chk-enable-hover', function () {
+            const isChecked = $(this).is(':checked');
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.enableHoverAnim = isChecked;
+            rec.styles[currentBucket].enableHoverAnim = isChecked;
+            if (isChecked) {
+                $('#ovb-hover-anim-preset-select').prop('disabled', false);
+                $('#ovb-hover-lock-badge')
+                    .text('✅ Ativo pelo Comportamento')
+                    .css({ 'background': 'rgba(16,185,129,0.2)', 'color': '#6ee7b7' });
+            } else {
+                $('#ovb-hover-anim-preset-select').prop('disabled', true);
+                $('#ovb-hover-lock-badge')
+                    .text('🔒 Bloqueado no Comportamento')
+                    .css({ 'background': 'rgba(239,68,68,0.2)', 'color': '#fca5a5' });
+            }
+            pushHistory();
+            syncPreview();
+        });
+
+        $(document).on('change', '#ovb-chk-enable-click', function () {
+            const isChecked = $(this).is(':checked');
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.enableClickAnim = isChecked;
+            rec.styles[currentBucket].enableClickAnim = isChecked;
+            if (isChecked) {
+                $('#ovb-click-anim-preset-select').prop('disabled', false);
+                $('#ovb-click-lock-badge')
+                    .text('✅ Ativo pelo Comportamento')
+                    .css({ 'background': 'rgba(16,185,129,0.2)', 'color': '#6ee7b7' });
+            } else {
+                $('#ovb-click-anim-preset-select').prop('disabled', true);
+                $('#ovb-click-lock-badge')
+                    .text('🔒 Bloqueado no Comportamento')
+                    .css({ 'background': 'rgba(239,68,68,0.2)', 'color': '#fca5a5' });
+            }
+            pushHistory();
+            syncPreview();
+        });
+
+        $(document).on('click', '.ovb-btn-pick-target', function () {
+            targetPickerProp = $(this).attr('data-target-prop');
+            isPickingTarget = true;
+            showToast('🎯 Clique em qualquer elemento na página para vinculá-lo como alvo!');
+        });
+
+        // Código CSS do Elemento no final da Aba 1 (Propriedades)
+        $(document).on('input change', '#ovb-element-custom-css', function () {
+            if (!currentSelector) return;
+            const val = $(this).val();
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].customCss = val;
+            rec.customCss = val;
+            syncPreview();
+            clearTimeout(historyTimer);
+            historyTimer = setTimeout(pushHistory, 400);
+        });
+
+        $(document).on('click', '#ovb-btn-open-code-from-prop', function () {
+            $('#ovb-btn-code-editor').trigger('click');
         });
 
         // 9-Point Reference Point / Transform Origin Matrix (Illustrator style)
@@ -3263,9 +3417,29 @@
             }
         });
 
-        // Parent Window Keyboard Shortcuts (Ctrl+Z, Ctrl+Shift+Z, and Adaptive Adobe Illustrator Shortcuts)
+        // Parent Window Keyboard Shortcuts (Ctrl+Z, Ctrl+Shift+Z, Ctrl+C, Ctrl+V, Illustrator & Atalhos Customizados de Preferências)
         $(document).on('keydown', function (e) {
             if ($(e.target).is('input, textarea, select')) return;
+
+            // Checagem prévia de atalhos personalizados salvos em state.shortcuts
+            if (state.shortcuts && typeof state.shortcuts === 'object') {
+                const parts = [];
+                if (e.ctrlKey) parts.push('Ctrl');
+                if (e.shiftKey) parts.push('Shift');
+                if (e.altKey) parts.push('Alt');
+                const keyUp = (e.key || '').toUpperCase();
+                if (!['CONTROL', 'SHIFT', 'ALT'].includes(keyUp)) {
+                    parts.push(keyUp);
+                    const currentCombo = parts.join('+');
+                    for (const [actionName, customCombo] of Object.entries(state.shortcuts)) {
+                        if (customCombo && customCombo.toUpperCase() === currentCombo.toUpperCase()) {
+                            e.preventDefault();
+                            executeShortcutCommand(actionName);
+                            return;
+                        }
+                    }
+                }
+            }
 
             const isMod = e.ctrlKey || e.metaKey;
             const key = (e.key || '').toLowerCase();
@@ -3283,7 +3457,29 @@
                 } else if (key === 'd') {
                     e.preventDefault();
                     executeShortcutCommand('duplicate');
+                } else if (key === 'c') {
+                    e.preventDefault();
+                    executeShortcutCommand('copy');
+                } else if (key === 'x') {
+                    e.preventDefault();
+                    executeShortcutCommand('cut');
+                } else if (key === 'v') {
+                    e.preventDefault();
+                    if (e.altKey) {
+                        executeShortcutCommand('paste-in-place');
+                    } else {
+                        executeShortcutCommand('paste');
+                    }
+                } else if (key === 'f') {
+                    e.preventDefault();
+                    executeShortcutCommand('find');
                 }
+                return;
+            }
+
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                executeShortcutCommand('deselect');
                 return;
             }
 
