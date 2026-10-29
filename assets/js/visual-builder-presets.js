@@ -432,6 +432,32 @@
             `
         },
 
+        {
+            number: 22,
+            id: 'preset-popup-notice',
+            category: 'small',
+            label: '22. Pop-up de Aviso (estilo banner de cookies)',
+            desc: 'Cartão flutuante em vidro fosco que desliza na tela, com título, texto e dois botões (aceitar / dispensar). Lembra a escolha do visitante.',
+            icon: '💬',
+            tag: 'div',
+            className: 'ovb-popup-preset',
+            html: `
+                <div class="ovb-popup-card" role="dialog" aria-live="polite" data-popup-delay="1500" data-popup-remember="true">
+                    <div class="ovb-popup-header">
+                        <svg class="ovb-popup-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5zM8.5 9a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm7 5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM9 15.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+                        <h3>Título do aviso</h3>
+                    </div>
+                    <div class="ovb-popup-content">
+                        <p>Escreva aqui a mensagem do seu pop-up. Você pode editar textos, cores, botões e o comportamento de cada um.</p>
+                    </div>
+                    <div class="ovb-popup-actions">
+                        <button type="button" class="ovb-popup-btn ovb-popup-btn-secondary" data-popup-close>Dispensar</button>
+                        <button type="button" class="ovb-popup-btn ovb-popup-btn-primary" data-popup-close data-popup-accept>Aceitar</button>
+                    </div>
+                </div>
+            `
+        },
+
         // =========================================================================
         // PRESETS ROBUSTOS / TELAS & ESTRUTURAS COMPLETAS (13 a 21)
         // =========================================================================
@@ -848,6 +874,36 @@
         });
     }
 
+    function initPopupNotices(rootEl) {
+        const cards = rootEl.classList && rootEl.classList.contains('ovb-popup-card')
+            ? [rootEl]
+            : Array.from(rootEl.querySelectorAll('.ovb-popup-card'));
+        cards.forEach(card => {
+            if (card.dataset.ovbPopupBound === 'true') return;
+            card.dataset.ovbPopupBound = 'true';
+            const host = card.closest('.ovb-popup-preset') || card.parentElement;
+            const key = 'ovb_popup_' + ((host && host.id) || 'default');
+            const inEditor = document.body.classList.contains('ovb-editor-active');
+            const remember = card.getAttribute('data-popup-remember') !== 'false';
+
+            let dismissed = false;
+            try { dismissed = !inEditor && remember && localStorage.getItem(key) === '1'; } catch (e) {}
+            if (dismissed) { card.classList.add('ovb-popup-hidden'); return; }
+
+            const delay = inEditor ? 0 : (parseInt(card.getAttribute('data-popup-delay'), 10) || 0);
+            setTimeout(() => card.classList.add('show'), delay);
+
+            card.addEventListener('click', ev => {
+                const btn = ev.target.closest('[data-popup-close]');
+                if (!btn) return;
+                if (inEditor) return;
+                card.classList.remove('show');
+                if (remember) { try { localStorage.setItem(key, '1'); } catch (e) {} }
+                setTimeout(() => card.classList.add('ovb-popup-hidden'), 650);
+            });
+        });
+    }
+
     function initSvgBannerParallax(rootEl) {
         const banners = rootEl.classList && rootEl.classList.contains('dg-banner')
             ? [rootEl]
@@ -934,6 +990,7 @@
         }
         initFaqAccordions(el);
         initSvgBannerParallax(el);
+        initPopupNotices(el);
     };
 
     // =========================================================================

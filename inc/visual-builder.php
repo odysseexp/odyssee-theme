@@ -2196,7 +2196,7 @@ function odyssee_vb_render_admin_page() {
                         <!-- AS 21 PRESETS PRÉ-PRONTAS DO SITE -->
                         <div class="ovb-section">
                             <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-puzzle-piece"></i> 12 Presets Modulares (1 a 12)</span>
+                                <span class="ovb-sec-title"><i class="fas fa-puzzle-piece"></i> 13 Presets Modulares (1 a 12 + Pop-up 22)</span>
                                 <i class="fas fa-chevron-down ovb-chevron"></i>
                             </div>
                             <div class="ovb-section-body">
