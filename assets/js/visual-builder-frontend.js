@@ -1832,22 +1832,24 @@
         document.body.appendChild(selBox);
 
         // 3. Floating Action Toolbar on Selected Element
+        let badgePlacePreference = 'auto'; // 'auto' | 'bottom' | 'top' | 'dock-bottom'
         const floatBadge = document.createElement('div');
         floatBadge.id = 'ovb-Floating-Badge';
         floatBadge.innerHTML = `
             <span class="ovb-badge-drag-handle" title="Arraste aqui (ou arraste o próprio elemento) para mover livremente em X/Y">
-                ✥ <span class="ovb-badge-title">Elemento</span>
+                <i class="fas fa-arrows-alt"></i> <span class="ovb-badge-title">Elemento</span>
             </span>
-            <button type="button" class="ovb-badge-btn" data-act="toggle-lock" title="Travar/Destravar Proporção ao Redimensionar">🔒 Proporção</button>
+            <button type="button" class="ovb-badge-btn" data-act="toggle-lock" title="Travar/Destravar Proporção ao Redimensionar"><i class="fas fa-lock"></i> Proporção</button>
             <button type="button" class="ovb-badge-btn" data-act="unstretch" title="Desfazer Esticamento / Restaurar Proporção Original 1:1">1:1</button>
-            <button type="button" class="ovb-badge-btn" data-act="toggle-immune" title="Marcar/Desmarcar como 'Tema Não Aplicável (Imune a Temas)' — ideal para Logos e Banners SVG">🛡️ Imune</button>
-            <button type="button" class="ovb-badge-btn" data-act="move-up" title="Mover Acima na Ordem da Página (HTML)">▲</button>
-            <button type="button" class="ovb-badge-btn" data-act="move-down" title="Mover Abaixo na Ordem da Página (HTML)">▼</button>
-            <button type="button" class="ovb-badge-btn" data-act="parent" title="Selecionar Elemento Pai (Atalho: A)">⬆ Pai</button>
-            <button type="button" class="ovb-badge-btn" data-act="duplicate" title="Duplicar Elemento (Atalho: Ctrl+D ou Alt+Arrastar)">⧉</button>
-            <button type="button" class="ovb-badge-btn" data-act="hide" title="Ocultar Elemento">👁️</button>
-            <button type="button" class="ovb-badge-btn" data-act="add-after" title="Inserir Novo Bloco Abaixo">＋</button>
-            <button type="button" class="ovb-badge-btn" data-act="reset" title="Resetar Posição e Estilo deste Elemento">↺</button>
+            <button type="button" class="ovb-badge-btn" data-act="toggle-immune" title="Marcar/Desmarcar como 'Tema Não Aplicável (Imune a Temas)' — ideal para Logos e Banners SVG"><i class="fas fa-shield-alt"></i> Imune</button>
+            <button type="button" class="ovb-badge-btn" data-act="move-up" title="Mover Acima na Ordem da Página (HTML)"><i class="fas fa-arrow-up"></i></button>
+            <button type="button" class="ovb-badge-btn" data-act="move-down" title="Mover Abaixo na Ordem da Página (HTML)"><i class="fas fa-arrow-down"></i></button>
+            <button type="button" class="ovb-badge-btn" data-act="parent" title="Selecionar Elemento Pai (Atalho: A)"><i class="fas fa-level-up-alt"></i> Pai</button>
+            <button type="button" class="ovb-badge-btn" data-act="duplicate" title="Duplicar Elemento (Atalho: Ctrl+D ou Alt+Arrastar)"><i class="fas fa-copy"></i></button>
+            <button type="button" class="ovb-badge-btn" data-act="hide" title="Ocultar Elemento"><i class="fas fa-eye-slash"></i></button>
+            <button type="button" class="ovb-badge-btn" data-act="add-after" title="Inserir Novo Bloco Abaixo"><i class="fas fa-plus"></i></button>
+            <button type="button" class="ovb-badge-btn" data-act="reset" title="Resetar Posição e Estilo deste Elemento"><i class="fas fa-undo-alt"></i></button>
+            <button type="button" class="ovb-badge-btn" data-act="flip-bar" style="background:rgba(56,189,248,0.28);border-color:rgba(56,189,248,0.55);" title="Mudar posição desta barra rápida (Acima / Abaixo / Rodapé da Tela)"><i class="fas fa-sort"></i> Posição</button>
         `;
         document.body.appendChild(floatBadge);
 
@@ -1874,10 +1876,43 @@
                 selBox.style.height = `${Math.max(8, rect.height)}px`;
 
                 floatBadge.style.display = 'flex';
-                const badgeTop = rect.top > 38 ? rect.top - 34 : Math.min(window.innerHeight - 36, rect.bottom + 6);
-                const badgeLeft = Math.max(6, Math.min(window.innerWidth - 520, rect.left));
-                floatBadge.style.top = `${badgeTop}px`;
-                floatBadge.style.left = `${badgeLeft}px`;
+                // Reset left temporarily so wrapping calculation gets full available viewport width on Mobile/Tablet
+                floatBadge.style.left = '8px';
+                const badgeRect = floatBadge.getBoundingClientRect();
+                const bW = badgeRect.width || 320;
+                const bH = badgeRect.height || 42;
+                const CLEARANCE = 22; // 22px clear of the top/bottom resize handles so it NEVER covers them!
+
+                const maxLeft = Math.max(8, window.innerWidth - bW - 8);
+                const badgeLeft = Math.max(8, Math.min(maxLeft, rect.left));
+
+                let badgeTop;
+                const topCandidate = rect.top - bH - CLEARANCE;
+                const bottomCandidate = rect.bottom + CLEARANCE;
+
+                if (badgePlacePreference === 'dock-bottom') {
+                    badgeTop = Math.max(8, window.innerHeight - bH - 12);
+                } else if (badgePlacePreference === 'bottom') {
+                    if (bottomCandidate + bH <= window.innerHeight - 8) {
+                        badgeTop = bottomCandidate;
+                    } else if (topCandidate >= 8) {
+                        badgeTop = topCandidate;
+                    } else {
+                        badgeTop = Math.max(8, window.innerHeight - bH - 12);
+                    }
+                } else {
+                    // 'auto' or 'top': prefer 22px above top border; if not enough space above, place 22px below bottom border
+                    if (topCandidate >= 8) {
+                        badgeTop = topCandidate;
+                    } else if (bottomCandidate + bH <= window.innerHeight - 8) {
+                        badgeTop = bottomCandidate;
+                    } else {
+                        badgeTop = Math.max(8, window.innerHeight - bH - 12);
+                    }
+                }
+
+                floatBadge.style.top = `${Math.round(badgeTop)}px`;
+                floatBadge.style.left = `${Math.round(badgeLeft)}px`;
             } else {
                 selBox.style.display = 'none';
                 floatBadge.style.display = 'none';
@@ -1886,7 +1921,7 @@
             if (hoveredElement && hoveredElement !== selectedElement && document.body.contains(hoveredElement) && !isInteractiveMode) {
                 const rect = hoveredElement.getBoundingClientRect();
                 hoverBadge.style.display = 'block';
-                hoverBadge.style.top = `${Math.max(4, rect.top - 22)}px`;
+                hoverBadge.style.top = `${Math.max(4, rect.top - 24)}px`;
                 hoverBadge.style.left = `${Math.max(4, rect.left)}px`;
             } else {
                 hoverBadge.style.display = 'none';
@@ -2331,11 +2366,20 @@
 
             if (act === 'toggle-lock') {
                 lockAspectRatio = !lockAspectRatio;
-                btn.innerHTML = lockAspectRatio ? '🔒 Proporção' : '🔓 Livre';
+                btn.innerHTML = lockAspectRatio ? '<i class="fas fa-lock"></i> Proporção' : '<i class="fas fa-lock-open"></i> Livre';
                 window.parent.postMessage({
                     type: 'OVB_ASPECT_LOCK_CHANGED',
                     locked: lockAspectRatio
                 }, '*');
+            } else if (act === 'flip-bar') {
+                if (badgePlacePreference === 'auto' || badgePlacePreference === 'top') {
+                    badgePlacePreference = 'bottom';
+                } else if (badgePlacePreference === 'bottom') {
+                    badgePlacePreference = 'dock-bottom';
+                } else {
+                    badgePlacePreference = 'top';
+                }
+                updateSelectionOverlay();
             } else if (act === 'unstretch') {
                 selectedElement.style.removeProperty('width');
                 selectedElement.style.removeProperty('height');
@@ -2476,7 +2520,7 @@
                 case 'OVB_SET_ASPECT_LOCK': {
                     lockAspectRatio = !!msg.locked;
                     const lockBtn = floatBadge.querySelector('[data-act="toggle-lock"]');
-                    if (lockBtn) lockBtn.innerHTML = lockAspectRatio ? '🔒 Proporção' : '🔓 Livre';
+                    if (lockBtn) lockBtn.innerHTML = lockAspectRatio ? '<i class="fas fa-lock"></i> Proporção' : '<i class="fas fa-lock-open"></i> Livre';
                     break;
                 }
                 case 'OVB_TOGGLE_GRID': {
