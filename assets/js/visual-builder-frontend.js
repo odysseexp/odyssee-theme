@@ -10,7 +10,7 @@
         data: { elements: {}, blocks: [], domMoves: [], clones: [], globalVars: {}, customCss: '' }
     };
 
-    let builderData = normalizeData(config.data);
+    let builderData = null; // inicializado após DEFAULT_PALETTES (evita TDZ)
     let isInteractiveMode = false; // When true in preview, allows clicking links/buttons normally
     let dragModeEnabled = true;    // Allows dragging any selected/clicked element on canvas
     let selectedSelector = null;
@@ -47,6 +47,8 @@
             isBuiltin: true
         }
     ];
+
+    builderData = normalizeData(config.data);
 
     function normalizePalettesList(rawList) {
         const list = Array.isArray(rawList) ? rawList.filter(p => p && p.id && p.accent) : [];
@@ -2985,11 +2987,10 @@
     }
 
     function init() {
-        applyDOMMoves();
-        renderClonedElements();
-        renderCustomBlocks();
-        updateLiveStyleTag();
-        applyDOMFeatures();
+        // Cada etapa isolada: uma falha não pode impedir o inspetor de seleção de iniciar
+        [applyDOMMoves, renderClonedElements, renderCustomBlocks, updateLiveStyleTag, applyDOMFeatures].forEach(function (step) {
+            try { step(); } catch (err) { if (window.console) console.error('[Odyssee VB] falha em ' + (step.name || 'etapa') + ':', err); }
+        });
 
         // Observe dynamic changes (carousels, translations, theme switches) and keep customizations intact
         let debounceTimer = null;
@@ -3038,7 +3039,7 @@
         const isInsideIframe = (window.parent && window.parent !== window);
         const hasPreviewParam = window.location.search.indexOf('odyssee_vb_preview=1') !== -1;
         if (isInsideIframe || hasPreviewParam || (config && config.isPreview)) {
-            initPreviewInspector();
+            try { initPreviewInspector(); } catch (err) { if (window.console) console.error('[Odyssee VB] falha no inspetor:', err); }
         }
     }
 
