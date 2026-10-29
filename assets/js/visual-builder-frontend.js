@@ -32,7 +32,10 @@
             clones: Array.isArray(d.clones) ? d.clones : [],
             globalVars: d.globalVars && typeof d.globalVars === 'object' && !Array.isArray(d.globalVars) ? d.globalVars : { all: {}, dark: {}, light: {} },
             customCss: typeof d.customCss === 'string' ? d.customCss : '',
-            customJs: typeof d.customJs === 'string' ? d.customJs : ''
+            customJs: typeof d.customJs === 'string' ? d.customJs : '',
+            componentPresets: Array.isArray(d.componentPresets) ? d.componentPresets : [],
+            pagePresets: d.pagePresets && typeof d.pagePresets === 'object' ? d.pagePresets : {},
+            sitePresets: d.sitePresets && typeof d.sitePresets === 'object' ? d.sitePresets : {}
         };
     }
 
@@ -632,6 +635,30 @@
                 wrapper.appendChild(htmlBox);
                 break;
             }
+            default: {
+                const catalog = window.ODYSSEE_VB_PRESETS_CATALOG || [];
+                const presetDef = catalog.find(p => p.id === block.type);
+                if (presetDef) {
+                    const presetEl = document.createElement(presetDef.tag || 'div');
+                    presetEl.className = `ovb-custom-block ovb-preset-block ${presetDef.className || ''}`.trim();
+                    presetEl.setAttribute('data-ovb-block-id', block.id);
+                    presetEl.setAttribute('data-ovb-preset-id', presetDef.id);
+                    presetEl.id = block.id;
+                    presetEl.innerHTML = (c && c.html) ? c.html : (presetDef.html || '');
+                    const mergedCfg = Object.assign({}, presetDef.defaultConfig || {}, block.config || {});
+                    if (window.odysseeVBApplyElementConfig) {
+                        setTimeout(() => window.odysseeVBApplyElementConfig(presetEl, mergedCfg), 40);
+                    }
+                    return presetEl;
+                } else if (block.type === 'user-component-preset' && c.html) {
+                    wrapper.className = 'ovb-custom-block ovb-user-component-preset';
+                    wrapper.innerHTML = c.html;
+                    if (window.odysseeVBApplyElementConfig) {
+                        setTimeout(() => window.odysseeVBApplyElementConfig(wrapper, block.config || {}), 40);
+                    }
+                }
+                break;
+            }
         }
 
         return wrapper;
@@ -666,7 +693,7 @@
     }
 
     /**
-     * Applies DOM-level features: Global UI Design System, Icon Pack, Blank Canvas Mode, text overrides (PT/EN), image src (Dark/Light), HTML attributes, overlay layers, entrance animations, hover presets, 3D tilt
+     * Applies DOM-level features: Global UI Design System, Icon Pack, Blank Canvas Mode, text overrides (PT/EN), image src (Dark/Light), HTML attributes, overlay layers, entrance animations, hover presets, 3D tilt, and Special Configs (Carousel #5, Floating Orbit #6, Gradient Bridge #8)
      */
     function applyDOMFeatures() {
         if (isApplyingDOM) return;
@@ -726,6 +753,15 @@
                 }
 
                 nodes.forEach(el => {
+                    // 0. Special Interactive Configs (Carousel #5, Floating Cards #6, Gradient Bridge #8)
+                    if (elConfig.specialConfig && typeof elConfig.specialConfig === 'object' && window.odysseeVBApplyElementConfig) {
+                        const serializedCfg = JSON.stringify(elConfig.specialConfig);
+                        if (el._ovbLastSpecialConfig !== serializedCfg) {
+                            el._ovbLastSpecialConfig = serializedCfg;
+                            window.odysseeVBApplyElementConfig(el, elConfig.specialConfig);
+                        }
+                    }
+
                     // 1. Content & Native Attributes Overrides
                     if (elConfig.content) {
                         const c = elConfig.content;
@@ -1856,6 +1892,36 @@
                     window.parent.postMessage({
                         type: 'OVB_PAGE_TREE',
                         tree: collectPageTree()
+                    }, '*');
+                    break;
+                }
+                case 'OVB_EXPORT_FIGMA_SVG': {
+                    if (typeof window.odysseeVBExportFigmaLunacySVG === 'function') {
+                        const targetSel = msg.scope === 'element' ? (msg.selector || selectedSelector || null) : null;
+                        const svgStr = window.odysseeVBExportFigmaLunacySVG(targetSel, msg.target || 'figma');
+                        window.parent.postMessage({
+                            type: 'OVB_FIGMA_SVG_RESULT',
+                            svgContent: svgStr,
+                            target: msg.target || 'figma',
+                            scope: msg.scope || 'page'
+                        }, '*');
+                    }
+                    break;
+                }
+                case 'OVB_CAPTURE_COMPONENT_PRESET': {
+                    const targetEl = (msg.selector && document.querySelector(msg.selector)) || selectedElement;
+                    if (!targetEl) return;
+                    const sel = generateSelector(targetEl);
+                    const clone = targetEl.cloneNode(true);
+                    clone.removeAttribute('data-ovb-selected');
+                    clone.removeAttribute('data-ovb-hover');
+                    clone.removeAttribute('data-ovb-block-id');
+                    window.parent.postMessage({
+                        type: 'OVB_COMPONENT_PRESET_CAPTURED',
+                        name: msg.name || getElementLabel(targetEl),
+                        selector: sel,
+                        html: clone.outerHTML,
+                        elConfig: builderData.elements[sel] || {}
                     }, '*');
                     break;
                 }

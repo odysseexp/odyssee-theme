@@ -3,16 +3,30 @@
 (function() {
     'use strict';
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const orbitContainer = document.getElementById('artcraft-orbit-container');
-        const dataElement = document.getElementById('odyssee-orbit-data');
-        if (!orbitContainer || !dataElement) return;
+    window.odysseeOrbitConfig = Object.assign({
+        totalCards: 24,
+        density: 1.0,
+        speedMult: 1.0,
+        smoothness: 0.14,
+        ring1Dir: 1,
+        ring2Dir: -1,
+        ring3Dir: 1,
+        ring4Dir: -1,
+        hoverWarp: 180,
+        hoverTug: 18,
+        chromaticAberration: 0.032,
+        bloom: 0.0
+    }, window.odysseeOrbitConfig || {});
 
-        if (window.innerWidth < 768) {
+    function initOrbitOnContainer(orbitContainer) {
+        if (!orbitContainer) return;
+
+        const dataElement = document.getElementById('odyssee-orbit-data');
+        if (window.innerWidth < 768 && !orbitContainer.hasAttribute('data-force-mobile')) {
             orbitContainer.style.display = 'none';
             return;
         }
-
+        orbitContainer.style.display = '';
         orbitContainer.innerHTML = '';
 
         const oldModal = document.getElementById('artcraft-expand-modal');
@@ -20,16 +34,46 @@
 
         let items = [];
         try {
-            items = JSON.parse(dataElement.textContent || '[]');
+            if (orbitContainer.dataset.orbitItems) {
+                items = JSON.parse(orbitContainer.dataset.orbitItems);
+            } else if (dataElement) {
+                items = JSON.parse(dataElement.textContent || '[]');
+            }
         } catch (e) {
             console.error('Erro ao ler dados orbitais:', e);
-            return;
         }
 
-        if (!items || items.length === 0) return;
+        if (!items || items.length === 0) {
+            items = [
+                { id: 1, title: 'Design Gráfico', thumb: '/wp-content/uploads/2026/01/art-card-services.webp', full: '/wp-content/uploads/2026/01/art-card-services.webp', width: 600, height: 400 },
+                { id: 2, title: 'Identidade Visual', thumb: '/wp-content/uploads/2026/01/art-card-services-1.webp', full: '/wp-content/uploads/2026/01/art-card-services-1.webp', width: 600, height: 400 },
+                { id: 3, title: 'Carrossel Criativo', thumb: '/wp-content/uploads/2026/01/art-card-services-2.webp', full: '/wp-content/uploads/2026/01/art-card-services-2.webp', width: 600, height: 400 },
+                { id: 4, title: 'Ilustração Anime', thumb: '/wp-content/uploads/2026/01/art-card-services_14.webp', full: '/wp-content/uploads/2026/01/art-card-services_14.webp', width: 600, height: 400 },
+                { id: 5, title: 'Ilustração Cartoon', thumb: '/wp-content/uploads/2026/01/art-card-services_13.webp', full: '/wp-content/uploads/2026/01/art-card-services_13.webp', width: 600, height: 400 },
+                { id: 6, title: 'Motion Design', thumb: '/wp-content/uploads/2025/12/art-card-services-motion.webp', full: '/wp-content/uploads/2025/12/art-card-services-motion.webp', width: 600, height: 400 }
+            ];
+        }
+
+        function getCfg() {
+            const g = window.odysseeOrbitConfig || {};
+            const d = orbitContainer.dataset || {};
+            return {
+                totalCards: parseInt(d.totalCards || g.totalCards || 24, 10),
+                density: parseFloat(d.density || g.density || 1.0),
+                speedMult: parseFloat(d.speedMult !== undefined ? d.speedMult : (g.speedMult !== undefined ? g.speedMult : 1.0)),
+                smoothness: parseFloat(d.smoothness || g.smoothness || 0.14),
+                ring1Dir: parseFloat(d.ring1Dir || g.ring1Dir || 1),
+                ring2Dir: parseFloat(d.ring2Dir || g.ring2Dir || -1),
+                ring3Dir: parseFloat(d.ring3Dir || g.ring3Dir || 1),
+                ring4Dir: parseFloat(d.ring4Dir || g.ring4Dir || -1),
+                hoverWarp: parseFloat(d.hoverWarp !== undefined ? d.hoverWarp : (g.hoverWarp !== undefined ? g.hoverWarp : 180)),
+                hoverTug: parseFloat(d.hoverTug !== undefined ? d.hoverTug : (g.hoverTug !== undefined ? g.hoverTug : 18)),
+                chromaticAberration: parseFloat(d.chromaticAberration !== undefined ? d.chromaticAberration : (g.chromaticAberration !== undefined ? g.chromaticAberration : 0.032)),
+                bloom: parseFloat(d.bloom !== undefined ? d.bloom : (g.bloom !== undefined ? g.bloom : 0.0))
+            };
+        }
 
         const canvas = document.createElement('canvas');
-        canvas.id = 'artcraft-orbit-canvas';
         canvas.className = 'artcraft-orbit-canvas';
         orbitContainer.appendChild(canvas);
 
@@ -96,6 +140,7 @@
         uniform vec3 uBg;
         uniform float uBlur;
         uniform float uFadeCenter;
+        uniform float uBloom;
 
         uniform vec4 uClick[4];
         uniform float uClickW;
@@ -151,6 +196,15 @@
                 );
             } else {
                 col = texture(uMap, clamp(uv, vec2(0.0), vec2(1.0))).rgb;
+            }
+
+            if (uBloom > 0.01) {
+                float b = 0.018;
+                vec3 glow = texture(uMap, clamp(uv + vec2(b, b), vec2(0.0), vec2(1.0))).rgb
+                          + texture(uMap, clamp(uv + vec2(-b, -b), vec2(0.0), vec2(1.0))).rgb
+                          + texture(uMap, clamp(uv + vec2(b, -b), vec2(0.0), vec2(1.0))).rgb
+                          + texture(uMap, clamp(uv + vec2(-b, b), vec2(0.0), vec2(1.0))).rgb;
+                col += (glow * 0.25) * uBloom;
             }
 
             col = mix(col, uBg, clamp(uFadeCenter * 0.82, 0.0, 0.95));
@@ -258,6 +312,7 @@
         const uBgLoc = gl.getUniformLocation(program, 'uBg');
         const uBlurLoc = gl.getUniformLocation(program, 'uBlur');
         const uFadeCenterLoc = gl.getUniformLocation(program, 'uFadeCenter');
+        const uBloomLoc = gl.getUniformLocation(program, 'uBloom');
         const uClickLoc = gl.getUniformLocation(program, 'uClick');
         const uClickWLoc = gl.getUniformLocation(program, 'uClickW');
         const uImgAspectLoc = gl.getUniformLocation(program, 'uImgAspect');
@@ -315,16 +370,21 @@
             textures.push(tex);
         });
 
+        const cfgInit = getCfg();
         const isMobile = window.innerWidth < 768;
+        const densityScale = Math.max(0.4, Math.min(2.2, cfgInit.density || 1.0));
+        const totalDesired = Math.max(4, Math.min(60, cfgInit.totalCards || 24));
+        const countRatio = totalDesired / 24;
+
         const ringConfigs = isMobile ? [
-            { rx: 160, ry: 75, speed: 0.0030, count: 2 },
-            { rx: 260, ry: 120, speed: -0.0022, count: 4 },
-            { rx: 370, ry: 165, speed: 0.0016, count: 6 }
+            { rx: 160 * densityScale, ry: 75 * densityScale, speed: 0.0030, count: Math.max(1, Math.round(2 * countRatio)) },
+            { rx: 260 * densityScale, ry: 120 * densityScale, speed: 0.0022, count: Math.max(2, Math.round(4 * countRatio)) },
+            { rx: 370 * densityScale, ry: 165 * densityScale, speed: 0.0016, count: Math.max(2, Math.round(6 * countRatio)) }
         ] : [
-            { rx: 290, ry: 110, speed: 0.0019, count: 2 },
-            { rx: 480, ry: 180, speed: -0.0014, count: 5 },
-            { rx: 700, ry: 255, speed: 0.0011, count: 8 },
-            { rx: 920, ry: 330, speed: -0.0008, count: 9 }
+            { rx: 290 * densityScale, ry: 110 * densityScale, speed: 0.0019, count: Math.max(1, Math.round(2 * countRatio)) },
+            { rx: 480 * densityScale, ry: 180 * densityScale, speed: 0.0014, count: Math.max(2, Math.round(5 * countRatio)) },
+            { rx: 700 * densityScale, ry: 255 * densityScale, speed: 0.0011, count: Math.max(3, Math.round(8 * countRatio)) },
+            { rx: 920 * densityScale, ry: 330 * densityScale, speed: 0.0008, count: Math.max(3, Math.round(9 * countRatio)) }
         ];
 
         const ringsSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -365,22 +425,19 @@
                     ringIndex,
                     rx: ring.rx,
                     ry: ring.ry,
-                    baseSpeed: ring.speed,
+                    baseSpeed: Math.abs(ring.speed),
                     angle: initialAngle,
                     width: dims.width,
                     height: dims.height,
                     aspect: dims.aspect,
                     imgAspect: item.naturalAspect || initAspect,
                     radius: 12,
-                    
                     x: 0,
                     y: 0,
                     z: 0,
                     scale: 1,
-                    
                     isBoosted: false,
                     boostK: 0,
-                    
                     clicks: [
                         { x: 0.5, y: 0.5, radius: 0, amp: 0, time: -99 }
                     ]
@@ -468,7 +525,7 @@
                 };
 
                 const willBoost = !hitCard.isBoosted;
-                cards.forEach(c => c.isBoosted = false); 
+                cards.forEach(c => c.isBoosted = false);
                 hitCard.isBoosted = willBoost;
             } else {
                 cards.forEach(c => c.isBoosted = false);
@@ -509,11 +566,9 @@
             ];
         }
 
-        let lastTime = performance.now();
-
         function render(time) {
-            lastTime = time;
             const nowSec = time / 1000;
+            const liveCfg = getCfg();
 
             const width = canvas.clientWidth;
             const height = canvas.clientHeight;
@@ -549,8 +604,9 @@
             gl.uniformMatrix4fv(uProjLoc, false, new Float32Array(projMat));
             gl.uniformMatrix4fv(uViewLoc, false, new Float32Array(viewMat));
             gl.uniform1f(uClickWLoc, 24.0);
+            gl.uniform1f(uBloomLoc, liveCfg.bloom || 0.0);
 
-            const isDark = document.body.classList.contains('theme-dark') || 
+            const isDark = document.body.classList.contains('theme-dark') ||
                            document.documentElement.getAttribute('data-theme') === 'dark' ||
                            (!document.body.classList.contains('theme-light') && document.documentElement.getAttribute('data-theme') !== 'light');
             gl.uniform3f(uFrameColLoc, isDark ? 1.0 : 0.0, isDark ? 1.0 : 0.0, isDark ? 1.0 : 0.0);
@@ -559,14 +615,16 @@
             gl.uniform3f(uBgLoc, isDark ? 0.043 : 0.972, isDark ? 0.059 : 0.980, isDark ? 0.090 : 0.988);
 
             let hoveredCard = null;
+            const ringDirs = [liveCfg.ring1Dir, liveCfg.ring2Dir, liveCfg.ring3Dir, liveCfg.ring4Dir];
 
             cards.forEach(card => {
-                   const targetBoost = card.isBoosted ? 1.0 : 0.0;
-                card.boostK += (targetBoost - card.boostK) * 0.14;
+                const targetBoost = card.isBoosted ? 1.0 : 0.0;
+                card.boostK += (targetBoost - card.boostK) * (liveCfg.smoothness || 0.14);
 
                 const speedMult = 1.0 - (card.boostK * 0.88);
-                const directionFactor = card.baseSpeed >= 0 ? 1 : -1;
-                const totalSpeed = (card.baseSpeed + (scrollVelocity * directionFactor * 2.2)) * speedMult;
+                const directionFactor = (ringDirs[card.ringIndex] !== undefined ? ringDirs[card.ringIndex] : (card.ringIndex % 2 === 0 ? 1 : -1)) >= 0 ? 1 : -1;
+                const signedBaseSpeed = Math.abs(card.baseSpeed) * directionFactor * (liveCfg.speedMult !== undefined ? liveCfg.speedMult : 1.0);
+                const totalSpeed = (signedBaseSpeed + (scrollVelocity * directionFactor * 2.2)) * speedMult;
                 card.angle += totalSpeed;
 
                 const cosA = Math.cos(card.angle);
@@ -578,7 +636,7 @@
                 let posX = cosA * currentRx;
                 let posY = sinA * currentRy;
 
-                const normalizedDepth = (sinA + 1) / 2; 
+                const normalizedDepth = (sinA + 1) / 2;
                 const ringBase = 0.58 + (card.ringIndex / Math.max(1, ringConfigs.length - 1)) * 0.56;
                 const depthFactor = 0.88 + (normalizedDepth * 0.24);
                 const baseScale = ringBase * depthFactor * zoomScale;
@@ -589,7 +647,8 @@
                 card.cleanFactor = cleanFactor;
 
                 let warp = 0;
-                let aber = 0.002 * cleanFactor;
+                const maxAber = liveCfg.chromaticAberration !== undefined ? liveCfg.chromaticAberration : 0.032;
+                let aber = Math.min(0.002, maxAber * 0.1) * cleanFactor;
                 let localMouseX = -99;
                 let localMouseY = -99;
                 let isHover = false;
@@ -610,8 +669,8 @@
                     }
 
                     const fieldPx = 340;
-                    const tugPx = 18;
-                    const mouseWarpPx = 180;
+                    const tugPx = liveCfg.hoverTug !== undefined ? liveCfg.hoverTug : 18;
+                    const mouseWarpPx = liveCfg.hoverWarp !== undefined ? liveCfg.hoverWarp : 180;
 
                     if (dist < fieldPx) {
                         const factor = Math.exp(-distSq / (fieldPx * fieldPx));
@@ -620,7 +679,7 @@
                         posY += dy * tug;
 
                         warp = mouseWarpPx * factor * cleanFactor;
-                        aber = (0.003 + (0.032 * factor)) * cleanFactor;
+                        aber = (0.002 + (maxAber * factor)) * cleanFactor;
                     }
 
                     localMouseX = ((mouseX - posX) / cardW) * cleanFactor;
@@ -731,7 +790,6 @@
 
         function startLoop() {
             if (!animFrameId && isHeroVisible) {
-                lastTime = performance.now();
                 animFrameId = requestAnimationFrame(render);
             }
         }
@@ -766,5 +824,14 @@
         });
 
         startLoop();
+    }
+
+    window.odysseeInitOrbitHero = initOrbitOnContainer;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const orbitContainer = document.getElementById('artcraft-orbit-container');
+        if (orbitContainer) {
+            initOrbitOnContainer(orbitContainer);
+        }
     });
 })();

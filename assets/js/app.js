@@ -1489,105 +1489,145 @@ function renderAllCarousels() {
 }
 
 function renderCarousel(containerId, filterCategory = null) {
-    const container = document.getElementById(containerId);
-    if (!container) return; 
+    const container = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
+    if (!container) return;
 
-    let filteredPosts = allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
-    if (filterCategory) {
-        
+    if (container._odysseeCarouselRAF) {
+        cancelAnimationFrame(container._odysseeCarouselRAF);
+        container._odysseeCarouselRAF = null;
+    }
+
+    const effectiveCategory = filterCategory !== null ? filterCategory : (container.dataset.category || null);
+    const direction = container.dataset.direction || 'clockwise'; // 'clockwise' (default) | 'counterclockwise'
+    const mode = container.dataset.mode || 'infinite'; // 'infinite' (default) | 'finite' | 'pingpong'
+    const cardsCount = Math.max(1, parseInt(container.dataset.cardsCount || '8', 10) || 8);
+    const visibleCards = parseFloat(container.dataset.visibleCards || '0') || 0;
+    const baseSpeed = Math.max(0, parseFloat(container.dataset.speed ?? '0.2'));
+
+    let filteredPosts = Array.isArray(allPosts) ? [...allPosts].sort((a, b) => new Date(b.date) - new Date(a.date)) : [];
+    if (effectiveCategory) {
         filteredPosts = filteredPosts.filter(post =>
-            post.categories && post.categories.includes(filterCategory)
+            post.categories && post.categories.includes(effectiveCategory)
         );
     }
 
-    const basePosts = filteredPosts.slice(0, 8);
+    if (filteredPosts.length === 0 && Array.isArray(allPosts) && allPosts.length > 0) {
+        filteredPosts = [...allPosts].slice(0, cardsCount);
+    }
 
+    const basePosts = filteredPosts.slice(0, cardsCount);
+
+    container.innerHTML = '';
     const track = document.createElement('div');
     track.className = 'carousel-track';
 
-    const triplePosts = [...basePosts, ...basePosts, ...basePosts];
-    triplePosts.forEach(post => {
-        track.appendChild(createCard(post));
+    const postsToRender = (mode === 'infinite' && basePosts.length > 0)
+        ? [...basePosts, ...basePosts, ...basePosts]
+        : [...basePosts];
+
+    postsToRender.forEach(post => {
+        const cardEl = createCard(post);
+        if (visibleCards > 0) {
+            const gapPx = 25;
+            cardEl.style.flex = `0 0 calc((100% - ${(visibleCards - 1) * gapPx}px) / ${visibleCards})`;
+            cardEl.style.maxWidth = `calc((100% - ${(visibleCards - 1) * gapPx}px) / ${visibleCards})`;
+        }
+        track.appendChild(cardEl);
     });
     container.appendChild(track);
 
     let position = 0;
-    let speed = 0.2;
+    let speed = baseSpeed;
+    let dirSign = direction === 'counterclockwise' ? 1 : -1;
     let isDown = false;
-    let startX = 0;
-    let scrollLeftStart = 0;
     let isHovering = false;
     let initialized = false;
     let singleSetWidth = 0;
-    let animationId = null; 
-
-    function waitForTrackImages(timeout = 1500) {
-        const imgs = Array.from(track.querySelectorAll('img'));
-        if (imgs.length === 0) return Promise.resolve();
-        return new Promise(resolve => {
-            let remaining = imgs.length;
-            const check = () => {
-                remaining -= 1;
-                if (remaining <= 0) resolve();
-            };
-            imgs.forEach(img => {
-                if (img.complete && img.naturalWidth !== 0) {
-                    check();
-                } else {
-                    img.addEventListener('load', check, { once: true });
-                    img.addEventListener('error', check, { once: true });
-                }
-            });
-            
-            setTimeout(resolve, timeout);
-        });
-    }
+    let finiteStopped = false;
 
     function animate() {
-        
+        const currentDirection = container.dataset.direction || direction;
+        const currentMode = container.dataset.mode || mode;
+        const currentSpeed = Math.max(0, parseFloat(container.dataset.speed ?? speed));
+        speed = currentSpeed;
+
         const totalWidth = track.scrollWidth;
-        let calculatedWidth = totalWidth / 3;
-        try {
-            const children = track.children;
-            const baseLen = basePosts.length;
-            if (children.length >= baseLen * 2) {
-                const startB = children[baseLen];
-                const startC = children[baseLen * 2];
-                const rectB = startB.getBoundingClientRect();
-                const rectC = startC.getBoundingClientRect();
-                calculatedWidth = Math.round(rectC.left - rectB.left);
+        const containerWidth = container.clientWidth || 1;
+
+        if (currentMode === 'infinite') {
+            let calculatedWidth = totalWidth / 3;
+            try {
+                const children = track.children;
+                const baseLen = basePosts.length;
+                if (baseLen > 0 && children.length >= baseLen * 2) {
+                    const startB = children[baseLen];
+                    const startC = children[baseLen * 2];
+                    const rectB = startB.getBoundingClientRect();
+                    const rectC = startC.getBoundingClientRect();
+                    calculatedWidth = Math.round(rectC.left - rectB.left);
+                }
+            } catch (e) { }
+
+            singleSetWidth = calculatedWidth;
+
+            if (!initialized && totalWidth > 0 && singleSetWidth > 0) {
+                position = -singleSetWidth;
+                initialized = true;
             }
-        } catch (e) { }
 
-        singleSetWidth = calculatedWidth;
+            if (!isDown && !isHovering && initialized) {
+                const step = (currentDirection === 'counterclockwise' ? 1 : -1) * speed;
+                position += step;
 
-        if (!initialized && totalWidth > 0 && singleSetWidth > 0) {
-            position = -singleSetWidth;
-            initialized = true;
-        }
+                if (position <= -(singleSetWidth * 2)) {
+                    position += singleSetWidth;
+                } else if (position >= 0) {
+                    position -= singleSetWidth;
+                }
+            }
+        } else {
+            // Finite or Ping-Pong bounds
+            const maxNegative = -Math.max(0, totalWidth - containerWidth);
+            if (!initialized && totalWidth > 0) {
+                position = currentDirection === 'counterclockwise' ? maxNegative : 0;
+                dirSign = currentDirection === 'counterclockwise' ? 1 : -1;
+                initialized = true;
+            }
 
-        if (!isDown && !isHovering && initialized) {
-            position -= speed;
+            if (!isDown && !isHovering && initialized && !finiteStopped) {
+                position += dirSign * speed;
 
-            if (position <= -(singleSetWidth * 2)) {
-                position += singleSetWidth;
-            } else if (position >= 0) {
-                position -= singleSetWidth;
+                if (position <= maxNegative) {
+                    position = maxNegative;
+                    if (currentMode === 'finite') {
+                        finiteStopped = true;
+                    } else if (currentMode === 'pingpong') {
+                        dirSign = 1;
+                    }
+                } else if (position >= 0) {
+                    position = 0;
+                    if (currentMode === 'finite') {
+                        finiteStopped = true;
+                    } else if (currentMode === 'pingpong') {
+                        dirSign = -1;
+                    }
+                }
             }
         }
 
         track.style.transform = `translateX(${position}px)`;
-
-        animationId = requestAnimationFrame(animate);
+        container._odysseeCarouselRAF = requestAnimationFrame(animate);
     }
 
     const totalWidth = track.scrollWidth;
-    let initialSingleWidth = totalWidth / 3;
-    if (totalWidth > 0 && initialSingleWidth > 0) {
-        position = -initialSingleWidth;
-        initialized = true;
+    if (mode === 'infinite') {
+        let initialSingleWidth = totalWidth / 3;
+        if (totalWidth > 0 && initialSingleWidth > 0) {
+            position = -initialSingleWidth;
+            initialized = true;
+        }
     }
-    requestAnimationFrame(animate);
+    container._odysseeCarouselRAF = requestAnimationFrame(animate);
 
     let dragStartX = 0;
     let dragStartPosition = 0;
@@ -1595,6 +1635,7 @@ function renderCarousel(containerId, filterCategory = null) {
     function handleDragStart(clientX) {
         isDown = true;
         isHovering = true;
+        finiteStopped = false;
         dragStartX = clientX;
         dragStartPosition = position;
         track.style.cursor = 'grabbing';
@@ -1624,7 +1665,7 @@ function renderCarousel(containerId, filterCategory = null) {
         if (isDown) {
             handleDragMove(clientX);
         }
-    }, 16); 
+    }, 16);
 
     window.addEventListener('mousemove', (e) => {
         throttledMouseMove(e.clientX);
@@ -1642,7 +1683,7 @@ function renderCarousel(containerId, filterCategory = null) {
         if (isDown) {
             handleDragMove(clientX);
         }
-    }, 16); 
+    }, 16);
 
     track.addEventListener('touchmove', (e) => {
         throttledTouchMove(e.touches[0].clientX);
@@ -1660,6 +1701,8 @@ function renderCarousel(containerId, filterCategory = null) {
         if (!isDown) isHovering = false;
     });
 }
+window.odysseeInitCarousel = renderCarousel;
+
 
 const mainHeaderEl = document.querySelector('.main-header');
 let lastHeaderScrolled = null;

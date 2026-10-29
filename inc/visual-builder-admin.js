@@ -52,7 +52,10 @@
             clones: Array.isArray(d.clones) ? d.clones : [],
             globalVars: d.globalVars && typeof d.globalVars === 'object' && !Array.isArray(d.globalVars) ? d.globalVars : { all: {}, dark: {}, light: {} },
             customCss: typeof d.customCss === 'string' ? d.customCss : '',
-            customJs: typeof d.customJs === 'string' ? d.customJs : ''
+            customJs: typeof d.customJs === 'string' ? d.customJs : '',
+            componentPresets: Array.isArray(d.componentPresets) ? d.componentPresets : [],
+            pagePresets: d.pagePresets && typeof d.pagePresets === 'object' && !Array.isArray(d.pagePresets) ? d.pagePresets : {},
+            sitePresets: d.sitePresets && typeof d.sitePresets === 'object' && !Array.isArray(d.sitePresets) ? d.sitePresets : {}
         };
     }
 
@@ -101,6 +104,7 @@
             state.elements[selector] = {
                 themeScope: 'all',
                 elUiStyle: '',
+                specialConfig: {},
                 content: { attrs: {} },
                 styles: {
                     desktop: { rawCssProps: {} },
@@ -120,6 +124,7 @@
         if (!rec.styles[currentBucket].rawCssProps) rec.styles[currentBucket].rawCssProps = {};
         if (!rec.content) rec.content = {};
         if (!rec.content.attrs) rec.content.attrs = {};
+        if (!rec.specialConfig || typeof rec.specialConfig !== 'object') rec.specialConfig = {};
         return rec;
     }
 
@@ -193,6 +198,37 @@
         } else {
             $('#ovb-custom-block-editor').hide();
         }
+
+        // Populate Special Config inputs (Carousel #5, Floating Orbit #6, Gradient Seam Breaker #8)
+        const specialDefaults = {
+            direction: 'clockwise',
+            mode: 'infinite',
+            cardsCount: 8,
+            visibleCards: 0,
+            speed: 0.2,
+            category: '',
+            totalCards: 44,
+            density: 1.0,
+            speedMult: 1.0,
+            smoothness: 0.08,
+            ring1Dir: 1,
+            ring2Dir: -1,
+            ring3Dir: 1,
+            ring4Dir: -1,
+            hoverWarp: 1.0,
+            hoverTug: 25,
+            chromaticAberration: 1.0,
+            bloom: 0,
+            heightPx: 180,
+            gradientDirection: 'to bottom'
+        };
+        const mergedSpecial = Object.assign({}, specialDefaults, (blockObj && blockObj.config) || {}, rec.specialConfig || {});
+        $('[data-ovb-sconfig]').each(function () {
+            const key = $(this).attr('data-ovb-sconfig');
+            if (mergedSpecial[key] !== undefined) {
+                $(this).val(String(mergedSpecial[key]));
+            }
+        });
 
         // Bind all [data-ovb-prop] fields strictly from active bucket `st[prop]` (or live computed `comp[prop]`)
         $('[data-ovb-prop]').each(function () {
@@ -501,6 +537,63 @@
         });
     }
 
+    function renderPresetsCatalogCards() {
+        const catalog = window.ODYSSEE_VB_PRESETS_CATALOG || [];
+        const $smallGrid = $('#ovb-presets-small-grid');
+        const $robustGrid = $('#ovb-presets-robust-grid');
+        $smallGrid.empty();
+        $robustGrid.empty();
+
+        catalog.forEach(p => {
+            const card = $(`
+                <div class="ovb-preset-catalog-card" data-preset-id="${p.id}" style="padding:8px 10px;background:#161f33;border:1px solid rgba(139,92,246,0.28);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all 0.2s;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+                        <strong style="font-size:11.5px;color:#f8fafc;">${p.icon || '✨'} ${$('<div>').text(p.label).html()}</strong>
+                        <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(168,85,247,0.22);color:#e9d5ff;font-weight:700;">＋ Inserir</span>
+                    </div>
+                    <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;line-height:1.35;">${$('<div>').text(p.desc).html()}</div>
+                </div>
+            `);
+            if (p.category === 'robust') {
+                $robustGrid.append(card);
+            } else {
+                $smallGrid.append(card);
+            }
+        });
+    }
+
+    function renderUserComponentPresets() {
+        const $list = $('#ovb-user-comp-presets-list');
+        $list.empty();
+        const comps = state.componentPresets || [];
+        if (comps.length === 0) {
+            $list.html('<p style="color:#64748b;font-size:11px;margin:0;">Nenhum conjunto salvo ainda. Selecione qualquer item e clique em 💾 Salvar.</p>');
+            return;
+        }
+        comps.forEach((cp, idx) => {
+            const row = $(`
+                <div class="ovb-tree-item" style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:155px;" title="${$('<div>').text(cp.name).html()}">🧩 ${$('<div>').text(cp.name).html()}</span>
+                    <div style="display:flex;gap:3px;">
+                        <button type="button" class="ovb-mini-btn ovb-insert-comp-preset" data-idx="${idx}" title="Inserir este Conjunto na página">＋ Inserir</button>
+                        <button type="button" class="ovb-mini-btn ovb-export-single-comp" data-idx="${idx}" title="Baixar JSON deste Conjunto">⬇</button>
+                        <button type="button" class="ovb-mini-btn ovb-del-comp-preset" data-idx="${idx}" title="Excluir Conjunto">✕</button>
+                    </div>
+                </div>
+            `);
+            $list.append(row);
+        });
+    }
+
+    function renderPagePresetsDropdown() {
+        const $sel = $('#ovb-page-preset-selector');
+        $sel.empty();
+        $sel.append('<option value="">-- Selecionar Preset de Página --</option>');
+        Object.keys(state.pagePresets || {}).forEach(pName => {
+            $sel.append($('<option></option>').val(pName).text(`📄 ${pName}`));
+        });
+    }
+
     function populateGlobalVariables() {
         const gv = state.globalVars || { all: {}, dark: {}, light: {} };
         $('[data-ovb-gvar]').each(function () {
@@ -525,10 +618,13 @@
         $('#ovb-active-preset-badge').text(pName);
         $('#ovb-blank-mode-toggle').prop('checked', !!state.blankMode);
         renderPresetsDropdown();
+        renderUserComponentPresets();
+        renderPagePresetsDropdown();
         updateCompiledCodeDisplay();
     }
 
     $(document).ready(function () {
+        renderPresetsCatalogCards();
         populateGlobalVariables();
         renderModifiedElementsList();
         updateUndoRedoButtons();
@@ -658,6 +754,35 @@
                         populateSidebarFromSelection();
                         showToast('Elemento restaurado ao original!');
                     }
+                    break;
+                }
+                case 'OVB_FIGMA_SVG_RESULT': {
+                    if (!msg.svgContent) break;
+                    const slug = (state.presetName || 'odysseexp').toLowerCase().replace(/\s+/g, '-');
+                    const targetTool = msg.target === 'lunacy' ? 'lunacy' : 'figma';
+                    const scopeName = msg.scope === 'element' ? 'conjunto' : 'pagina';
+                    const blob = new Blob([msg.svgContent], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${slug}-${targetTool}-${scopeName}.svg`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    showToast(`🎨 Artboard vetorial em camadas exportado para ${targetTool.toUpperCase()}!`);
+                    break;
+                }
+                case 'OVB_COMPONENT_PRESET_CAPTURED': {
+                    if (!msg.html) break;
+                    if (!Array.isArray(state.componentPresets)) state.componentPresets = [];
+                    state.componentPresets.push({
+                        id: 'comp_' + Date.now(),
+                        name: msg.name || 'Conjunto Personalizado',
+                        html: msg.html,
+                        elConfig: msg.elConfig || {}
+                    });
+                    pushHistory();
+                    renderUserComponentPresets();
+                    showToast(`💾 Conjunto '${msg.name}' salvo nos seus Presets de Conjunto!`);
                     break;
                 }
             }
@@ -1251,6 +1376,104 @@
             insertNewBlock(type);
         });
 
+        // Insert any of the 21 Pre-Built Presets (1–12 Small/Modular & 13–21 Robust Full-Screen)
+        $(document).on('click', '.ovb-preset-catalog-card', function () {
+            const presetId = $(this).attr('data-preset-id');
+            const catalog = window.ODYSSEE_VB_PRESETS_CATALOG || [];
+            const presetDef = catalog.find(p => p.id === presetId);
+            if (!presetDef) return;
+
+            const targetSel = currentSelector || 'main, .main-content, .immersive-wrapper, body';
+            const pos = $('#ovb-insert-position').val() || 'after';
+            const id = 'ovb_blk_' + Math.random().toString(36).substring(2, 8);
+
+            const newBlock = {
+                id: id,
+                type: presetDef.id,
+                targetSelector: targetSel,
+                position: pos,
+                config: deepClone(presetDef.defaultConfig || {}),
+                content: { html: presetDef.html || '' }
+            };
+
+            if (!Array.isArray(state.blocks)) state.blocks = [];
+            state.blocks.push(newBlock);
+
+            if (presetDef.defaultConfig) {
+                const rec = ensureElementRecord('#' + id);
+                rec.specialConfig = deepClone(presetDef.defaultConfig);
+            }
+
+            pushHistory();
+            syncPreview();
+
+            setTimeout(() => {
+                postToPreview({
+                    type: 'OVB_SELECT_SELECTOR',
+                    selector: '#' + id,
+                    scroll: true
+                });
+                postToPreview({ type: 'OVB_REQUEST_TREE' });
+            }, 140);
+
+            showToast(`✨ ${presetDef.label} inserido! Você pode editar tudo livremente.`);
+        });
+
+        // Quick Select Orbit Hero (#6) or Carousel (#5) on Home Page
+        $('#ovb-btn-quick-select-orbit').on('click', function () {
+            currentSelector = '#artcraft-orbit-container';
+            postToPreview({ type: 'OVB_SELECT_SELECTOR', selector: '#artcraft-orbit-container', scroll: true });
+            populateSidebarFromSelection();
+            showToast('🪐 Cards Flutuantes Orbitais selecionados!');
+        });
+
+        $('#ovb-btn-quick-select-carousel').on('click', function () {
+            currentSelector = '#carousel-recentes';
+            postToPreview({ type: 'OVB_SELECT_SELECTOR', selector: '#carousel-recentes', scroll: true });
+            populateSidebarFromSelection();
+            showToast('🎠 Carrossel selecionado!');
+        });
+
+        // Live Special Config Binding ([data-ovb-sconfig]) for Carousels (#5), Floating Orbit (#6), and Gradient (#8)
+        $(document).on('input change', '[data-ovb-sconfig]', function () {
+            const key = $(this).attr('data-ovb-sconfig');
+            let val = $(this).val();
+            if (['cardsCount', 'visibleCards', 'speed', 'totalCards', 'density', 'speedMult', 'smoothness', 'ring1Dir', 'ring2Dir', 'ring3Dir', 'ring4Dir', 'hoverWarp', 'hoverTug', 'chromaticAberration', 'bloom', 'heightPx'].includes(key)) {
+                const num = parseFloat(val);
+                if (!isNaN(num)) val = num;
+            }
+
+            // Target current selector, or auto-fallback to #artcraft-orbit-container / #carousel-recentes
+            let targetSel = currentSelector;
+            if (!targetSel) {
+                if (['totalCards', 'density', 'speedMult', 'smoothness', 'ring1Dir', 'ring2Dir', 'ring3Dir', 'ring4Dir', 'hoverWarp', 'hoverTug', 'chromaticAberration', 'bloom'].includes(key)) {
+                    targetSel = '#artcraft-orbit-container';
+                } else if (['direction', 'mode', 'cardsCount', 'visibleCards', 'speed', 'category'].includes(key)) {
+                    targetSel = '#carousel-recentes';
+                } else {
+                    targetSel = '.gradient-fade-bottom';
+                }
+                currentSelector = targetSel;
+            }
+
+            const rec = ensureElementRecord(targetSel);
+            rec.specialConfig[key] = val;
+
+            // If it's a custom block, also update block.config
+            if (targetSel.startsWith('#ovb_blk_')) {
+                const bId = targetSel.slice(1);
+                const blk = (state.blocks || []).find(b => b.id === bId);
+                if (blk) {
+                    if (!blk.config) blk.config = {};
+                    blk.config[key] = val;
+                }
+            }
+
+            syncPreview();
+            clearTimeout(historyTimer);
+            historyTimer = setTimeout(pushHistory, 450);
+        });
+
         // ==========================================
         // GLOBAL UI DESIGN SYSTEM & ICON PACK SWITCHERS
         // ==========================================
@@ -1413,8 +1636,166 @@
         });
 
         // ==========================================
-        // PRESETS MANAGER (OdysseeXP / Tema em Branco / Named Presets)
+        // 3-TIER PRESETS MANAGER (1. Conjuntos, 2. Página Única, 3. Site Todo)
         // ==========================================
+        // Tier 1: Save/Insert/Export User Component Set Presets
+        $('#ovb-btn-save-comp-preset').on('click', function () {
+            if (!currentSelector) {
+                showToast('Selecione primeiro o elemento ou conjunto que deseja salvar como Preset!', true);
+                return;
+            }
+            const name = $('#ovb-comp-preset-name').val().trim() || ((currentSnapshot && currentSnapshot.label) || 'Meu Conjunto');
+            postToPreview({
+                type: 'OVB_CAPTURE_COMPONENT_PRESET',
+                selector: currentSelector,
+                name: name
+            });
+            $('#ovb-comp-preset-name').val('');
+        });
+
+        $(document).on('click', '.ovb-insert-comp-preset', function () {
+            const idx = parseInt($(this).attr('data-idx'), 10);
+            const comp = (state.componentPresets || [])[idx];
+            if (!comp) return;
+            const targetSel = currentSelector || 'main, .main-content, .immersive-wrapper, body';
+            const pos = $('#ovb-insert-position').val() || 'after';
+            const id = 'ovb_blk_' + Math.random().toString(36).substring(2, 8);
+
+            state.blocks.push({
+                id: id,
+                type: 'user-component-preset',
+                targetSelector: targetSel,
+                position: pos,
+                content: { html: comp.html }
+            });
+            if (comp.elConfig && Object.keys(comp.elConfig).length > 0) {
+                state.elements['#' + id] = deepClone(comp.elConfig);
+            }
+            pushHistory();
+            syncPreview();
+            showToast(`🧩 Conjunto '${comp.name}' inserido na página!`);
+        });
+
+        $(document).on('click', '.ovb-export-single-comp', function () {
+            const idx = parseInt($(this).attr('data-idx'), 10);
+            const comp = (state.componentPresets || [])[idx];
+            if (!comp) return;
+            const slug = (comp.name || 'conjunto').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const blob = new Blob([JSON.stringify({ type: 'odyssee-component-preset', version: '26.10.7', preset: comp }, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `preset-conjunto-${slug}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        $(document).on('click', '.ovb-del-comp-preset', function () {
+            const idx = parseInt($(this).attr('data-idx'), 10);
+            if (!Array.isArray(state.componentPresets)) return;
+            state.componentPresets.splice(idx, 1);
+            pushHistory();
+            renderUserComponentPresets();
+            showToast('Conjunto removido.');
+        });
+
+        $('#ovb-btn-export-all-comp-presets').on('click', function () {
+            const blob = new Blob([JSON.stringify({ type: 'odyssee-component-presets-collection', version: '26.10.7', componentPresets: state.componentPresets || [] }, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'odyssee-presets-conjuntos.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        $('#ovb-btn-import-comp-presets').on('click', function () {
+            $('#ovb-import-comp-file').trigger('click');
+        });
+
+        $('#ovb-import-comp-file').on('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                try {
+                    const parsed = JSON.parse(ev.target.result);
+                    if (!Array.isArray(state.componentPresets)) state.componentPresets = [];
+                    if (parsed.preset) {
+                        state.componentPresets.push(parsed.preset);
+                    } else if (Array.isArray(parsed.componentPresets)) {
+                        state.componentPresets.push(...parsed.componentPresets);
+                    }
+                    pushHistory();
+                    renderUserComponentPresets();
+                    showToast('Conjunto(s) importado(s) com sucesso!');
+                } catch (err) {
+                    showToast('Arquivo JSON de conjunto inválido.', true);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Tier 2: Save/Load/Export Single Page Presets
+        $('#ovb-btn-save-page-preset').on('click', function () {
+            const pageLabel = $('#ovb-page-switcher option:selected').text().trim() || 'Página Atual';
+            const customName = $('#ovb-page-preset-name').val().trim() || `${pageLabel} (${new Date().toLocaleTimeString()})`;
+            if (!state.pagePresets || typeof state.pagePresets !== 'object') state.pagePresets = {};
+            state.pagePresets[customName] = {
+                name: customName,
+                pageUrl: $('#ovb-page-switcher').val() || '/',
+                uiStyle: state.uiStyle,
+                iconPack: state.iconPack,
+                elements: deepClone(state.elements || {}),
+                blocks: deepClone(state.blocks || []),
+                domMoves: deepClone(state.domMoves || []),
+                clones: deepClone(state.clones || [])
+            };
+            $('#ovb-page-preset-name').val('');
+            pushHistory();
+            renderPagePresetsDropdown();
+            $('#ovb-page-preset-selector').val(customName);
+            showToast(`📄 Preset de página '${customName}' salvo!`);
+        });
+
+        $('#ovb-btn-load-page-preset').on('click', function () {
+            const pName = $('#ovb-page-preset-selector').val();
+            if (!pName || !state.pagePresets || !state.pagePresets[pName]) {
+                showToast('Selecione um Preset de Página primeiro!', true);
+                return;
+            }
+            const pg = deepClone(state.pagePresets[pName]);
+            state.elements = Object.assign({}, state.elements || {}, pg.elements || {});
+            state.blocks = pg.blocks || [];
+            state.domMoves = pg.domMoves || [];
+            state.clones = pg.clones || [];
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+            showToast(`📄 Preset de página '${pName}' aplicado!`);
+        });
+
+        $('#ovb-btn-export-page-preset').on('click', function () {
+            const pName = $('#ovb-page-preset-selector').val();
+            const pageData = (pName && state.pagePresets && state.pagePresets[pName]) ? state.pagePresets[pName] : {
+                name: 'Pagina-Atual',
+                pageUrl: $('#ovb-page-switcher').val() || '/',
+                elements: state.elements,
+                blocks: state.blocks,
+                domMoves: state.domMoves,
+                clones: state.clones
+            };
+            const slug = (pageData.name || 'pagina').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const blob = new Blob([JSON.stringify({ type: 'odyssee-single-page-preset', version: '26.10.7', pagePreset: pageData }, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `preset-pagina-${slug}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Tier 3: Full Site Presets (OdysseeXP / Tema em Branco / Named Presets)
         $('#ovb-preset-name-input').on('input change', function () {
             const name = $(this).val().trim() || 'OdysseeXP';
             state.presetName = name;
@@ -1441,9 +1822,71 @@
             showToast(`Predefinição '${chosen}' carregada com sucesso!`);
         });
 
+        // ==========================================
+        // FIGMA & LUNACY OPEN-STANDARD EXPORT (Layered .SVG Artboard + W3C .tokens.json)
+        // ==========================================
+        $('#ovb-btn-export-figma').on('click', function () {
+            const scope = $('#ovb-design-export-scope').val() || 'page';
+            if (scope === 'element' && !currentSelector) {
+                showToast('Selecione um elemento ou conjunto primeiro para exportar!', true);
+                return;
+            }
+            postToPreview({
+                type: 'OVB_EXPORT_FIGMA_SVG',
+                target: 'figma',
+                scope: scope,
+                selector: currentSelector
+            });
+        });
+
+        $('#ovb-btn-export-lunacy').on('click', function () {
+            const scope = $('#ovb-design-export-scope').val() || 'page';
+            if (scope === 'element' && !currentSelector) {
+                showToast('Selecione um elemento ou conjunto primeiro para exportar!', true);
+                return;
+            }
+            postToPreview({
+                type: 'OVB_EXPORT_FIGMA_SVG',
+                target: 'lunacy',
+                scope: scope,
+                selector: currentSelector
+            });
+        });
+
+        $('#ovb-btn-export-tokens').on('click', function () {
+            const slug = (state.presetName || 'odysseexp').toLowerCase().replace(/\s+/g, '-');
+            const w3cTokens = {
+                "$schema": "https://tr.designtokens.org/format/",
+                "meta": {
+                    "generator": "Odyssee Visual Studio v26.10.7",
+                    "compatibleWith": ["Figma (Tokens Studio / Native Variables)", "Lunacy", "VS Code / Cursor"],
+                    "presetName": state.presetName || "OdysseeXP",
+                    "uiStyle": state.uiStyle || "odysseexp",
+                    "iconPack": state.iconPack || "default"
+                },
+                "color": {
+                    "accent": { "$value": (state.globalVars && state.globalVars.all && state.globalVars.all['--color-accent']) || "#8b5cf6", "$type": "color" },
+                    "nebula-1": { "$value": (state.globalVars && state.globalVars.all && state.globalVars.all['--nebula-1']) || "#9333ea", "$type": "color" },
+                    "nebula-2": { "$value": (state.globalVars && state.globalVars.all && state.globalVars.all['--nebula-2']) || "#c026d3", "$type": "color" },
+                    "nebula-3": { "$value": (state.globalVars && state.globalVars.all && state.globalVars.all['--nebula-3']) || "#7c3aed", "$type": "color" },
+                    "dark-bg": { "$value": (state.globalVars && state.globalVars.dark && state.globalVars.dark['--bg-page']) || "#0d1538", "$type": "color" },
+                    "light-bg": { "$value": (state.globalVars && state.globalVars.light && state.globalVars.light['--bg-page']) || "#f8fafc", "$type": "color" }
+                },
+                "elements": state.elements || {}
+            };
+            const blob = new Blob([JSON.stringify(w3cTokens, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${slug}-figma-lunacy.tokens.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('💎 W3C Design Tokens (.tokens.json) exportado para Figma & Lunacy!');
+        });
+
         // Layer Tree Click to Select Element
         $(document).on('click', '.ovb-tree-item', function (e) {
-            if ($(e.target).closest('.ovb-del-rule').length) return;
+            if ($(e.target).closest('.ovb-del-rule, .ovb-insert-comp-preset, .ovb-export-single-comp, .ovb-del-comp-preset').length) return;
             const sel = $(this).attr('data-sel');
             if (!sel) return;
             postToPreview({
@@ -1541,6 +1984,21 @@
             reader.onload = function (ev) {
                 try {
                     const parsed = JSON.parse(ev.target.result);
+                    if (parsed.type === 'odyssee-single-page-preset' && parsed.pagePreset) {
+                        const pg = parsed.pagePreset;
+                        if (!state.pagePresets) state.pagePresets = {};
+                        state.pagePresets[pg.name || 'Página Importada'] = pg;
+                        state.elements = Object.assign({}, state.elements || {}, pg.elements || {});
+                        state.blocks = pg.blocks || [];
+                        state.domMoves = pg.domMoves || [];
+                        state.clones = pg.clones || [];
+                        pushHistory();
+                        syncPreview();
+                        populateSidebarFromSelection();
+                        populateGlobalVariables();
+                        showToast(`📄 Preset de Página '${pg.name}' importado e aplicado!`);
+                        return;
+                    }
                     state = normalizeData(parsed);
                     savedPresets[state.presetName] = deepClone(state);
                     pushHistory();
