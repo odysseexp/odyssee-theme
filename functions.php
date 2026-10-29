@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once get_template_directory() . '/inc/cv-admin.php';
 require_once get_template_directory() . '/inc/faq-admin.php';
+require_once get_template_directory() . '/inc/visual-builder.php';
 
 function odyssee_generate_csp_nonce() {
     if ( ! defined( 'ODYSSEE_CSP_NONCE' ) ) {
@@ -44,7 +45,7 @@ function odyssee_security_headers() {
 
 function odyssee_scripts() {
     
-    $theme_version = '26.10.2';
+    $theme_version = '26.10.3';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 

@@ -1,0 +1,714 @@
+/* ==========================================================================
+   Odyssee Visual Studio — Elementor-Style Fullscreen Editor UI
+   ========================================================================== */
+
+body.toplevel_page_odyssee-visual-builder,
+body.appearance_page_odyssee-visual-builder {
+    overflow: hidden !important;
+    background: #0b0f17 !important;
+}
+
+body.toplevel_page_odyssee-visual-builder #wpadminbar,
+body.toplevel_page_odyssee-visual-builder #adminmenumain,
+body.toplevel_page_odyssee-visual-builder #wpfooter,
+body.appearance_page_odyssee-visual-builder #wpadminbar,
+body.appearance_page_odyssee-visual-builder #adminmenumain,
+body.appearance_page_odyssee-visual-builder #wpfooter {
+    display: none !important;
+}
+
+body.toplevel_page_odyssee-visual-builder #wpcontent,
+body.toplevel_page_odyssee-visual-builder #wpbody-content,
+body.appearance_page_odyssee-visual-builder #wpcontent,
+body.appearance_page_odyssee-visual-builder #wpbody-content {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.ovb-studio-app {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    background: #0d111a;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif;
+    font-size: 12.5px;
+    user-select: none;
+}
+
+.ovb-studio-app * {
+    box-sizing: border-box;
+}
+
+/* --- Top Header Bar --- */
+.ovb-topbar {
+    height: 52px;
+    background: #131926;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.ovb-topbar-left,
+.ovb-topbar-center,
+.ovb-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ovb-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    color: #f8fafc;
+    padding-right: 10px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ovb-brand-badge {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    color: #fff;
+    padding: 3px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+}
+
+.ovb-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    text-decoration: none;
+    transition: all 0.18s;
+}
+
+.ovb-back-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.ovb-select-page {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 6px !important;
+    padding: 4px 26px 4px 10px !important;
+    font-size: 12px !important;
+    height: 32px !important;
+    cursor: pointer;
+}
+
+.ovb-btn-group {
+    display: inline-flex;
+    background: #0d111a;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 7px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.ovb-icon-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 5px 9px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+}
+
+.ovb-icon-btn:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.ovb-icon-btn.active {
+    background: #8b5cf6;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.ovb-save-btn {
+    background: linear-gradient(135deg, #8b5cf6, #d946ef);
+    color: #ffffff;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 16px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.ovb-save-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+}
+
+.ovb-save-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+/* --- Main Workspace Split --- */
+.ovb-workspace {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- Left Sidebar Inspector --- */
+.ovb-sidebar {
+    width: 375px;
+    background: #131926;
+    border-right: 1px solid rgba(255, 255, 255, 0.09);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* --- Selected Element Header Banner --- */
+.ovb-selected-banner {
+    padding: 10px 14px;
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.16), rgba(217, 70, 239, 0.08));
+    border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ovb-selected-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.ovb-selected-label {
+    font-weight: 700;
+    color: #f8fafc;
+    font-size: 12.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ovb-selected-selector {
+    font-family: monospace;
+    font-size: 10.5px;
+    color: #a78bfa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ovb-selected-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.ovb-mini-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    border-radius: 5px;
+    padding: 4px 7px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.ovb-mini-btn:hover {
+    background: rgba(139, 92, 246, 0.35);
+    border-color: #8b5cf6;
+}
+
+/* --- State & Theme Scope Sub-bar --- */
+.ovb-context-bar {
+    padding: 7px 12px;
+    background: #0f1420;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.ovb-context-bar label {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+/* --- Main Tabs (Conteúdo | Estilo | Efeitos & Magia | Camadas) --- */
+.ovb-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: #0d111a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    flex-shrink: 0;
+}
+
+.ovb-tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #94a3b8;
+    padding: 10px 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.18s;
+}
+
+.ovb-tab-btn i {
+    font-size: 14px;
+}
+
+.ovb-tab-btn:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ovb-tab-btn.active {
+    color: #c084fc;
+    border-bottom-color: #a855f7;
+    background: rgba(168, 85, 247, 0.08);
+}
+
+/* --- Scrollable Tab Panels --- */
+.ovb-panels {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 40px;
+}
+
+.ovb-panels::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ovb-panels::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 3px;
+}
+
+.ovb-tab-panel {
+    display: none;
+}
+
+.ovb-tab-panel.active {
+    display: block;
+}
+
+/* --- Collapsible Accordion Sections --- */
+.ovb-section {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.ovb-section-header {
+    padding: 11px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 12px;
+    color: #f1f5f9;
+    transition: background 0.15s;
+}
+
+.ovb-section-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.ovb-section-header .ovb-sec-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ovb-section-header .ovb-sec-title i {
+    color: #a855f7;
+    width: 15px;
+    text-align: center;
+}
+
+.ovb-section-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    background: #131926;
+}
+
+.ovb-section.collapsed .ovb-section-body {
+    display: none;
+}
+
+.ovb-section.collapsed .ovb-chevron {
+    transform: rotate(-90deg);
+}
+
+.ovb-chevron {
+    transition: transform 0.2s ease;
+    font-size: 11px;
+    color: #64748b;
+}
+
+/* --- Form Controls --- */
+.ovb-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ovb-field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ovb-label {
+    font-size: 11.5px;
+    color: #cbd5e1;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ovb-input,
+.ovb-select,
+.ovb-textarea {
+    width: 100%;
+    background: #0b0f17 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #f8fafc !important;
+    border-radius: 6px !important;
+    padding: 6px 9px !important;
+    font-size: 12px !important;
+    outline: none !important;
+    transition: border-color 0.15s;
+}
+
+.ovb-input:focus,
+.ovb-select:focus,
+.ovb-textarea:focus {
+    border-color: #a855f7 !important;
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2) !important;
+}
+
+/* Slider + Number Input Combo */
+.ovb-slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ovb-range {
+    flex: 1;
+    accent-color: #a855f7;
+    cursor: pointer;
+    height: 4px;
+}
+
+.ovb-num-input {
+    width: 66px !important;
+    text-align: center;
+    background: #0b0f17 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #f8fafc !important;
+    border-radius: 5px !important;
+    padding: 4px 6px !important;
+    font-size: 11.5px !important;
+}
+
+/* Color Picker Row */
+.ovb-color-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ovb-color-picker {
+    width: 32px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+}
+
+/* 4-Sided Box Model (Margin / Padding) */
+.ovb-box-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+}
+
+.ovb-box-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.ovb-box-cell input {
+    width: 100%;
+    text-align: center;
+    background: #0b0f17 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #f8fafc !important;
+    border-radius: 5px !important;
+    padding: 4px !important;
+    font-size: 11px !important;
+}
+
+.ovb-box-cell span {
+    font-size: 9.5px;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+/* Widget Grid for Inserting Blocks */
+.ovb-widget-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.ovb-widget-card {
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: #cbd5e1;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.18s;
+}
+
+.ovb-widget-card i {
+    font-size: 18px;
+    color: #a855f7;
+}
+
+.ovb-widget-card:hover {
+    border-color: #a855f7;
+    background: rgba(168, 85, 247, 0.1);
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+/* Blend Modes Quick Preset Pills */
+.ovb-preset-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.ovb-pill {
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.ovb-pill:hover,
+.ovb-pill.active {
+    background: #8b5cf6;
+    border-color: #a855f7;
+    color: #fff;
+}
+
+/* Action Buttons inside Sidebar */
+.ovb-action-btn {
+    width: 100%;
+    background: rgba(139, 92, 246, 0.18);
+    border: 1px solid rgba(139, 92, 246, 0.45);
+    color: #e9d5ff;
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+}
+
+.ovb-action-btn:hover {
+    background: #8b5cf6;
+    color: #ffffff;
+}
+
+.ovb-danger-btn {
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.ovb-danger-btn:hover {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+/* Layer Tree Navigator */
+.ovb-tree-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ovb-tree-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 9px;
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11.5px;
+    color: #cbd5e1;
+    transition: all 0.15s;
+}
+
+.ovb-tree-item:hover {
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+
+.ovb-tree-item.is-modified {
+    border-left: 3px solid #a855f7;
+}
+
+.ovb-tree-item.is-block {
+    border-left: 3px solid #10b981;
+}
+
+.ovb-tree-children {
+    padding-left: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 3px;
+}
+
+/* --- Center / Right Preview Canvas --- */
+.ovb-canvas-area {
+    flex: 1;
+    background: #070a10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.ovb-iframe-container {
+    width: 100%;
+    height: 100%;
+    transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s ease;
+    background: #0b0f17;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+    position: relative;
+}
+
+.ovb-iframe-container.device-tablet {
+    width: 768px;
+    height: 92%;
+    border: 8px solid #1e293b;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.ovb-iframe-container.device-mobile {
+    width: 390px;
+    height: 88%;
+    border: 10px solid #1e293b;
+    border-radius: 28px;
+    overflow: hidden;
+}
+
+#ovb-preview-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #0b0f17;
+}
+
+/* Toast Notification */
+#ovb-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 24px;
+    z-index: 2147483647;
+    background: #10b981;
+    color: #ffffff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+}
+
+#ovb-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}

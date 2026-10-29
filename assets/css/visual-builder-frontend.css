@@ -1,0 +1,393 @@
+/* ==========================================================================
+   Odyssee Visual Studio — Frontend Runtime & Animations CSS
+   Non-destructive visual layer for animations, glow, blend modes & blocks
+   ========================================================================== */
+
+/* --- Keyframe Animations: Entrance --- */
+@keyframes ovbFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes ovbFadeInUp {
+    from { opacity: 0; transform: translate3d(0, 42px, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes ovbFadeInDown {
+    from { opacity: 0; transform: translate3d(0, -42px, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes ovbFadeInLeft {
+    from { opacity: 0; transform: translate3d(-48px, 0, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes ovbFadeInRight {
+    from { opacity: 0; transform: translate3d(48px, 0, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes ovbZoomIn {
+    from { opacity: 0; transform: scale3d(0.78, 0.78, 0.78); }
+    to { opacity: 1; transform: scale3d(1, 1, 1); }
+}
+
+@keyframes ovbZoomOut {
+    from { opacity: 0; transform: scale3d(1.22, 1.22, 1.22); }
+    to { opacity: 1; transform: scale3d(1, 1, 1); }
+}
+
+@keyframes ovbBlurIn {
+    0% { opacity: 0; filter: blur(18px); transform: translateY(18px) scale(0.96); }
+    100% { opacity: 1; filter: blur(0px); transform: translateY(0) scale(1); }
+}
+
+@keyframes ovbFlipX {
+    from { opacity: 0; transform: perspective(800px) rotateX(65deg); }
+    to { opacity: 1; transform: perspective(800px) rotateX(0deg); }
+}
+
+@keyframes ovbFlipY {
+    from { opacity: 0; transform: perspective(800px) rotateY(65deg); }
+    to { opacity: 1; transform: perspective(800px) rotateY(0deg); }
+}
+
+@keyframes ovbBounceIn {
+    0% { opacity: 0; transform: scale3d(0.3, 0.3, 0.3); }
+    40% { opacity: 1; transform: scale3d(1.08, 1.08, 1.08); }
+    65% { transform: scale3d(0.95, 0.95, 0.95); }
+    82% { transform: scale3d(1.03, 1.03, 1.03); }
+    100% { opacity: 1; transform: scale3d(1, 1, 1); }
+}
+
+@keyframes ovbElasticPop {
+    0% { opacity: 0; transform: scale(0.5) translateY(30px); }
+    60% { opacity: 1; transform: scale(1.06) translateY(-6px); }
+    80% { transform: scale(0.98) translateY(2px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes ovbSlideUpReveal {
+    0% { opacity: 0; transform: translateY(60px) skewY(3deg); }
+    100% { opacity: 1; transform: translateY(0) skewY(0deg); }
+}
+
+@keyframes ovbGlitchIn {
+    0% { opacity: 0; transform: translate(-10px, 4px) skewX(12deg); filter: hue-rotate(90deg); }
+    25% { opacity: 0.7; transform: translate(8px, -4px) skewX(-10deg); }
+    50% { opacity: 0.9; transform: translate(-5px, 2px) skewX(6deg); filter: hue-rotate(-45deg); }
+    75% { transform: translate(3px, -1px) skewX(-2deg); }
+    100% { opacity: 1; transform: translate(0, 0) skewX(0deg); filter: hue-rotate(0deg); }
+}
+
+/* --- Keyframe Animations: Continuous Loop --- */
+@keyframes ovbLoopFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(calc(-1 * var(--ovb-loop-amp, 12px))); }
+}
+
+@keyframes ovbLoopPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(var(--ovb-loop-scale, 1.06)); }
+}
+
+@keyframes ovbLoopBreathe {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(var(--ovb-loop-scale, 1.035)); opacity: 0.86; }
+}
+
+@keyframes ovbLoopLevitate {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    33% { transform: translateY(calc(-0.8 * var(--ovb-loop-amp, 12px))) rotate(1.5deg); }
+    66% { transform: translateY(calc(-0.4 * var(--ovb-loop-amp, 12px))) rotate(-1.5deg); }
+}
+
+@keyframes ovbLoopSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes ovbLoopSwing {
+    0%, 100% { transform: rotate(-4deg); }
+    50% { transform: rotate(4deg); }
+}
+
+@keyframes ovbLoopJitter {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    20% { transform: translate(-2px, 1px) rotate(-0.8deg); }
+    40% { transform: translate(2px, -2px) rotate(0.8deg); }
+    60% { transform: translate(-2px, -1px) rotate(-0.5deg); }
+    80% { transform: translate(1px, 2px) rotate(0.5deg); }
+}
+
+/* --- Keyframe Animations: Glow Effects --- */
+@keyframes ovbGlowPulse {
+    0%, 100% {
+        filter: var(--ovb-base-filter, none) drop-shadow(0 0 var(--ovb-glow-blur, 20px) var(--ovb-glow-color, #8b5cf6));
+    }
+    50% {
+        filter: var(--ovb-base-filter, none) drop-shadow(0 0 calc(var(--ovb-glow-blur, 20px) * 1.65) var(--ovb-glow-color, #8b5cf6)) drop-shadow(0 0 calc(var(--ovb-glow-blur, 20px) * 0.6) var(--ovb-glow-color-2, #d946ef));
+    }
+}
+
+@keyframes ovbBoxGlowPulse {
+    0%, 100% {
+        box-shadow: 0 0 var(--ovb-glow-blur, 20px) var(--ovb-glow-spread, 0px) var(--ovb-glow-color, rgba(139, 92, 246, 0.7));
+    }
+    50% {
+        box-shadow: 0 0 calc(var(--ovb-glow-blur, 20px) * 1.7) calc(var(--ovb-glow-spread, 0px) + 4px) var(--ovb-glow-color, rgba(139, 92, 246, 0.95)), 0 0 calc(var(--ovb-glow-blur, 20px) * 2.4) var(--ovb-glow-color-2, rgba(217, 70, 239, 0.55));
+    }
+}
+
+@keyframes ovbGlowFlicker {
+    0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+    20%, 24%, 55% { opacity: 0.65; }
+}
+
+/* --- Entrance Animation Helper Classes --- */
+.ovb-anim-Wait {
+    opacity: 0 !important;
+}
+
+.ovb-anim-Triggered {
+    animation-fill-mode: both;
+}
+
+/* --- Hover Effect Classes --- */
+.ovb-hover-lift {
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.32s ease, filter 0.32s ease !important;
+}
+.ovb-hover-lift:hover {
+    transform: translateY(-8px) !important;
+}
+
+.ovb-hover-grow {
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), filter 0.32s ease !important;
+}
+.ovb-hover-grow:hover {
+    transform: scale(1.07) !important;
+}
+
+.ovb-hover-shrink {
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+.ovb-hover-shrink:hover {
+    transform: scale(0.94) !important;
+}
+
+.ovb-hover-tilt {
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+.ovb-hover-tilt:hover {
+    transform: rotate(3deg) scale(1.04) !important;
+}
+
+.ovb-hover-glow-boost {
+    transition: filter 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease !important;
+}
+.ovb-hover-glow-boost:hover {
+    filter: brightness(1.18) drop-shadow(0 0 24px var(--ovb-glow-color, var(--color-accent, #8b5cf6))) !important;
+}
+
+/* --- Layer Overlay Child Element --- */
+.ovb-layer-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    pointer-events: none !important;
+    border-radius: inherit !important;
+    z-index: 2 !important;
+}
+
+/* --- Custom Inserted Widgets / Blocks --- */
+.ovb-custom-block {
+    position: relative;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.ovb-block-heading {
+    font-family: var(--font-ubuntu, sans-serif);
+    color: var(--color-title);
+    margin: 1rem auto;
+    text-align: center;
+    font-weight: 700;
+}
+
+.ovb-block-text {
+    font-family: var(--font-ubuntu, sans-serif);
+    color: var(--color-subtitle);
+    line-height: 1.65;
+    max-width: 780px;
+    margin: 0.75rem auto;
+    text-align: center;
+}
+
+.ovb-block-button-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 1.25rem auto;
+}
+
+.ovb-block-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.85rem;
+    border-radius: 999px;
+    background: var(--color-accent, #8b5cf6);
+    color: #ffffff;
+    font-family: var(--font-ubuntu, sans-serif);
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 25px var(--color-accent-glow, rgba(139, 92, 246, 0.35));
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+    cursor: pointer;
+}
+
+.ovb-block-button:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 32px var(--color-accent-glow, rgba(139, 92, 246, 0.55));
+}
+
+.ovb-block-card {
+    background: var(--bg-card, rgba(19, 25, 38, 0.8));
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+    border-radius: 18px;
+    padding: 2rem;
+    max-width: 520px;
+    margin: 1.5rem auto;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    text-align: center;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+}
+
+.ovb-block-card-icon {
+    font-size: 2.2rem;
+    color: var(--color-accent, #8b5cf6);
+    margin-bottom: 0.85rem;
+}
+
+.ovb-block-card-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--color-title);
+    margin: 0 0 0.5rem 0;
+}
+
+.ovb-block-card-desc {
+    font-size: 0.96rem;
+    color: var(--color-subtitle);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.ovb-block-image-wrap {
+    text-align: center;
+    margin: 1.5rem auto;
+    max-width: 900px;
+}
+
+.ovb-block-image-wrap img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 14px;
+    display: inline-block;
+}
+
+.ovb-block-glow-orb {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.65) 0%, rgba(217, 70, 239, 0.25) 45%, transparent 72%);
+    filter: blur(36px);
+    mix-blend-mode: plus-lighter;
+    pointer-events: auto;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.ovb-block-divider {
+    height: 2px;
+    max-width: 420px;
+    margin: 2rem auto;
+    background: linear-gradient(90deg, transparent, var(--color-accent, #8b5cf6), transparent);
+    border: 0;
+    opacity: 0.7;
+}
+
+/* ==========================================================================
+   Editor Preview Mode Overlay (Only active when ?odyssee_vb_preview=1)
+   ========================================================================== */
+body.ovb-editor-active {
+    user-select: none;
+}
+
+body.ovb-editor-active [data-ovb-hover="true"] {
+    outline: 2px dashed #38bdf8 !important;
+    outline-offset: 2px !important;
+    cursor: pointer !important;
+}
+
+body.ovb-editor-active [data-ovb-selected="true"] {
+    outline: 2px solid #a855f7 !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.22) !important;
+}
+
+#ovb-Floating-Badge {
+    position: fixed;
+    z-index: 2147483646;
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    pointer-events: auto;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+}
+
+#ovb-Floating-Badge .ovb-badge-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: background 0.15s;
+}
+
+#ovb-Floating-Badge .ovb-badge-btn:hover {
+    background: rgba(255, 255, 255, 0.38);
+}
+
+#ovb-Hover-Badge {
+    position: fixed;
+    z-index: 2147483645;
+    background: #0284c7;
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    display: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
