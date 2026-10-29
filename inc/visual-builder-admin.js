@@ -1283,7 +1283,7 @@
             $(this).toggleClass('active');
             const showGrid = $(this).hasClass('active');
             postToPreview({ type: 'OVB_TOGGLE_GRID', show: showGrid });
-            showToast(showGrid ? '📐 Grade de Alinhamento Figma ativada!' : 'Grade de Alinhamento ocultada');
+            showToast(showGrid ? '📐 Grade de Alinhamento ativada!' : 'Grade de Alinhamento ocultada');
         });
 
         // Interactive Mode Toggle (Navigate vs Select/Drag)

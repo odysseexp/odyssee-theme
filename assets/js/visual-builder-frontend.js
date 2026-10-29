@@ -1827,7 +1827,7 @@
             <div class="ovb-resize-handle ovb-rh-s"  data-rh="s"  title="Redimensionar Altura"></div>
             <div class="ovb-resize-handle ovb-rh-sw" data-rh="sw" title="Redimensionar Tamanho Proporcional (Escala)"></div>
             <div class="ovb-resize-handle ovb-rh-w"  data-rh="w"  title="Redimensionar Largura"></div>
-            <div class="ovb-radius-handle" title="Arraste para arredondar cantos (Corner Radius estilo Figma/Illustrator)"></div>
+            <div class="ovb-radius-handle" title="Arraste para arredondar os cantos do elemento"></div>
         `;
         document.body.appendChild(selBox);
 
