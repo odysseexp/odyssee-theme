@@ -65,7 +65,9 @@
             colorPalettes: Array.isArray(d.colorPalettes) ? d.colorPalettes : [],
             activeGlobalPalette: typeof d.activeGlobalPalette === 'string' ? d.activeGlobalPalette : '',
             pagePalettes: d.pagePalettes && typeof d.pagePalettes === 'object' && !Array.isArray(d.pagePalettes) ? d.pagePalettes : {},
-            allowVisitorColorSwitch: d.allowVisitorColorSwitch !== undefined ? !!d.allowVisitorColorSwitch : true
+            allowVisitorColorSwitch: d.allowVisitorColorSwitch !== undefined ? !!d.allowVisitorColorSwitch : true,
+            uiStyleColors: d.uiStyleColors && typeof d.uiStyleColors === 'object' && !Array.isArray(d.uiStyleColors) ? d.uiStyleColors : {},
+            shortcuts: d.shortcuts && typeof d.shortcuts === 'object' && !Array.isArray(d.shortcuts) ? d.shortcuts : {}
         };
     }
 
@@ -186,6 +188,14 @@
             bannerLabel.text('Nenhum elemento selecionado');
             bannerSel.text('Clique ou arraste qualquer item do site ao lado →');
             syncUiStyleCardsSelection();
+            syncUiStyleColorsFields();
+            if (!$('#ovb-text-quick-pt').is(':focus')) $('#ovb-text-quick-pt').val('');
+            if (!$('#ovb-text-quick-en').is(':focus')) $('#ovb-text-quick-en').val('');
+            $('.ovb-text-toggle').removeClass('active');
+            $('.ovb-text-align').removeClass('active');
+            if ($('#ovb-color-manager').is(':visible')) {
+                populateColorManagerTargets();
+            }
             return;
         }
 
@@ -408,6 +418,64 @@
         // Highlight selected row in Photoshop Layers panel
         $('.ovb-ps-layer-row').removeClass('is-selected');
         $(`.ovb-ps-layer-row[data-sel="${CSS.escape(currentSelector)}"]`).addClass('is-selected');
+
+        // Sincroniza Aba de Texto (#tab-text)
+        if (!$('#ovb-text-quick-pt').is(':focus')) {
+            $('#ovb-text-quick-pt').val(content.text !== undefined ? content.text : ((currentSnapshot && currentSnapshot.text) || ''));
+        }
+        if (!$('#ovb-text-quick-en').is(':focus')) {
+            $('#ovb-text-quick-en').val(content.textEn || '');
+        }
+
+        // Fonte (Família)
+        const curFont = st.fontFamily || comp.fontFamily || '';
+        const fontSelect = $('#ovb-text-font-select');
+        let matchedFont = false;
+        if (curFont) {
+            fontSelect.find('option').each(function () {
+                const optVal = $(this).val();
+                if (optVal && curFont.toLowerCase().includes(optVal.toLowerCase().replace(/['"]/g, ''))) {
+                    fontSelect.val(optVal);
+                    matchedFont = true;
+                    return false;
+                }
+            });
+        }
+        if (!matchedFont) {
+            fontSelect.val('');
+            if (!$('#ovb-text-font-custom').is(':focus')) {
+                $('#ovb-text-font-custom').val(curFont);
+            }
+        } else {
+            if (!$('#ovb-text-font-custom').is(':focus')) {
+                $('#ovb-text-font-custom').val('');
+            }
+        }
+
+        // Toggles de Estilo de Texto (Bold, Italic, Underline, Strike)
+        const isBold = ['bold', '700', '800', '900'].includes(String(st.fontWeight || comp.fontWeight || '').toLowerCase());
+        const isItalic = String(st.fontStyle || comp.fontStyle || '').toLowerCase() === 'italic';
+        const textDec = String(st.textDecoration || comp.textDecoration || '').toLowerCase();
+        const isUnderline = textDec.includes('underline');
+        const isStrike = textDec.includes('line-through');
+
+        $('.ovb-text-toggle[data-text-toggle="bold"]').toggleClass('active', isBold);
+        $('.ovb-text-toggle[data-text-toggle="italic"]').toggleClass('active', isItalic);
+        $('.ovb-text-toggle[data-text-toggle="underline"]').toggleClass('active', isUnderline);
+        $('.ovb-text-toggle[data-text-toggle="line-through"]').toggleClass('active', isStrike);
+
+        // Alinhamento de Texto (Left, Center, Right, Justify)
+        const textAlign = String(st.textAlign || comp.textAlign || 'left').toLowerCase();
+        $('.ovb-text-align').removeClass('active');
+        $(`.ovb-text-align[data-text-align="${textAlign}"]`).addClass('active');
+
+        // Sincroniza campos da seção de Cores do Estilo UI
+        syncUiStyleColorsFields();
+
+        // Se o Gerenciador de Cores estiver aberto, atualiza a lista de alvos
+        if ($('#ovb-color-manager').is(':visible')) {
+            populateColorManagerTargets();
+        }
     }
 
     /**
@@ -921,13 +989,17 @@
                 showToast('↖ Seleção Direta / Nível Pai (A)');
                 break;
             case 'tool-text':
-                $('.ovb-tab-btn[data-tab="tab-content"]').trigger('click');
+                $('.ovb-tab-btn[data-tab="tab-text"]').trigger('click');
                 if (currentSelector) {
-                    $('#ovb-content-text').focus();
-                    showToast('🔤 Editando texto do elemento (T)');
+                    $('#ovb-text-quick-pt').focus();
+                    showToast('🔤 Aba de Texto aberta (T)');
                 } else {
                     insertNewBlock('heading');
                 }
+                break;
+            case 'open-color-manager':
+            case 'color-manager':
+                openColorManager();
                 break;
             case 'tool-rect':
                 insertNewBlock('shape-square');
@@ -1140,11 +1212,290 @@
         updateCompiledCodeDisplay();
     }
 
+    function syncUiStyleColorsFields() {
+        const style = $('#ovb-uisc-style').val() || state.uiStyle || 'odysseexp';
+        const saved = (state.uiStyleColors && state.uiStyleColors[style]) || {};
+        const palette = (window.ODYSSEE_VB_STYLE_COLORS && window.ODYSSEE_VB_STYLE_COLORS.PALETTES && window.ODYSSEE_VB_STYLE_COLORS.PALETTES[style]) || null;
+
+        $('.ovb-uisc-color').each(function () {
+            const path = $(this).attr('data-uisc');
+            if (!path) return;
+            const parts = path.split('.');
+            let val = '';
+            if (parts.length === 1) {
+                val = saved[parts[0]] || (palette && palette[parts[0]]) || '';
+            } else if (parts.length === 2) {
+                val = (saved[parts[0]] && saved[parts[0]][parts[1]]) || (palette && palette[parts[0]] && palette[parts[0]][parts[1]]) || '';
+            }
+            if (val) {
+                $(this).val(rgbToHex(val));
+                const textInput = $(this).closest('.ovb-color-wrap').find('.ovb-uisc-text');
+                if (!textInput.is(':focus')) {
+                    textInput.val(val);
+                }
+            } else {
+                const textInput = $(this).closest('.ovb-color-wrap').find('.ovb-uisc-text');
+                if (!textInput.is(':focus')) {
+                    textInput.val('');
+                }
+            }
+        });
+    }
+
+    let cmPicker = null;
+
+    function initColorManager() {
+        const panel = $('#ovb-color-manager');
+        if (!panel.length || cmPicker) return;
+
+        if (window.OVBColorPicker && typeof window.OVBColorPicker.create === 'function') {
+            cmPicker = window.OVBColorPicker.create($('#ovb-cm-picker-host'), {
+                onChange: function (hex, alpha, css) {
+                    applyColorManagerValue(css, hex, alpha);
+                }
+            });
+        }
+
+        // Draggable
+        let drag = null;
+        panel.on('pointerdown', '.ovb-cm-head', function (e) {
+            if ($(e.target).closest('.ovb-cm-close').length) return;
+            const r = panel[0].getBoundingClientRect();
+            drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+            this.setPointerCapture(e.originalEvent.pointerId);
+        }).on('pointermove', '.ovb-cm-head', function (e) {
+            if (!drag) return;
+            const left = Math.max(8, Math.min(window.innerWidth - 60, e.clientX - drag.dx));
+            const top = Math.max(8, Math.min(window.innerHeight - 40, e.clientY - drag.dy));
+            panel.css({ left: left, top: top, right: 'auto', bottom: 'auto' });
+        }).on('pointerup pointercancel', '.ovb-cm-head', function () { drag = null; });
+
+        panel.on('click', '.ovb-cm-close', function () {
+            panel.hide();
+            if (cmPicker) cmPicker.commit();
+        });
+
+        $('#ovb-cm-target').on('change', function () {
+            readColorManagerTargetValue();
+        });
+
+        $('#ovb-cm-clear').on('click', function () {
+            clearColorManagerTargetValue();
+        });
+
+        $(document).on('click', '.ovb-open-color-manager', function (e) {
+            e.preventDefault();
+            openColorManager();
+        });
+    }
+
+    function openColorManager(preferredTarget) {
+        initColorManager();
+        populateColorManagerTargets(preferredTarget);
+        $('#ovb-color-manager').show();
+        readColorManagerTargetValue();
+    }
+
+    function populateColorManagerTargets(preferredTarget) {
+        const select = $('#ovb-cm-target');
+        const prevVal = preferredTarget || select.val();
+        select.empty();
+
+        // 1. Elemento Selecionado
+        if (currentSelector) {
+            const shortLabel = (currentSnapshot && currentSnapshot.label) || currentSelector;
+            const grpEl = $('<optgroup></optgroup>').attr('label', `Elemento Selecionado (${shortLabel})`);
+            grpEl.append(new Option('Cor do Texto (color)', 'el:color'));
+            grpEl.append(new Option('Cor de Fundo (background-color)', 'el:backgroundColor'));
+            grpEl.append(new Option('Borda (border-color)', 'el:borderColor'));
+            select.append(grpEl);
+        }
+
+        // 2. Estilo UI Ativo
+        const activeStyle = state.uiStyle || 'odysseexp';
+        const grpStyle = $('<optgroup></optgroup>').attr('label', `Estilo UI Ativo (${activeStyle}) — Preserva Detalhes`);
+        grpStyle.append(new Option(`Destaque do Estilo (${activeStyle})`, `uisc:${activeStyle}:accent`));
+        grpStyle.append(new Option(`Fundo Escuro (${activeStyle})`, `uisc:${activeStyle}:dark.page`));
+        grpStyle.append(new Option(`Cartões Escuros (${activeStyle})`, `uisc:${activeStyle}:dark.surface`));
+        grpStyle.append(new Option(`Fundo Claro (${activeStyle})`, `uisc:${activeStyle}:light.page`));
+        grpStyle.append(new Option(`Cartões Claros (${activeStyle})`, `uisc:${activeStyle}:light.surface`));
+        select.append(grpStyle);
+
+        // 3. Outros Estilos UI Disponíveis
+        const allStyles = [
+            ['odysseexp', 'OdysseeXP'],
+            ['frutiger-aero', 'Frutiger Aero (Vidro/Água/Gloss)'],
+            ['gtk4', 'GTK4 Libadwaita'],
+            ['breeze', 'KDE Breeze'],
+            ['mactahoe', 'MacTahoe Liquid Glass'],
+            ['material', 'Material Design'],
+            ['material-3-expressive', 'Material 3 Expressive']
+        ];
+        const grpOtherStyles = $('<optgroup label="Outros Estilos UI (Recolor)"></optgroup>');
+        allStyles.forEach(([sId, sLabel]) => {
+            if (sId !== activeStyle) {
+                grpOtherStyles.append(new Option(`Destaque — ${sLabel}`, `uisc:${sId}:accent`));
+            }
+        });
+        select.append(grpOtherStyles);
+
+        // 4. Variáveis Globais do Tema
+        const grpVars = $('<optgroup label="Variáveis Globais do Tema"></optgroup>');
+        grpVars.append(new Option('Acento Principal (--accent-color)', 'var:--accent-color:all'));
+        grpVars.append(new Option('Acento Hover (--accent-hover)', 'var:--accent-hover:all'));
+        grpVars.append(new Option('Glow / Brilho (--accent-glow)', 'var:--accent-glow:all'));
+        grpVars.append(new Option('Fundo Escuro (--bg-dark)', 'var:--bg-dark:dark'));
+        grpVars.append(new Option('Cartões Escuros (--card-bg-dark)', 'var:--card-bg-dark:dark'));
+        grpVars.append(new Option('Texto Escuro (--text-dark)', 'var:--text-dark:dark'));
+        grpVars.append(new Option('Fundo Claro (--bg-light)', 'var:--bg-light:light'));
+        grpVars.append(new Option('Cartões Claros (--card-bg-light)', 'var:--card-bg-light:light'));
+        grpVars.append(new Option('Texto Claro (--text-light)', 'var:--text-light:light'));
+        select.append(grpVars);
+
+        if (prevVal && select.find(`option[value="${prevVal}"]`).length) {
+            select.val(prevVal);
+        } else if (currentSelector) {
+            select.val('el:color');
+        } else {
+            select.val(`uisc:${activeStyle}:accent`);
+        }
+    }
+
+    function readColorManagerTargetValue() {
+        if (!cmPicker) return;
+        const target = $('#ovb-cm-target').val();
+        if (!target) return;
+
+        let currentVal = '';
+        let hint = '';
+
+        if (target.startsWith('el:')) {
+            const prop = target.slice(3);
+            const rec = currentSelector ? (state.elements[currentSelector] || {}) : {};
+            const st = (rec.styles && rec.styles[currentBucket]) || {};
+            const comp = (currentSnapshot && currentSnapshot.computed) || {};
+            currentVal = st[prop] || comp[prop] || '';
+            hint = `Editando <strong>${prop}</strong> do elemento selecionado (dispositivo: ${BUCKET_LABELS[currentBucket] || currentBucket}).`;
+        } else if (target.startsWith('uisc:')) {
+            const [, style, key] = target.split(':');
+            const saved = (state.uiStyleColors && state.uiStyleColors[style]) || {};
+            const palette = (window.ODYSSEE_VB_STYLE_COLORS && window.ODYSSEE_VB_STYLE_COLORS.PALETTES && window.ODYSSEE_VB_STYLE_COLORS.PALETTES[style]) || null;
+            const parts = key.split('.');
+            if (parts.length === 1) {
+                currentVal = saved[parts[0]] || (palette && palette[parts[0]]) || '';
+            } else if (parts.length === 2) {
+                currentVal = (saved[parts[0]] && saved[parts[0]][parts[1]]) || (palette && palette[parts[0]] && palette[parts[0]][parts[1]]) || '';
+            }
+            hint = `Recolor inteligente do estilo <strong>${style}</strong>: preserva chanfros, sombras e materiais aero/glass intactos.`;
+        } else if (target.startsWith('var:')) {
+            const [, varName, scope] = target.split(':');
+            const gv = state.globalVars || {};
+            currentVal = (gv[scope] && gv[scope][varName]) || '';
+            hint = `Variável CSS <code>${varName}</code> aplicada globalmente no tema (${scope}).`;
+        }
+
+        $('#ovb-cm-current-val').text(currentVal || 'Padrão do tema');
+        $('#ovb-cm-hint').html(hint);
+
+        cmPicker.setOnChange(null);
+        if (currentVal) {
+            cmPicker.setColor(currentVal);
+            cmPicker.setOriginal(currentVal);
+        } else {
+            cmPicker.setColor('#8b5cf6');
+            cmPicker.setOriginal('#8b5cf6');
+        }
+        cmPicker.setOnChange(function (hex, alpha, css) {
+            applyColorManagerValue(css, hex, alpha);
+        });
+    }
+
+    function applyColorManagerValue(css, hex, alpha) {
+        const target = $('#ovb-cm-target').val();
+        if (!target) return;
+        $('#ovb-cm-current-val').text(css);
+
+        if (target.startsWith('el:')) {
+            if (!currentSelector) return;
+            const prop = target.slice(3);
+            const rec = ensureElementRecord(currentSelector);
+            if (!rec.styles) rec.styles = {};
+            if (!rec.styles[currentBucket]) rec.styles[currentBucket] = {};
+            rec.styles[currentBucket][prop] = css;
+            $(`[data-ovb-prop="${prop}"]`).val(hex);
+            $(`input[type="text"][data-ovb-prop="${prop}"]`).val(css);
+            syncPreview();
+        } else if (target.startsWith('uisc:')) {
+            const [, style, key] = target.split(':');
+            if (!state.uiStyleColors) state.uiStyleColors = {};
+            if (!state.uiStyleColors[style]) state.uiStyleColors[style] = {};
+            const parts = key.split('.');
+            if (parts.length === 1) {
+                state.uiStyleColors[style][parts[0]] = css;
+            } else if (parts.length === 2) {
+                if (!state.uiStyleColors[style][parts[0]]) state.uiStyleColors[style][parts[0]] = {};
+                state.uiStyleColors[style][parts[0]][parts[1]] = css;
+            }
+            syncUiStyleColorsFields();
+            syncPreview();
+        } else if (target.startsWith('var:')) {
+            const [, varName, scope] = target.split(':');
+            if (!state.globalVars) state.globalVars = { all: {}, dark: {}, light: {} };
+            if (!state.globalVars[scope]) state.globalVars[scope] = {};
+            state.globalVars[scope][varName] = css;
+            $(`[data-ovb-gvar="${varName}"][data-ovb-gscope="${scope}"]`).val(hex);
+            syncPreview();
+        }
+    }
+
+    function clearColorManagerTargetValue() {
+        const target = $('#ovb-cm-target').val();
+        if (!target) return;
+
+        if (target.startsWith('el:')) {
+            if (!currentSelector) return;
+            const prop = target.slice(3);
+            const rec = state.elements[currentSelector];
+            if (rec && rec.styles && rec.styles[currentBucket]) {
+                delete rec.styles[currentBucket][prop];
+                $(`[data-ovb-prop="${prop}"]`).val('');
+                $(`input[type="text"][data-ovb-prop="${prop}"]`).val('');
+                pushHistory();
+                syncPreview();
+            }
+        } else if (target.startsWith('uisc:')) {
+            const [, style, key] = target.split(':');
+            if (state.uiStyleColors && state.uiStyleColors[style]) {
+                const parts = key.split('.');
+                if (parts.length === 1) {
+                    delete state.uiStyleColors[style][parts[0]];
+                } else if (parts.length === 2 && state.uiStyleColors[style][parts[0]]) {
+                    delete state.uiStyleColors[style][parts[0]][parts[1]];
+                }
+                syncUiStyleColorsFields();
+                pushHistory();
+                syncPreview();
+            }
+        } else if (target.startsWith('var:')) {
+            const [, varName, scope] = target.split(':');
+            if (state.globalVars && state.globalVars[scope]) {
+                delete state.globalVars[scope][varName];
+                $(`[data-ovb-gvar="${varName}"][data-ovb-gscope="${scope}"]`).val('');
+                pushHistory();
+                syncPreview();
+            }
+        }
+        readColorManagerTargetValue();
+        showToast('Cor restaurada para o padrão');
+    }
+
     $(document).ready(function () {
         renderPresetsCatalogCards();
         populateGlobalVariables();
         renderModifiedElementsList();
         updateUndoRedoButtons();
+        initColorManager();
+        syncUiStyleColorsFields();
 
         // Ensure Rock-Solid Handshake with Preview Iframe on Load
         $('#ovb-preview-iframe').on('load', function () {
@@ -1794,6 +2145,157 @@
             rec.content.textEn = $(this).val();
             syncPreview();
         });
+
+        // ==========================================
+        // ABA TEXTO: QUICK EDIT, FONTES, FORMATOS & ALINHAMENTO
+        // ==========================================
+        $('#ovb-text-quick-pt').on('input', function () {
+            if (!currentSelector) return;
+            const val = $(this).val();
+            const rec = ensureElementRecord(currentSelector);
+            rec.content.text = val;
+            $('#ovb-content-text').val(val);
+            syncPreview();
+        }).on('change blur', function () {
+            pushHistory();
+        });
+
+        $('#ovb-text-quick-en').on('input', function () {
+            if (!currentSelector) return;
+            const val = $(this).val();
+            const rec = ensureElementRecord(currentSelector);
+            rec.content.textEn = val;
+            $('#ovb-content-text-en').val(val);
+            syncPreview();
+        }).on('change blur', function () {
+            pushHistory();
+        });
+
+        $('#ovb-text-font-select').on('change', function () {
+            if (!currentSelector) return;
+            const val = $(this).val();
+            $('#ovb-text-font-custom').val('');
+            const rec = ensureElementRecord(currentSelector);
+            if (val) {
+                rec.styles[currentBucket].fontFamily = val;
+            } else {
+                delete rec.styles[currentBucket].fontFamily;
+            }
+            pushHistory();
+            syncPreview();
+        });
+
+        $('#ovb-text-font-custom').on('input change', function () {
+            if (!currentSelector) return;
+            const val = $(this).val().trim();
+            $('#ovb-text-font-select').val('');
+            const rec = ensureElementRecord(currentSelector);
+            if (val) {
+                rec.styles[currentBucket].fontFamily = val;
+            } else {
+                delete rec.styles[currentBucket].fontFamily;
+            }
+            syncPreview();
+        }).on('blur', function () {
+            pushHistory();
+        });
+
+        $(document).on('click', '.ovb-text-toggle', function () {
+            if (!currentSelector) return;
+            const toggle = $(this).attr('data-text-toggle');
+            const rec = ensureElementRecord(currentSelector);
+            const st = rec.styles[currentBucket];
+
+            if (toggle === 'bold') {
+                const isB = ['bold', '700', '800', '900'].includes(String(st.fontWeight || '').toLowerCase());
+                st.fontWeight = isB ? 'normal' : '700';
+                $('[data-ovb-prop="fontWeight"]').val(st.fontWeight);
+            } else if (toggle === 'italic') {
+                st.fontStyle = (st.fontStyle === 'italic') ? 'normal' : 'italic';
+            } else if (toggle === 'underline') {
+                let decs = (st.textDecoration || '').split(/\s+/).filter(Boolean);
+                if (decs.includes('underline')) {
+                    decs = decs.filter(d => d !== 'underline');
+                } else {
+                    decs.push('underline');
+                }
+                st.textDecoration = decs.join(' ') || 'none';
+            } else if (toggle === 'line-through') {
+                let decs = (st.textDecoration || '').split(/\s+/).filter(Boolean);
+                if (decs.includes('line-through')) {
+                    decs = decs.filter(d => d !== 'line-through');
+                } else {
+                    decs.push('line-through');
+                }
+                st.textDecoration = decs.join(' ') || 'none';
+            }
+            populateSidebarFromSelection();
+            pushHistory();
+            syncPreview();
+        });
+
+        $(document).on('click', '.ovb-text-align', function () {
+            if (!currentSelector) return;
+            const align = $(this).attr('data-text-align');
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].textAlign = align;
+            $('.ovb-text-align').removeClass('active');
+            $(this).addClass('active');
+            pushHistory();
+            syncPreview();
+        });
+
+        // ==========================================
+        // CORES DO ESTILO UI (RECOLOR PRESERVANDO DESIGN SYSTEM)
+        // ==========================================
+        $('#ovb-uisc-style').on('change', function () {
+            syncUiStyleColorsFields();
+        });
+
+        $(document).on('input change', '.ovb-uisc-color, .ovb-uisc-text', function () {
+            const style = $('#ovb-uisc-style').val() || state.uiStyle || 'odysseexp';
+            const path = $(this).attr('data-uisc');
+            if (!path) return;
+            const val = $(this).val().trim();
+            if (!state.uiStyleColors) state.uiStyleColors = {};
+            if (!state.uiStyleColors[style]) state.uiStyleColors[style] = {};
+
+            const parts = path.split('.');
+            if (parts.length === 1) {
+                if (val) state.uiStyleColors[style][parts[0]] = val;
+                else delete state.uiStyleColors[style][parts[0]];
+            } else if (parts.length === 2) {
+                if (!state.uiStyleColors[style][parts[0]]) state.uiStyleColors[style][parts[0]] = {};
+                if (val) state.uiStyleColors[style][parts[0]][parts[1]] = val;
+                else delete state.uiStyleColors[style][parts[0]][parts[1]];
+            }
+
+            // Se alterou no text input, atualiza o color picker irmão
+            const $wrap = $(this).closest('.ovb-color-wrap');
+            if ($(this).hasClass('ovb-uisc-text')) {
+                const parsed = window.OVBColorPicker ? window.OVBColorPicker.parseColor(val) : null;
+                const hex = parsed ? window.OVBColorPicker.toHex(parsed.rgb) : val;
+                $wrap.find('.ovb-uisc-color').val(hex);
+            } else {
+                $wrap.find('.ovb-uisc-text').val(val);
+            }
+
+            syncPreview();
+        }).on('change', function () {
+            pushHistory();
+        });
+
+        $('#ovb-uisc-reset').on('click', function () {
+            const style = $('#ovb-uisc-style').val() || state.uiStyle || 'odysseexp';
+            if (state.uiStyleColors && state.uiStyleColors[style]) {
+                delete state.uiStyleColors[style];
+                syncUiStyleColorsFields();
+                pushHistory();
+                syncPreview();
+                showToast(`Cores originais do estilo '${style}' restauradas`);
+            }
+        });
+
 
         $('#ovb-content-src').on('input change', function () {
             if (!currentSelector) return;
@@ -3480,6 +3982,12 @@
             if (e.key === 'Escape') {
                 e.preventDefault();
                 executeShortcutCommand('deselect');
+                return;
+            }
+
+            if (e.altKey && (key === 'c')) {
+                e.preventDefault();
+                executeShortcutCommand('open-color-manager');
                 return;
             }
 

@@ -96,7 +96,9 @@
             colorPalettes: normalizePalettesList(d.colorPalettes),
             activeGlobalPalette: typeof d.activeGlobalPalette === 'string' && d.activeGlobalPalette ? d.activeGlobalPalette : 'purple',
             pagePalettes: d.pagePalettes && typeof d.pagePalettes === 'object' && !Array.isArray(d.pagePalettes) ? d.pagePalettes : {},
-            allowVisitorColorSwitch: d.allowVisitorColorSwitch !== undefined ? !!d.allowVisitorColorSwitch : true
+            allowVisitorColorSwitch: d.allowVisitorColorSwitch !== undefined ? !!d.allowVisitorColorSwitch : true,
+            uiStyleColors: d.uiStyleColors && typeof d.uiStyleColors === 'object' && !Array.isArray(d.uiStyleColors) ? d.uiStyleColors : {},
+            shortcuts: d.shortcuts && typeof d.shortcuts === 'object' && !Array.isArray(d.shortcuts) ? d.shortcuts : {}
         };
     }
 
@@ -667,6 +669,11 @@
             cssParts.push(`@media (max-width: 768px) {\n  ${mobileRules.join('\n  ')}\n}`);
         }
 
+        // Recolor dos estilos UI (Frutiger, GTK4, Material, etc.) sem perder o caráter do estilo
+        if (window.ODYSSEE_VB_STYLE_COLORS && data.uiStyleColors) {
+            try { cssParts.push(window.ODYSSEE_VB_STYLE_COLORS.compile(data.uiStyleColors)); } catch (e) {}
+        }
+
         if (data.customCss && data.customCss.trim()) {
             cssParts.push(data.customCss);
         }
@@ -682,6 +689,33 @@
             document.head.appendChild(styleEl);
         }
         styleEl.textContent = compileAllCSS(builderData);
+        loadUsedGoogleFonts(builderData);
+    }
+
+    const GOOGLE_FONTS = ['Inter', 'Roboto', 'Poppins', 'Montserrat', 'Open Sans', 'Lato', 'Nunito', 'Raleway', 'Playfair Display', 'Merriweather', 'Lora', 'Oswald', 'Bebas Neue', 'Pacifico', 'Caveat', 'JetBrains Mono', 'Fira Code', 'Space Grotesk', 'DM Sans', 'Rubik'];
+
+    /**
+     * Carrega do Google Fonts apenas as famílias realmente usadas pelos elementos editados
+     */
+    function loadUsedGoogleFonts(data) {
+        const used = new Set();
+        Object.values((data && data.elements) || {}).forEach(el => {
+            Object.values((el && el.styles) || {}).forEach(st => {
+                if (!st || !st.fontFamily) return;
+                GOOGLE_FONTS.forEach(name => {
+                    if (String(st.fontFamily).indexOf(name) !== -1) used.add(name);
+                });
+            });
+        });
+        used.forEach(name => {
+            const id = 'ovb-gf-' + name.replace(/\s+/g, '-').toLowerCase();
+            if (document.getElementById(id)) return;
+            const link = document.createElement('link');
+            link.id = id;
+            link.rel = 'stylesheet';
+            link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(name).replace(/%20/g, '+') + ':ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap';
+            document.head.appendChild(link);
+        });
     }
 
     /**

@@ -318,7 +318,7 @@ body:not(.ovb-editor-active) [data-ovb-role="none"][data-ovb-pass-events="true"]
    -------------------------------------------------------------------------- */
 body[data-ovb-ui-style="frutiger-aero"] {
     --ovb-aero-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.22) 48%, rgba(255, 255, 255, 0.0) 50%, rgba(255, 255, 255, 0.18) 100%);
-    --ovb-aero-shine-dark: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.12) 48%, rgba(0, 0, 0, 0.22) 50%, rgba(56, 189, 248, 0.18) 100%);
+    --ovb-aero-shine-dark: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.12) 48%, rgba(0, 0, 0, 0.22) 50%, rgb(var(--ovb-fa-1) / 0.18) 100%);
 }
 
 html:has(body[data-ovb-ui-style="frutiger-aero"]) ::-webkit-scrollbar,
@@ -328,16 +328,16 @@ body[data-ovb-ui-style="frutiger-aero"] ::-webkit-scrollbar {
 }
 html:has(body[data-ovb-ui-style="frutiger-aero"]) ::-webkit-scrollbar-track,
 body[data-ovb-ui-style="frutiger-aero"] ::-webkit-scrollbar-track {
-    background: linear-gradient(90deg, rgba(15, 23, 42, 0.4), rgba(56, 189, 248, 0.12), rgba(15, 23, 42, 0.4));
+    background: linear-gradient(90deg, rgb(var(--ovb-fa-4) / 0.4), rgb(var(--ovb-fa-1) / 0.12), rgb(var(--ovb-fa-4) / 0.4));
     border-left: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.4);
 }
 html:has(body[data-ovb-ui-style="frutiger-aero"]) ::-webkit-scrollbar-thumb,
 body[data-ovb-ui-style="frutiger-aero"] ::-webkit-scrollbar-thumb {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0%, rgba(56, 189, 248, 0.85) 50%, rgba(14, 165, 233, 0.95) 51%, rgba(125, 211, 252, 0.8) 100%);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0%, rgb(var(--ovb-fa-1) / 0.85) 50%, rgb(var(--ovb-fa-5) / 0.95) 51%, rgb(var(--ovb-fa-6) / 0.8) 100%);
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 10px rgba(56, 189, 248, 0.6);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 10px rgb(var(--ovb-fa-1) / 0.6);
 }
 
 /* Frutiger Aero Bars (Header, Sidebar, Custom Bars) */
@@ -346,11 +346,11 @@ body[data-ovb-ui-style="frutiger-aero"] #settings-sidebar:not([data-ovb-el-ui-st
 body[data-ovb-ui-style="frutiger-aero"] .ovb-shape-bar:not([data-ovb-el-ui-style="none"]),
 body[data-ovb-ui-style="frutiger-aero"] .service-notice:not([data-ovb-el-ui-style="none"]) {
     background-image: var(--ovb-aero-shine-dark) !important;
-    background-color: rgba(14, 116, 144, 0.42) !important;
+    background-color: rgb(var(--ovb-fa-8) / 0.42) !important;
     backdrop-filter: blur(18px) saturate(180%) !important;
     -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
     border: 1px solid rgba(255, 255, 255, 0.55) !important;
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.85), 0 8px 28px rgba(6, 182, 212, 0.32) !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.85), 0 8px 28px rgb(var(--ovb-fa-7) / 0.32) !important;
 }
 
 /* Frutiger Aero Buttons & Header Buttons */
@@ -366,10 +366,10 @@ body[data-ovb-ui-style="frutiger-aero"] #btn-mobile-menu:not([data-ovb-el-ui-sty
 body[data-ovb-ui-style="frutiger-aero"] #btn-continuar:not([data-ovb-el-ui-style="none"]),
 body[data-ovb-ui-style="frutiger-aero"] .lang-btn:not([data-ovb-el-ui-style="none"]),
 body[data-ovb-ui-style="frutiger-aero"] .color-option-btn:not([data-ovb-el-ui-style="none"]) {
-    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(125, 211, 252, 0.45) 48%, rgba(2, 132, 199, 0.75) 51%, rgba(56, 189, 248, 0.9) 100%) !important;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgb(var(--ovb-fa-6) / 0.45) 48%, rgb(var(--ovb-fa-2) / 0.75) 51%, rgb(var(--ovb-fa-1) / 0.9) 100%) !important;
     border: 1.5px solid rgba(255, 255, 255, 0.88) !important;
     border-radius: 999px !important;
-    box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.95), inset 0 -2px 4px rgba(16, 185, 129, 0.35), 0 6px 20px rgba(14, 165, 233, 0.48) !important;
+    box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.95), inset 0 -2px 4px rgb(var(--ovb-fa-3) / 0.35), 0 6px 20px rgb(var(--ovb-fa-5) / 0.48) !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
     color: #ffffff !important;
     padding: 0.45rem 1rem !important;
@@ -391,18 +391,18 @@ body[data-ovb-ui-style="frutiger-aero"] .ovb-shape-element:not([data-ovb-el-ui-s
 body[data-ovb-ui-style="frutiger-aero"] .ilustracao-tutorial-box:not([data-ovb-el-ui-style="none"]),
 body[data-ovb-ui-style="frutiger-aero"] .faq-item:not([data-ovb-el-ui-style="none"]),
 body[data-ovb-ui-style="frutiger-aero"] .cv-card:not([data-ovb-el-ui-style="none"]) {
-    background-image: linear-gradient(165deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 46%, rgba(6, 182, 212, 0.06) 47%, rgba(16, 185, 129, 0.14) 100%) !important;
+    background-image: linear-gradient(165deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 46%, rgb(var(--ovb-fa-7) / 0.06) 47%, rgb(var(--ovb-fa-3) / 0.14) 100%) !important;
     backdrop-filter: blur(16px) saturate(160%) !important;
     -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
     border: 1.5px solid rgba(255, 255, 255, 0.55) !important;
     border-radius: 20px !important;
-    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.7), 0 12px 32px rgba(2, 132, 199, 0.25) !important;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.7), 0 12px 32px rgb(var(--ovb-fa-2) / 0.25) !important;
 }
 
 body[data-ovb-ui-style="frutiger-aero"] i.fas:not([data-ovb-el-ui-style="none"] *),
 body[data-ovb-ui-style="frutiger-aero"] i.far:not([data-ovb-el-ui-style="none"] *),
 body[data-ovb-ui-style="frutiger-aero"] .icon-svg:not(#header-logotype):not(.hero-symbol):not(.onboarding-logo):not([data-ovb-el-ui-style="none"]):not([data-ovb-el-ui-style="none"] *) {
-    filter: drop-shadow(0 2px 3px rgba(2, 132, 199, 0.65)) drop-shadow(0 -1px 1px rgba(255, 255, 255, 0.8)) !important;
+    filter: drop-shadow(0 2px 3px rgb(var(--ovb-fa-2) / 0.65)) drop-shadow(0 -1px 1px rgba(255, 255, 255, 0.8)) !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -509,7 +509,7 @@ body[data-ovb-ui-style="breeze"] ::-webkit-scrollbar-track {
 }
 html:has(body[data-ovb-ui-style="breeze"]) ::-webkit-scrollbar-thumb,
 body[data-ovb-ui-style="breeze"] ::-webkit-scrollbar-thumb {
-    background: #3daee9;
+    background: rgb(var(--ovb-br-1));
     border-radius: 3px;
     border: 2px solid rgba(35, 38, 41, 0.8);
 }
@@ -529,7 +529,7 @@ body[data-ovb-ui-style="breeze"] .main-header:not([data-ovb-el-ui-style="none"])
 body[data-ovb-ui-style="breeze"] #settings-sidebar:not([data-ovb-el-ui-style="none"]),
 body[data-ovb-ui-style="breeze"] .ovb-shape-bar:not([data-ovb-el-ui-style="none"]) {
     background: linear-gradient(180deg, rgba(49, 54, 59, 0.96), rgba(35, 38, 41, 0.96)) !important;
-    border-bottom: 1px solid #3daee9 !important;
+    border-bottom: 1px solid rgb(var(--ovb-br-1)) !important;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28) !important;
     border-radius: 4px !important;
 }
@@ -548,7 +548,7 @@ body[data-ovb-ui-style="breeze"] .color-option-btn:not([data-ovb-el-ui-style="no
     border-radius: 4px !important;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.12)) !important;
     background-color: var(--bg-card) !important;
-    border: 1px solid #3daee9 !important;
+    border: 1px solid rgb(var(--ovb-br-1)) !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
     padding: 0.4rem 0.9rem !important;
 }
@@ -568,7 +568,7 @@ body[data-ovb-ui-style="breeze"] .ovb-shape-element:not([data-ovb-el-ui-style="n
 body[data-ovb-ui-style="breeze"] .faq-item:not([data-ovb-el-ui-style="none"]),
 body[data-ovb-ui-style="breeze"] .cv-card:not([data-ovb-el-ui-style="none"]) {
     border-radius: 5px !important;
-    border: 1px solid rgba(61, 174, 233, 0.45) !important;
+    border: 1px solid rgb(var(--ovb-br-1) / 0.45) !important;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
 }
 
@@ -735,7 +735,7 @@ body[data-ovb-ui-style="material-3-expressive"] ::-webkit-scrollbar {
 }
 html:has(body[data-ovb-ui-style="material-3-expressive"]) ::-webkit-scrollbar-track,
 body[data-ovb-ui-style="material-3-expressive"] ::-webkit-scrollbar-track {
-    background: rgba(139, 92, 246, 0.08);
+    background: rgb(var(--ovb-m3-1) / 0.08);
     border-radius: 999px;
     margin: 6px;
 }
@@ -823,7 +823,7 @@ body[data-ovb-ui-style="material-3-expressive"] .ovb-block-card-icon:not([data-o
     justify-content: center;
     padding: 8px;
     border-radius: 14px;
-    background: rgba(139, 92, 246, 0.22);
+    background: rgb(var(--ovb-m3-1) / 0.22);
 }
 
 /* ==========================================================================
@@ -1188,19 +1188,19 @@ body #btn-mobile-menu[data-ovb-el-ui-style="frutiger-aero"] {
     background: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.78) 0%,
-        rgba(125, 232, 255, 0.45) 48%,
-        rgba(0, 148, 218, 0.72) 50%,
-        rgba(16, 185, 129, 0.65) 100%
+        rgb(var(--ovb-fa-9) / 0.45) 48%,
+        rgb(var(--ovb-fa-10) / 0.72) 50%,
+        rgb(var(--ovb-fa-3) / 0.65) 100%
     ) !important;
     border: 1.5px solid rgba(255, 255, 255, 0.88) !important;
     border-radius: 999px !important;
     box-shadow:
         inset 0 2px 3px rgba(255, 255, 255, 0.95),
-        inset 0 -3px 8px rgba(0, 212, 255, 0.55),
-        0 8px 24px rgba(0, 150, 210, 0.48) !important;
+        inset 0 -3px 8px rgb(var(--ovb-fa-11) / 0.55),
+        0 8px 24px rgb(var(--ovb-fa-12) / 0.48) !important;
     backdrop-filter: blur(16px) saturate(185%) !important;
     -webkit-backdrop-filter: blur(16px) saturate(185%) !important;
-    text-shadow: 0 1px 3px rgba(0, 45, 75, 0.75) !important;
+    text-shadow: 0 1px 3px rgb(var(--ovb-fa-13) / 0.75) !important;
     color: #ffffff !important;
 }
 
@@ -1212,7 +1212,7 @@ body .btn-header-settings[data-ovb-el-ui-style="gtk4"],
 body .btn-header-about[data-ovb-el-ui-style="gtk4"],
 body .main-nav a[data-ovb-el-ui-style="gtk4"],
 body #btn-mobile-menu[data-ovb-el-ui-style="gtk4"] {
-    background: #3584e4 !important;
+    background: rgb(var(--ovb-gt-1)) !important;
     border: 1px solid rgba(255, 255, 255, 0.18) !important;
     border-radius: 9px !important;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28) !important;
@@ -1229,9 +1229,9 @@ body .btn-header-about[data-ovb-el-ui-style="breeze"],
 body .main-nav a[data-ovb-el-ui-style="breeze"],
 body #btn-mobile-menu[data-ovb-el-ui-style="breeze"] {
     background: linear-gradient(180deg, rgba(49, 54, 59, 0.96), rgba(35, 38, 41, 0.96)) !important;
-    border: 1.5px solid #3daee9 !important;
+    border: 1.5px solid rgb(var(--ovb-br-1)) !important;
     border-radius: 5px !important;
-    box-shadow: 0 3px 12px rgba(61, 174, 233, 0.35) !important;
+    box-shadow: 0 3px 12px rgb(var(--ovb-br-1) / 0.35) !important;
     color: #eff0f1 !important;
 }
 
@@ -1289,10 +1289,10 @@ body .btn-header-settings[data-ovb-el-ui-style="material-3-expressive"],
 body .btn-header-about[data-ovb-el-ui-style="material-3-expressive"],
 body .main-nav a[data-ovb-el-ui-style="material-3-expressive"],
 body #btn-mobile-menu[data-ovb-el-ui-style="material-3-expressive"] {
-    background: linear-gradient(135deg, #4f378b, #7d5260) !important;
-    border: 1px solid rgba(208, 188, 255, 0.45) !important;
+    background: linear-gradient(135deg, rgb(var(--ovb-m3-2)), #7d5260) !important;
+    border: 1px solid rgb(var(--ovb-m3-3) / 0.45) !important;
     border-radius: 999px !important;
-    box-shadow: 0 10px 28px rgba(79, 55, 139, 0.42) !important;
+    box-shadow: 0 10px 28px rgb(var(--ovb-m3-2) / 0.42) !important;
     color: #f8fafc !important;
     transition: all 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
@@ -1544,3 +1544,27 @@ body.theme-light .ovb-popup-card {
     .ovb-popup-preset { bottom: 1rem; left: 1rem; right: 1rem; max-width: none; }
     .ovb-popup-card { border-radius: 16px; }
 }
+
+/* OVB-STYLE-COLOR-VARS-BEGIN */
+/* Cores de cada estilo UI como variáveis RGB: o recolor (aba Estilo & Efeitos) só altera estes valores, preservando a estrutura do estilo. */
+:root {
+    --ovb-fa-1: 56 189 248;
+    --ovb-fa-2: 2 132 199;
+    --ovb-fa-3: 16 185 129;
+    --ovb-fa-4: 15 23 42;
+    --ovb-fa-5: 14 165 233;
+    --ovb-fa-6: 125 211 252;
+    --ovb-fa-7: 6 182 212;
+    --ovb-fa-8: 14 116 144;
+    --ovb-fa-9: 125 232 255;
+    --ovb-fa-10: 0 148 218;
+    --ovb-fa-11: 0 212 255;
+    --ovb-fa-12: 0 150 210;
+    --ovb-fa-13: 0 45 75;
+    --ovb-gt-1: 53 132 228;
+    --ovb-br-1: 61 174 233;
+    --ovb-m3-1: 139 92 246;
+    --ovb-m3-2: 79 55 139;
+    --ovb-m3-3: 208 188 255;
+}
+/* OVB-STYLE-COLOR-VARS-END */

@@ -58,6 +58,7 @@ function odyssee_vb_get_data() {
         'pagePalettes'            => array(),
         'allowVisitorColorSwitch' => true,
         'shortcuts'               => array(),
+        'uiStyleColors'           => array(),
     ) );
 }
 
@@ -234,9 +235,25 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
     );
 
     wp_enqueue_script(
+        'odyssee-vb-style-colors',
+        get_template_directory_uri() . '/assets/js/visual-builder-style-colors.js',
+        array(),
+        odyssee_vb_asset_ver( 'assets/js/visual-builder-style-colors.js' ),
+        true
+    );
+
+    wp_enqueue_script(
+        'odyssee-vb-colorpicker',
+        get_template_directory_uri() . '/inc/visual-builder-colorpicker.js',
+        array( 'jquery' ),
+        odyssee_vb_asset_ver( 'inc/visual-builder-colorpicker.js' ),
+        true
+    );
+
+    wp_enqueue_script(
         'odyssee-vb-admin',
         get_template_directory_uri() . '/inc/visual-builder-admin.js',
-        array( 'jquery', 'odyssee-vb-presets' ),
+        array( 'jquery', 'odyssee-vb-presets', 'odyssee-vb-style-colors', 'odyssee-vb-colorpicker' ),
         odyssee_vb_asset_ver( 'inc/visual-builder-admin.js' ),
         true
     );
@@ -256,7 +273,7 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
  */
 function odyssee_vb_asset_ver( $relative_path ) {
     $full = get_template_directory() . '/' . ltrim( $relative_path, '/' );
-    return file_exists( $full ) ? (string) filemtime( $full ) : '26.10.13';
+    return file_exists( $full ) ? (string) filemtime( $full ) : '26.10.14';
 }
 
 /**
@@ -308,9 +325,17 @@ function odyssee_vb_enqueue_frontend_assets() {
     );
 
     wp_enqueue_script(
+        'odyssee-vb-style-colors',
+        get_template_directory_uri() . '/assets/js/visual-builder-style-colors.js',
+        array(),
+        odyssee_vb_asset_ver( 'assets/js/visual-builder-style-colors.js' ),
+        true
+    );
+
+    wp_enqueue_script(
         'odyssee-vb-frontend',
         get_template_directory_uri() . '/assets/js/visual-builder-frontend.js',
-        array( 'vanilla-tilt', 'odyssee-vb-presets' ),
+        array( 'vanilla-tilt', 'odyssee-vb-presets', 'odyssee-vb-style-colors' ),
         odyssee_vb_asset_ver( 'assets/js/visual-builder-frontend.js' ),
         true
     );
@@ -404,6 +429,7 @@ function odyssee_vb_ajax_save() {
         'pagePalettes'            => isset( $decoded['pagePalettes'] ) && is_array( $decoded['pagePalettes'] ) ? $decoded['pagePalettes'] : array(),
         'allowVisitorColorSwitch' => isset( $decoded['allowVisitorColorSwitch'] ) ? (bool) $decoded['allowVisitorColorSwitch'] : true,
         'shortcuts'               => isset( $decoded['shortcuts'] ) && is_array( $decoded['shortcuts'] ) ? $decoded['shortcuts'] : array(),
+        'uiStyleColors'           => isset( $decoded['uiStyleColors'] ) && is_array( $decoded['uiStyleColors'] ) ? $decoded['uiStyleColors'] : array(),
     );
 
     // 1. Save revision backup (up to 10 revisions)
@@ -643,6 +669,9 @@ function odyssee_vb_render_admin_page() {
 
             <!-- Quick Action Badges -->
             <div class="ovb-cbar-right">
+                <button type="button" id="ovb-btn-open-color-manager" class="ovb-cbar-pill-btn ovb-open-color-manager" title="Gerenciador de Cores — roda de cores para qualquer coisa (Alt+C)">
+                    🎨 Cores
+                </button>
                 <button type="button" id="ovb-btn-quick-hero-slogan" class="ovb-cbar-pill-btn" title="Selecionar imediatamente o Título do Site abaixo da Logo (.hero-slogan)">
                     🔤 Título Abaixo da Logo
                 </button>
@@ -717,6 +746,10 @@ function odyssee_vb_render_admin_page() {
                     <button type="button" class="ovb-tab-btn" data-tab="tab-style-effects" title="Estilo & Efeitos">
                         <i class="fas fa-palette"></i>
                         <span>Estilo & Efeitos</span>
+                    </button>
+                    <button type="button" class="ovb-tab-btn" data-tab="tab-text" title="Texto">
+                        <i class="fas fa-font"></i>
+                        <span>Texto</span>
                     </button>
                     <button type="button" class="ovb-tab-btn" data-tab="tab-behavior" title="Comportamento">
                         <i class="fas fa-mouse-pointer"></i>
@@ -1590,6 +1623,74 @@ function odyssee_vb_render_admin_page() {
                             </div>
                         </div>
 
+                        <!-- RECOLOR DOS ESTILOS UI (mantém o caráter do estilo, só troca a cor) -->
+                        <div class="ovb-section">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-fill-drip"></i> Cores do Estilo UI</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <p style="font-size:10.5px;color:#94a3b8;margin:0 0 6px 0;line-height:1.4;">
+                                    Troque as cores de um estilo sem perder o visual dele: o brilho, o vidro, as sombras e os contornos do estilo são preservados — só a matiz muda.
+                                </p>
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Estilo a recolorir</label>
+                                    <select id="ovb-uisc-style" class="ovb-select">
+                                        <option value="odysseexp">⚡ OdysseeXP</option>
+                                        <option value="frutiger-aero">🫧 Frutiger Aero</option>
+                                        <option value="gtk4">🐧 GTK4 Libadwaita</option>
+                                        <option value="breeze">❄️ KDE Breeze</option>
+                                        <option value="mactahoe">🍎 MacTahoe Liquid Glass</option>
+                                        <option value="material">📐 Material Design</option>
+                                        <option value="material-3-expressive">🌸 Material 3 Expressive</option>
+                                    </select>
+                                </div>
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Cor de Destaque do Estilo</label>
+                                    <div class="ovb-color-wrap">
+                                        <input type="color" class="ovb-uisc-color" data-uisc="accent" value="#8b5cf6">
+                                        <input type="text" class="ovb-input ovb-uisc-text" data-uisc="accent" placeholder="padrão do estilo">
+                                    </div>
+                                </div>
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Fundo — Escuro</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-uisc-color" data-uisc="dark.page" value="#1e1e1e">
+                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="dark.page" placeholder="padrão">
+                                        </div>
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Cartões — Escuro</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-uisc-color" data-uisc="dark.surface" value="#303030">
+                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="dark.surface" placeholder="padrão">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Fundo — Claro</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-uisc-color" data-uisc="light.page" value="#fafafa">
+                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="light.page" placeholder="padrão">
+                                        </div>
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Cartões — Claro</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-uisc-color" data-uisc="light.surface" value="#ffffff">
+                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="light.surface" placeholder="padrão">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ovb-field-row" style="gap:6px;">
+                                    <button type="button" id="ovb-uisc-reset" class="ovb-mini-btn" style="flex:1;">↺ Restaurar cores originais</button>
+                                    <button type="button" class="ovb-mini-btn ovb-open-color-manager" style="flex:1;">🎨 Gerenciador (roda)</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- CORES BASE, PREENCHIMENTO & BORDAS (COM SMART LOCK SE FOR JPEG/PNG) -->
                         <div class="ovb-section">
                             <div class="ovb-section-header">
@@ -1931,6 +2032,180 @@ function odyssee_vb_render_admin_page() {
                                         <option value="slide-corner">↗ Ir para a Quina / Diagonal</option>
                                     </select>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==========================================
+                         ABA: TEXTO
+                         (Edição de texto, fonte, tamanho, peso, alinhamento, cor, espaçamentos)
+                         ========================================== -->
+                    <div class="ovb-tab-panel" id="tab-text">
+                        <div class="ovb-section">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-i-cursor"></i> Conteúdo do Texto</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Texto (Português)</label>
+                                    <textarea id="ovb-text-quick-pt" class="ovb-textarea" rows="3" placeholder="Selecione um elemento de texto e edite aqui..."></textarea>
+                                </div>
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Texto (English)</label>
+                                    <textarea id="ovb-text-quick-en" class="ovb-textarea" rows="2" placeholder="Tradução opcional..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ovb-section">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-font"></i> Fonte &amp; Tamanho</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Fonte (Família)</label>
+                                    <select class="ovb-select" id="ovb-text-font-select">
+                                        <option value="">Herdar do tema</option>
+                                        <option value="var(--font-ubuntu), sans-serif">Padrão do tema (Ubuntu)</option>
+                                        <option value="'Inter', sans-serif">Inter</option>
+                                        <option value="'Roboto', sans-serif">Roboto</option>
+                                        <option value="'Poppins', sans-serif">Poppins</option>
+                                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                                        <option value="'Open Sans', sans-serif">Open Sans</option>
+                                        <option value="'Lato', sans-serif">Lato</option>
+                                        <option value="'Nunito', sans-serif">Nunito</option>
+                                        <option value="'Raleway', sans-serif">Raleway</option>
+                                        <option value="'DM Sans', sans-serif">DM Sans</option>
+                                        <option value="'Rubik', sans-serif">Rubik</option>
+                                        <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+                                        <option value="'Oswald', sans-serif">Oswald</option>
+                                        <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+                                        <option value="'Playfair Display', serif">Playfair Display</option>
+                                        <option value="'Merriweather', serif">Merriweather</option>
+                                        <option value="'Lora', serif">Lora</option>
+                                        <option value="'Pacifico', cursive">Pacifico</option>
+                                        <option value="'Caveat', cursive">Caveat</option>
+                                        <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                                        <option value="'Fira Code', monospace">Fira Code</option>
+                                        <option value="Arial, Helvetica, sans-serif">Arial</option>
+                                        <option value="Georgia, serif">Georgia</option>
+                                        <option value="'Courier New', monospace">Courier New</option>
+                                    </select>
+                                    <input type="text" id="ovb-text-font-custom" class="ovb-input" style="margin-top:4px;" placeholder="Ou digite: 'Minha Fonte', sans-serif">
+                                    <p style="font-size:10px;color:#94a3b8;margin:3px 0 0 0;">Fontes do Google Fonts são carregadas automaticamente no site quando usadas.</p>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label"><span>Tamanho da Fonte</span></label>
+                                    <div class="ovb-slider-wrap">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="fontSize" data-unit="px" min="8" max="160" step="1" data-default="16">
+                                        <input type="text" class="ovb-num-input" data-ovb-prop="fontSize" placeholder="16px">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Peso</label>
+                                        <select class="ovb-select" data-ovb-prop="fontWeight">
+                                            <option value="">Padrão</option>
+                                            <option value="100">100 — Fina</option>
+                                            <option value="300">300 — Leve</option>
+                                            <option value="400">400 — Normal</option>
+                                            <option value="500">500 — Média</option>
+                                            <option value="600">600 — Semi-negrito</option>
+                                            <option value="700">700 — Negrito</option>
+                                            <option value="800">800 — Extra-negrito</option>
+                                            <option value="900">900 — Black</option>
+                                        </select>
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Capitalização</label>
+                                        <select class="ovb-select" data-ovb-prop="textTransform">
+                                            <option value="">Padrão</option>
+                                            <option value="none">Normal</option>
+                                            <option value="uppercase">MAIÚSCULAS</option>
+                                            <option value="lowercase">minúsculas</option>
+                                            <option value="capitalize">Capitalizar Palavras</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Estilo</label>
+                                    <div class="ovb-text-toggle-row">
+                                        <button type="button" class="ovb-text-toggle" data-text-toggle="bold" title="Negrito"><b>B</b></button>
+                                        <button type="button" class="ovb-text-toggle" data-text-toggle="italic" title="Itálico"><i>I</i></button>
+                                        <button type="button" class="ovb-text-toggle" data-text-toggle="underline" title="Sublinhado"><u>U</u></button>
+                                        <button type="button" class="ovb-text-toggle" data-text-toggle="line-through" title="Tachado"><s>S</s></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ovb-section">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-align-left"></i> Alinhamento &amp; Espaçamento</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Alinhamento do Texto</label>
+                                    <div class="ovb-text-toggle-row">
+                                        <button type="button" class="ovb-text-align" data-text-align="left" title="Esquerda"><i class="fas fa-align-left"></i></button>
+                                        <button type="button" class="ovb-text-align" data-text-align="center" title="Centro"><i class="fas fa-align-center"></i></button>
+                                        <button type="button" class="ovb-text-align" data-text-align="right" title="Direita"><i class="fas fa-align-right"></i></button>
+                                        <button type="button" class="ovb-text-align" data-text-align="justify" title="Justificado"><i class="fas fa-align-justify"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Altura da Linha</label>
+                                    <div class="ovb-slider-wrap">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="lineHeight" min="0.8" max="3" step="0.05" data-default="1.5">
+                                        <input type="text" class="ovb-num-input" data-ovb-prop="lineHeight" placeholder="1.5">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Espaço entre Letras</label>
+                                    <div class="ovb-slider-wrap">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="letterSpacing" data-unit="px" min="-5" max="30" step="0.5" data-default="0">
+                                        <input type="text" class="ovb-num-input" data-ovb-prop="letterSpacing" placeholder="0px">
+                                    </div>
+                                </div>
+
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Espaço entre Palavras</label>
+                                    <div class="ovb-slider-wrap">
+                                        <input type="range" class="ovb-range" data-ovb-range-for="wordSpacing" data-unit="px" min="-10" max="60" step="1" data-default="0">
+                                        <input type="text" class="ovb-num-input" data-ovb-prop="wordSpacing" placeholder="0px">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ovb-section">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-palette"></i> Cor &amp; Sombra do Texto</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Cor do Texto</label>
+                                    <div class="ovb-color-wrap">
+                                        <input type="color" class="ovb-color-picker" data-ovb-prop="color" value="#f8fafc">
+                                        <input type="text" class="ovb-input" data-ovb-prop="color" placeholder="#f8fafc">
+                                    </div>
+                                </div>
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Sombra do Texto (text-shadow)</label>
+                                    <input type="text" class="ovb-input" data-ovb-prop="textShadow" placeholder="0 2px 6px rgba(0,0,0,0.5)">
+                                </div>
+                                <button type="button" class="ovb-action-btn ovb-open-color-manager" style="width:100%;margin-top:4px;">
+                                    <i class="fas fa-palette"></i> Abrir Gerenciador de Cores (roda)
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -2392,6 +2667,10 @@ function odyssee_vb_render_admin_page() {
                                         <span class="ovb-sc-name">Desselecionar</span>
                                         <button type="button" class="ovb-sc-btn" data-key="Escape">Escape</button>
                                     </div>
+                                    <div class="ovb-shortcut-row" data-action="open-color-manager">
+                                        <span class="ovb-sc-name">🎨 Gerenciador de Cores (Roda)</span>
+                                        <button type="button" class="ovb-sc-btn" data-key="Alt+C">Alt+C</button>
+                                    </div>
                                 </div>
 
                                 <button type="button" id="ovb-btn-reset-shortcuts" class="ovb-mini-btn" style="width:100%;margin-top:8px;">
@@ -2504,6 +2783,24 @@ function odyssee_vb_render_admin_page() {
                     </div>
                 </div>
             </main>
+        </div>
+
+        <!-- GERENCIADOR DE CORES (roda de cores para qualquer elemento, estilo ou variável do site) -->
+        <div id="ovb-color-manager" class="ovb-cm-panel" style="display:none;">
+            <div class="ovb-cm-head">
+                <span><i class="fas fa-palette"></i> Gerenciador de Cores</span>
+                <button type="button" class="ovb-cm-close" title="Fechar">&times;</button>
+            </div>
+            <div class="ovb-cm-body">
+                <label class="ovb-label">Aplicar a cor em:</label>
+                <select id="ovb-cm-target" class="ovb-select"></select>
+                <div class="ovb-cm-current">
+                    <span>Valor atual:</span> <code id="ovb-cm-current-val">—</code>
+                    <button type="button" id="ovb-cm-clear" class="ovb-mini-btn" title="Remover a cor definida (volta ao padrão)">Limpar</button>
+                </div>
+                <div id="ovb-cm-picker-host"></div>
+                <p id="ovb-cm-hint" class="ovb-cm-hint"></p>
+            </div>
         </div>
 
         <div id="ovb-toast">Salvo com sucesso!</div>
