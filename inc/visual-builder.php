@@ -273,7 +273,7 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
  */
 function odyssee_vb_asset_ver( $relative_path ) {
     $full = get_template_directory() . '/' . ltrim( $relative_path, '/' );
-    return file_exists( $full ) ? (string) filemtime( $full ) : '26.10.14';
+    return file_exists( $full ) ? (string) filemtime( $full ) : '26.10.15';
 }
 
 /**
@@ -1623,170 +1623,182 @@ function odyssee_vb_render_admin_page() {
                             </div>
                         </div>
 
-                        <!-- RECOLOR DOS ESTILOS UI (mantém o caráter do estilo, só troca a cor) -->
-                        <div class="ovb-section">
+                        <!-- ========================================================
+                             CORES DO ELEMENTO (DETECÇÃO INTELIGENTE, DEGRADÊ & TEMA)
+                             ======================================================== -->
+                        <div class="ovb-section" id="ovb-sec-element-colors">
                             <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-fill-drip"></i> Cores do Estilo UI</span>
+                                <span class="ovb-sec-title"><i class="fas fa-palette"></i> Cores do Elemento</span>
                                 <i class="fas fa-chevron-down ovb-chevron"></i>
                             </div>
                             <div class="ovb-section-body">
-                                <p style="font-size:10.5px;color:#94a3b8;margin:0 0 6px 0;line-height:1.4;">
-                                    Troque as cores de um estilo sem perder o visual dele: o brilho, o vidro, as sombras e os contornos do estilo são preservados — só a matiz muda.
-                                </p>
-                                <div class="ovb-field">
-                                    <label class="ovb-label">Estilo a recolorir</label>
-                                    <select id="ovb-uisc-style" class="ovb-select">
-                                        <option value="odysseexp">⚡ OdysseeXP</option>
-                                        <option value="frutiger-aero">🫧 Frutiger Aero</option>
-                                        <option value="gtk4">🐧 GTK4 Libadwaita</option>
-                                        <option value="breeze">❄️ KDE Breeze</option>
-                                        <option value="mactahoe">🍎 MacTahoe Liquid Glass</option>
-                                        <option value="material">📐 Material Design</option>
-                                        <option value="material-3-expressive">🌸 Material 3 Expressive</option>
-                                    </select>
-                                </div>
-                                <div class="ovb-field">
-                                    <label class="ovb-label">Cor de Destaque do Estilo</label>
-                                    <div class="ovb-color-wrap">
-                                        <input type="color" class="ovb-uisc-color" data-uisc="accent" value="#8b5cf6">
-                                        <input type="text" class="ovb-input ovb-uisc-text" data-uisc="accent" placeholder="padrão do estilo">
-                                    </div>
-                                </div>
-                                <div class="ovb-field-row">
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Fundo — Escuro</label>
-                                        <div class="ovb-color-wrap">
-                                            <input type="color" class="ovb-uisc-color" data-uisc="dark.page" value="#1e1e1e">
-                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="dark.page" placeholder="padrão">
-                                        </div>
-                                    </div>
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Cartões — Escuro</label>
-                                        <div class="ovb-color-wrap">
-                                            <input type="color" class="ovb-uisc-color" data-uisc="dark.surface" value="#303030">
-                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="dark.surface" placeholder="padrão">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="ovb-field-row">
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Fundo — Claro</label>
-                                        <div class="ovb-color-wrap">
-                                            <input type="color" class="ovb-uisc-color" data-uisc="light.page" value="#fafafa">
-                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="light.page" placeholder="padrão">
-                                        </div>
-                                    </div>
-                                    <div class="ovb-field" style="flex:1;">
-                                        <label class="ovb-label">Cartões — Claro</label>
-                                        <div class="ovb-color-wrap">
-                                            <input type="color" class="ovb-uisc-color" data-uisc="light.surface" value="#ffffff">
-                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="light.surface" placeholder="padrão">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="ovb-field-row" style="gap:6px;">
-                                    <button type="button" id="ovb-uisc-reset" class="ovb-mini-btn" style="flex:1;">↺ Restaurar cores originais</button>
-                                    <button type="button" class="ovb-mini-btn ovb-open-color-manager" style="flex:1;">🎨 Gerenciador (roda)</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- CORES BASE, PREENCHIMENTO & BORDAS (COM SMART LOCK SE FOR JPEG/PNG) -->
-                        <div class="ovb-section">
-                            <div class="ovb-section-header">
-                                <span class="ovb-sec-title"><i class="fas fa-paint-brush"></i> Cores Base, Fundo &amp; Bordas</span>
-                                <i class="fas fa-chevron-down ovb-chevron"></i>
-                            </div>
-                            <div class="ovb-section-body">
-                                <!-- Smart Lock Warning for Raster Images -->
+                                <!-- Aviso inteligente para imagens raster (PNG/JPEG) -->
                                 <div id="ovb-raster-color-lock-notice" style="display:none;padding:8px 10px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:7px;margin-bottom:8px;">
                                     <span style="font-size:11px;color:#fca5a5;font-weight:700;">
                                         🔒 Inserção de cor bloqueada: elemento de imagem (JPEG/PNG).
                                     </span>
                                     <p style="font-size:10px;color:#cbd5e1;margin:3px 0 0 0;">
-                                        Imagens raster têm cores fixas em pixels. Para alterar cores, selecione um elemento SVG, texto ou CSS.
+                                        Imagens raster têm pixels fixos. Para alterar cores, selecione um elemento SVG, texto ou CSS.
                                     </p>
                                 </div>
 
                                 <div id="ovb-color-controls-wrap">
-                                    <div class="ovb-field">
-                                        <label class="ovb-label">Cor de Texto / Principal (color)</label>
+                                    <!-- Barra de Aplicação por Tema: Sol (☀️) e Lua (🌙) -->
+                                    <div class="ovb-elc-theme-bar">
+                                        <div class="ovb-elc-theme-header">
+                                            <span class="ovb-elc-label">Aplicar Cor no Tema:</span>
+                                            <button type="button" id="ovb-elc-reset-default" class="ovb-elc-reset-btn" title="Reseta as cores deste elemento de volta para o padrão original do tema/estilo ativo">
+                                                <i class="fas fa-undo-alt"></i> Resetar pro Default
+                                            </button>
+                                        </div>
+                                        <div class="ovb-elc-theme-pills">
+                                            <button type="button" class="ovb-elc-theme-pill active" data-theme-scope="all" title="Aplica em ambos os temas (Global)">
+                                                <span>☀️🌙</span> Ambos
+                                            </button>
+                                            <button type="button" class="ovb-elc-theme-pill" data-theme-scope="light" title="Aplica somente quando o site estiver no Tema Claro">
+                                                <span>☀️</span> Claro
+                                            </button>
+                                            <button type="button" class="ovb-elc-theme-pill" data-theme-scope="dark" title="Aplica somente quando o site estiver no Tema Escuro">
+                                                <span>🌙</span> Escuro
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Fundo / Preenchimento do Elemento -->
+                                    <div class="ovb-elc-card">
+                                        <div class="ovb-elc-card-header">
+                                            <span class="ovb-elc-card-title"><i class="fas fa-fill"></i> Fundo / Preenchimento</span>
+                                            <div class="ovb-elc-type-pills">
+                                                <button type="button" class="ovb-elc-type-pill active" data-bg-mode="solid">Sólido</button>
+                                                <button type="button" class="ovb-elc-type-pill" data-bg-mode="gradient">Degradê</button>
+                                                <button type="button" class="ovb-elc-type-pill" data-bg-mode="none">Nenhum</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Modo Sólido -->
+                                        <div id="ovb-elc-bg-solid-box" class="ovb-elc-box">
+                                            <div class="ovb-color-wrap">
+                                                <input type="color" class="ovb-color-picker" data-ovb-prop="backgroundColor" value="#131926">
+                                                <input type="text" class="ovb-input" data-ovb-prop="backgroundColor" placeholder="padrão do tema">
+                                            </div>
+                                        </div>
+
+                                        <!-- Modo Degradê -->
+                                        <div id="ovb-elc-bg-gradient-box" class="ovb-elc-box" style="display:none;">
+                                            <input type="checkbox" data-ovb-prop="bgGradientEnabled" id="ovb-bg-grad-enabled" style="display:none;">
+                                            <!-- Preview Visual da Barra de Degradê -->
+                                            <div id="ovb-elc-gradient-preview" class="ovb-elc-grad-bar" title="Pré-visualização do degradê"></div>
+
+                                            <div class="ovb-field-row" style="margin-top:8px;gap:6px;">
+                                                <div class="ovb-field" style="flex:1;">
+                                                    <span style="font-size:10px;color:#cbd5e1;">Cor Inicial:</span>
+                                                    <div class="ovb-color-wrap">
+                                                        <input type="color" class="ovb-color-picker" data-ovb-prop="bgGradientColor1" value="#8b5cf6">
+                                                        <input type="text" class="ovb-input" data-ovb-prop="bgGradientColor1" placeholder="#8b5cf6">
+                                                    </div>
+                                                </div>
+                                                <div class="ovb-field" style="flex:1;">
+                                                    <span style="font-size:10px;color:#cbd5e1;">Cor Final:</span>
+                                                    <div class="ovb-color-wrap">
+                                                        <input type="color" class="ovb-color-picker" data-ovb-prop="bgGradientColor2" value="#ec4899">
+                                                        <input type="text" class="ovb-input" data-ovb-prop="bgGradientColor2" placeholder="#ec4899">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="ovb-field-row" style="margin-top:4px;gap:6px;">
+                                                <div class="ovb-field" style="flex:1;">
+                                                    <span style="font-size:10px;color:#cbd5e1;">Tipo de Degradê:</span>
+                                                    <select class="ovb-select" data-ovb-prop="bgGradientType">
+                                                        <option value="linear">Linear</option>
+                                                        <option value="radial">Radial</option>
+                                                    </select>
+                                                </div>
+                                                <div class="ovb-field" style="width:90px;">
+                                                    <span style="font-size:10px;color:#cbd5e1;">Ângulo:</span>
+                                                    <input type="number" class="ovb-num-input" data-ovb-prop="bgGradientAngle" placeholder="135" min="0" max="360">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Modo Nenhum / Transparente -->
+                                        <div id="ovb-elc-bg-none-box" class="ovb-elc-box" style="display:none;">
+                                            <p style="font-size:11px;color:#94a3b8;margin:2px 0 0 0;font-style:italic;">
+                                                Fundo transparente (nenhuma cor definida neste elemento).
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Cor do Texto / Conteúdo -->
+                                    <div class="ovb-elc-card" id="ovb-elc-text-card">
+                                        <div class="ovb-elc-card-header">
+                                            <span class="ovb-elc-card-title"><i class="fas fa-font"></i> Cor do Texto</span>
+                                        </div>
                                         <div class="ovb-color-wrap">
                                             <input type="color" class="ovb-color-picker" data-ovb-prop="color" value="#f8fafc">
-                                            <input type="text" class="ovb-input" data-ovb-prop="color" placeholder="#f8fafc">
+                                            <input type="text" class="ovb-input" data-ovb-prop="color" placeholder="padrão do tema">
                                         </div>
                                     </div>
 
-                                    <div class="ovb-field-row">
-                                        <div class="ovb-field" style="flex:1;">
-                                            <label class="ovb-label">Preenchimento SVG (fill)</label>
-                                            <div class="ovb-color-wrap">
-                                                <input type="color" class="ovb-color-picker" data-ovb-prop="fill" value="#8b5cf6">
-                                                <input type="text" class="ovb-input" data-ovb-prop="fill" placeholder="currentColor">
+                                    <!-- Preenchimento e Traçado SVG (visível apenas para elementos SVG) -->
+                                    <div class="ovb-elc-card" id="ovb-elc-svg-card" style="display:none;">
+                                        <div class="ovb-elc-card-header">
+                                            <span class="ovb-elc-card-title"><i class="fas fa-bezier-curve"></i> Cores do Vetor SVG</span>
+                                        </div>
+                                        <div class="ovb-field-row" style="gap:6px;">
+                                            <div class="ovb-field" style="flex:1;">
+                                                <span style="font-size:10px;color:#cbd5e1;">Preenchimento (fill):</span>
+                                                <div class="ovb-color-wrap">
+                                                    <input type="color" class="ovb-color-picker" data-ovb-prop="fill" value="#8b5cf6">
+                                                    <input type="text" class="ovb-input" data-ovb-prop="fill" placeholder="currentColor">
+                                                </div>
+                                            </div>
+                                            <div class="ovb-field" style="flex:1;">
+                                                <span style="font-size:10px;color:#cbd5e1;">Traçado (stroke):</span>
+                                                <div class="ovb-color-wrap">
+                                                    <input type="color" class="ovb-color-picker" data-ovb-prop="stroke" value="#d946ef">
+                                                    <input type="text" class="ovb-input" data-ovb-prop="stroke" placeholder="none">
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="ovb-field" style="flex:1;">
-                                            <label class="ovb-label">Traçado SVG (stroke)</label>
-                                            <div class="ovb-color-wrap">
-                                                <input type="color" class="ovb-color-picker" data-ovb-prop="stroke" value="#d946ef">
-                                                <input type="text" class="ovb-input" data-ovb-prop="stroke" placeholder="none">
+                                    </div>
+
+                                    <!-- Contorno / Borda -->
+                                    <div class="ovb-elc-card">
+                                        <div class="ovb-elc-card-header">
+                                            <span class="ovb-elc-card-title"><i class="fas fa-border-style"></i> Contorno / Borda</span>
+                                        </div>
+                                        <div id="ovb-elc-border-box">
+                                            <div class="ovb-field-row" style="gap:6px;">
+                                                <div class="ovb-field" style="flex:1;">
+                                                    <span style="font-size:10px;color:#cbd5e1;">Cor do Contorno:</span>
+                                                    <div class="ovb-color-wrap">
+                                                        <input type="color" class="ovb-color-picker" data-ovb-prop="borderColor" value="#8b5cf6">
+                                                        <input type="text" class="ovb-input" data-ovb-prop="borderColor" placeholder="padrão">
+                                                    </div>
+                                                </div>
+                                                <div class="ovb-field" style="width:75px;">
+                                                    <span style="font-size:10px;color:#cbd5e1;">Espessura:</span>
+                                                    <input type="text" class="ovb-input" data-ovb-prop="borderWidth" placeholder="1px">
+                                                </div>
+                                                <div class="ovb-field" style="width:85px;">
+                                                    <span style="font-size:10px;color:#cbd5e1;">Estilo:</span>
+                                                    <select class="ovb-select" data-ovb-prop="borderStyle">
+                                                        <option value="">Padrão</option>
+                                                        <option value="solid">Sólida</option>
+                                                        <option value="dashed">Tracejada</option>
+                                                        <option value="dotted">Pontilhada</option>
+                                                        <option value="none">Nenhuma</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="ovb-field">
-                                        <label class="ovb-label">Cor de Fundo (background-color)</label>
-                                        <div class="ovb-color-wrap">
-                                            <input type="color" class="ovb-color-picker" data-ovb-prop="backgroundColor" value="#131926">
-                                            <input type="text" class="ovb-input" data-ovb-prop="backgroundColor" placeholder="rgba(19,25,38,0.75)">
-                                        </div>
-                                    </div>
-
-                                    <div class="ovb-field">
-                                        <label class="ovb-label">
-                                            <span>Fundo em Degradê</span>
-                                            <input type="checkbox" data-ovb-prop="bgGradientEnabled">
-                                        </label>
-                                        <div class="ovb-field-row">
-                                            <input type="color" class="ovb-color-picker" data-ovb-prop="bgGradientColor1" value="#8b5cf6">
-                                            <input type="color" class="ovb-color-picker" data-ovb-prop="bgGradientColor2" value="#ec4899">
-                                            <select class="ovb-select" data-ovb-prop="bgGradientType" style="width:85px;">
-                                                <option value="linear">Linear</option>
-                                                <option value="radial">Radial</option>
-                                            </select>
-                                            <input type="number" class="ovb-num-input" data-ovb-prop="bgGradientAngle" placeholder="135°">
-                                        </div>
-                                    </div>
-
-                                    <div class="ovb-field-row">
-                                        <div class="ovb-field" style="flex:1;">
-                                            <label class="ovb-label">Estilo da Borda</label>
-                                            <select class="ovb-select" data-ovb-prop="borderStyle">
-                                                <option value="">Padrão</option>
-                                                <option value="none">Nenhuma</option>
-                                                <option value="solid">Sólida</option>
-                                                <option value="dashed">Tracejada</option>
-                                            </select>
-                                        </div>
-                                        <div class="ovb-field" style="flex:1;">
-                                            <label class="ovb-label">Espessura</label>
-                                            <input type="text" class="ovb-input" data-ovb-prop="borderWidth" placeholder="1px">
-                                        </div>
-                                    </div>
-
-                                    <div class="ovb-field">
-                                        <label class="ovb-label">Cor da Borda</label>
-                                        <div class="ovb-color-wrap">
-                                            <input type="color" class="ovb-color-picker" data-ovb-prop="borderColor" value="#8b5cf6">
-                                            <input type="text" class="ovb-input" data-ovb-prop="borderColor" placeholder="rgba(139,92,246,0.5)">
-                                        </div>
-                                    </div>
-
-                                    <div class="ovb-field">
-                                        <label class="ovb-label">Arredondamento (Border Radius)</label>
-                                        <div class="ovb-slider-wrap">
-                                            <input type="range" class="ovb-range" data-ovb-range-for="borderRadius" data-unit="px" min="0" max="100" step="1" data-default="0">
-                                            <input type="text" class="ovb-num-input" data-ovb-prop="borderRadius" placeholder="0px">
+                                            <div class="ovb-field" style="margin-top:6px;">
+                                                <label class="ovb-label">Arredondamento dos Cantos</label>
+                                                <div class="ovb-slider-wrap">
+                                                    <input type="range" class="ovb-range" data-ovb-range-for="borderRadius" data-unit="px" min="0" max="100" step="1" data-default="0">
+                                                    <input type="text" class="ovb-num-input" data-ovb-prop="borderRadius" placeholder="0px">
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2031,6 +2043,74 @@ function odyssee_vb_render_admin_page() {
                                         <option value="slide-up">↑ Ir para Cima</option>
                                         <option value="slide-corner">↗ Ir para a Quina / Diagonal</option>
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RECOLOR GLOBAL DOS ESTILOS UI (COLAPSADO POR PADRÃO PARA NÃO POLUIR) -->
+                        <div class="ovb-section collapsed" id="ovb-sec-style-recolor">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-sliders-h"></i> Personalizar Cores Globais do Estilo UI (Avançado)</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body" style="display:none;">
+                                <p style="font-size:10.5px;color:#94a3b8;margin:0 0 6px 0;line-height:1.4;">
+                                    Troque as cores de um estilo sem perder o visual dele: o brilho, o vidro, as sombras e os contornos do estilo são preservados — só a matiz muda.
+                                </p>
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Estilo a recolorir</label>
+                                    <select id="ovb-uisc-style" class="ovb-select">
+                                        <option value="odysseexp">⚡ OdysseeXP</option>
+                                        <option value="frutiger-aero">🫧 Frutiger Aero</option>
+                                        <option value="gtk4">🐧 GTK4 Libadwaita</option>
+                                        <option value="breeze">❄️ KDE Breeze</option>
+                                        <option value="mactahoe">🍎 MacTahoe Liquid Glass</option>
+                                        <option value="material">📐 Material Design</option>
+                                        <option value="material-3-expressive">🌸 Material 3 Expressive</option>
+                                    </select>
+                                </div>
+                                <div class="ovb-field">
+                                    <label class="ovb-label">Cor de Destaque do Estilo</label>
+                                    <div class="ovb-color-wrap">
+                                        <input type="color" class="ovb-uisc-color" data-uisc="accent" value="#8b5cf6">
+                                        <input type="text" class="ovb-input ovb-uisc-text" data-uisc="accent" placeholder="padrão do estilo">
+                                    </div>
+                                </div>
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Fundo — Escuro</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-uisc-color" data-uisc="dark.page" value="#1e1e1e">
+                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="dark.page" placeholder="padrão">
+                                        </div>
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Cartões — Escuro</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-uisc-color" data-uisc="dark.surface" value="#303030">
+                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="dark.surface" placeholder="padrão">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ovb-field-row">
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Fundo — Claro</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-uisc-color" data-uisc="light.page" value="#fafafa">
+                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="light.page" placeholder="padrão">
+                                        </div>
+                                    </div>
+                                    <div class="ovb-field" style="flex:1;">
+                                        <label class="ovb-label">Cartões — Claro</label>
+                                        <div class="ovb-color-wrap">
+                                            <input type="color" class="ovb-uisc-color" data-uisc="light.surface" value="#ffffff">
+                                            <input type="text" class="ovb-input ovb-uisc-text" data-uisc="light.surface" placeholder="padrão">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ovb-field-row" style="gap:6px;">
+                                    <button type="button" id="ovb-uisc-reset" class="ovb-mini-btn" style="flex:1;">↺ Restaurar cores originais</button>
+                                    <button type="button" class="ovb-mini-btn ovb-open-color-manager" style="flex:1;">🎨 Gerenciador (roda)</button>
                                 </div>
                             </div>
                         </div>

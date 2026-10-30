@@ -1796,6 +1796,7 @@
                 fill: cs.fill,
                 stroke: cs.stroke !== 'none' ? cs.stroke : '',
                 backgroundColor: cs.backgroundColor,
+                backgroundImage: cs.backgroundImage !== 'none' ? cs.backgroundImage : '',
                 borderRadius: cs.borderRadius,
                 borderStyle: cs.borderTopStyle,
                 borderWidth: cs.borderTopWidth,

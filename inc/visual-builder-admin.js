@@ -189,6 +189,7 @@
             bannerSel.text('Clique ou arraste qualquer item do site ao lado →');
             syncUiStyleCardsSelection();
             syncUiStyleColorsFields();
+            syncElementColorsPanel();
             if (!$('#ovb-text-quick-pt').is(':focus')) $('#ovb-text-quick-pt').val('');
             if (!$('#ovb-text-quick-en').is(':focus')) $('#ovb-text-quick-en').val('');
             $('.ovb-text-toggle').removeClass('active');
@@ -471,6 +472,9 @@
 
         // Sincroniza campos da seção de Cores do Estilo UI
         syncUiStyleColorsFields();
+
+        // Sincroniza novo Inspetor Rápido de Cores do Elemento (Sol, Lua, Sólido, Degradê, Contorno)
+        syncElementColorsPanel();
 
         // Se o Gerenciador de Cores estiver aberto, atualiza a lista de alvos
         if ($('#ovb-color-manager').is(':visible')) {
@@ -1240,6 +1244,89 @@
                 }
             }
         });
+    }
+
+    function syncElementColorsPanel() {
+        if (!currentSelector) {
+            $('.ovb-elc-theme-pill').removeClass('active');
+            $('.ovb-elc-theme-pill[data-theme-scope="all"]').addClass('active');
+            $('#ovb-elc-bg-solid-box').show();
+            $('#ovb-elc-bg-gradient-box').hide();
+            $('#ovb-elc-bg-none-box').hide();
+            $('.ovb-elc-type-pill').removeClass('active');
+            $('.ovb-elc-type-pill[data-bg-mode="solid"]').addClass('active');
+            return;
+        }
+
+        const rec = state.elements[currentSelector] || {};
+        const st = (rec.styles && rec.styles[currentBucket]) || {};
+        const comp = (currentSnapshot && currentSnapshot.computed) || {};
+        const content = rec.content || {};
+
+        // 1. Sincroniza Tema Scope (☀️ Sol / 🌙 Lua / ☀️🌙 Ambos)
+        const themeScope = rec.themeScope || 'all';
+        $('.ovb-elc-theme-pill').removeClass('active');
+        $(`.ovb-elc-theme-pill[data-theme-scope="${themeScope}"]`).addClass('active');
+
+        // 2. Preenchimento: Sólido vs Degradê vs Nenhum
+        const isGradSaved = !!st.bgGradientEnabled;
+        const compBgImg = String(comp.backgroundImage || '');
+        const isGradComputed = compBgImg.includes('gradient');
+        const isGradient = isGradSaved || (st.bgGradientEnabled === undefined && isGradComputed && !st.backgroundColor);
+
+        const curBgColor = st.backgroundColor !== undefined ? st.backgroundColor : (comp.backgroundColor || '');
+        const isTransparent = !isGradient && (curBgColor === 'transparent' || curBgColor === 'rgba(0, 0, 0, 0)' || curBgColor === 'none' || (st.backgroundColor === 'transparent'));
+
+        $('.ovb-elc-type-pill').removeClass('active');
+        if (isGradient) {
+            $('.ovb-elc-type-pill[data-bg-mode="gradient"]').addClass('active');
+            $('#ovb-elc-bg-gradient-box').show();
+            $('#ovb-elc-bg-solid-box').hide();
+            $('#ovb-elc-bg-none-box').hide();
+            updateGradientPreview();
+        } else if (isTransparent) {
+            $('.ovb-elc-type-pill[data-bg-mode="none"]').addClass('active');
+            $('#ovb-elc-bg-none-box').show();
+            $('#ovb-elc-bg-solid-box').hide();
+            $('#ovb-elc-bg-gradient-box').hide();
+        } else {
+            $('.ovb-elc-type-pill[data-bg-mode="solid"]').addClass('active');
+            $('#ovb-elc-bg-solid-box').show();
+            $('#ovb-elc-bg-gradient-box').hide();
+            $('#ovb-elc-bg-none-box').hide();
+        }
+
+        // 3. Cor do Texto: mostra somente se o elemento contém texto ou tag de texto
+        const tag = (currentSnapshot && currentSnapshot.tagName) ? currentSnapshot.tagName.toUpperCase() : '';
+        const hasText = !!(content.text || (currentSnapshot && currentSnapshot.text) || ['H1','H2','H3','H4','H5','H6','P','SPAN','A','BUTTON','LABEL','LI','TEXT','TSPAN','STRONG','EM','B','I'].includes(tag));
+        if (hasText) {
+            $('#ovb-elc-text-card').show();
+        } else {
+            $('#ovb-elc-text-card').hide();
+        }
+
+        // 4. Cores SVG (fill & stroke): mostra apenas se for SVG
+        const isSvg = (currentSnapshot && (currentSnapshot.isSvg || tag === 'SVG' || tag === 'PATH' || tag === 'G' || tag === 'CIRCLE' || tag === 'RECT'));
+        if (isSvg) {
+            $('#ovb-elc-svg-card').show();
+        } else {
+            $('#ovb-elc-svg-card').hide();
+        }
+
+        // 5. Contorno / Borda
+        const hasBorder = (st.borderWidth && st.borderWidth !== '0px') || (st.borderStyle && st.borderStyle !== 'none') || (comp.borderWidth && comp.borderWidth !== '0px' && comp.borderStyle !== 'none');
+        $('#ovb-elc-border-toggle').prop('checked', !!hasBorder);
+    }
+
+    function updateGradientPreview() {
+        const c1 = $('[data-ovb-prop="bgGradientColor1"]').first().val() || '#8b5cf6';
+        const c2 = $('[data-ovb-prop="bgGradientColor2"]').first().val() || '#ec4899';
+        const type = $('[data-ovb-prop="bgGradientType"]').val() || 'linear';
+        const angle = $('[data-ovb-prop="bgGradientAngle"]').val() || 135;
+        const gradCss = type === 'radial'
+            ? `radial-gradient(circle, ${c1}, ${c2})`
+            : `linear-gradient(${angle}deg, ${c1}, ${c2})`;
+        $('#ovb-elc-gradient-preview').css('background', gradCss);
     }
 
     let cmPicker = null;
@@ -2295,6 +2382,138 @@
                 showToast(`Cores originais do estilo '${style}' restauradas`);
             }
         });
+
+        // ==========================================
+        // INSPETOR DE CORES DO ELEMENTO (TEMA SOL/LUA, SÓLIDO, DEGRADÊ & CONTORNO)
+        // ==========================================
+        // Alternador de Tema: Sol (☀️) / Lua (🌙) / Ambos
+        $(document).on('click', '.ovb-elc-theme-pill', function () {
+            if (!currentSelector) return;
+            const scope = $(this).attr('data-theme-scope');
+            const rec = ensureElementRecord(currentSelector);
+            rec.themeScope = scope;
+            $('#ovb-theme-scope').val(scope);
+            $('.ovb-elc-theme-pill').removeClass('active');
+            $(this).addClass('active');
+
+            // Sincroniza o preview para o tema escolhido para feedback imediato
+            if (scope === 'light' || scope === 'dark') {
+                postToPreview({ type: 'OVB_SET_PREVIEW_THEME', theme: scope });
+                $('.ovb-preview-theme-btn').removeClass('active');
+                $(`.ovb-preview-theme-btn[data-theme="${scope}"]`).addClass('active');
+            }
+
+            pushHistory();
+            syncPreview();
+            const labels = {
+                'all': '☀️🌙 Cores aplicadas em Ambos os Temas',
+                'light': '☀️ Cores aplicadas somente no Tema Claro',
+                'dark': '🌙 Cores aplicadas somente no Tema Escuro'
+            };
+            showToast(labels[scope] || scope);
+        });
+
+        // Resetar Cores do Elemento para o Default
+        $('#ovb-elc-reset-default').on('click', function () {
+            if (!currentSelector) return;
+            const rec = state.elements[currentSelector];
+            if (!rec) return;
+
+            const colorProps = [
+                'backgroundColor', 'bgGradientEnabled', 'bgGradientColor1', 'bgGradientColor2',
+                'bgGradientType', 'bgGradientAngle', 'color', 'fill', 'stroke',
+                'borderColor', 'borderWidth', 'borderStyle'
+            ];
+
+            ['desktop', 'tablet', 'mobile', 'global', 'dark', 'light'].forEach(b => {
+                if (rec.styles && rec.styles[b]) {
+                    colorProps.forEach(p => delete rec.styles[b][p]);
+                }
+            });
+
+            pushHistory();
+            syncPreview();
+            populateSidebarFromSelection();
+            showToast('↺ Cores do elemento resetadas para o default original!');
+        });
+
+        // Alternador de Fundo: Sólido | Degradê | Nenhum
+        $(document).on('click', '.ovb-elc-type-pill', function () {
+            if (!currentSelector) return;
+            const mode = $(this).attr('data-bg-mode');
+            const rec = ensureElementRecord(currentSelector);
+            const st = rec.styles[currentBucket];
+
+            $('.ovb-elc-type-pill').removeClass('active');
+            $(this).addClass('active');
+
+            if (mode === 'solid') {
+                st.bgGradientEnabled = false;
+                $('#ovb-bg-grad-enabled').prop('checked', false);
+                if (!st.backgroundColor || st.backgroundColor === 'transparent') {
+                    st.backgroundColor = '#8b5cf6';
+                    $('[data-ovb-prop="backgroundColor"]').val('#8b5cf6');
+                }
+                $('#ovb-elc-bg-solid-box').show();
+                $('#ovb-elc-bg-gradient-box').hide();
+                $('#ovb-elc-bg-none-box').hide();
+            } else if (mode === 'gradient') {
+                st.bgGradientEnabled = true;
+                $('#ovb-bg-grad-enabled').prop('checked', true);
+                if (!st.bgGradientColor1) st.bgGradientColor1 = '#8b5cf6';
+                if (!st.bgGradientColor2) st.bgGradientColor2 = '#ec4899';
+                if (!st.bgGradientType) st.bgGradientType = 'linear';
+                if (st.bgGradientAngle === undefined) st.bgGradientAngle = 135;
+
+                $('[data-ovb-prop="bgGradientColor1"]').val(st.bgGradientColor1);
+                $('[data-ovb-prop="bgGradientColor2"]').val(st.bgGradientColor2);
+                $('[data-ovb-prop="bgGradientType"]').val(st.bgGradientType);
+                $('[data-ovb-prop="bgGradientAngle"]').val(st.bgGradientAngle);
+
+                $('#ovb-elc-bg-gradient-box').show();
+                $('#ovb-elc-bg-solid-box').hide();
+                $('#ovb-elc-bg-none-box').hide();
+                updateGradientPreview();
+            } else if (mode === 'none') {
+                st.bgGradientEnabled = false;
+                $('#ovb-bg-grad-enabled').prop('checked', false);
+                st.backgroundColor = 'transparent';
+                $('[data-ovb-prop="backgroundColor"]').val('transparent');
+                $('#ovb-elc-bg-none-box').show();
+                $('#ovb-elc-bg-solid-box').hide();
+                $('#ovb-elc-bg-gradient-box').hide();
+            }
+
+            pushHistory();
+            syncPreview();
+        });
+
+        $(document).on('input change', '[data-ovb-prop="bgGradientColor1"], [data-ovb-prop="bgGradientColor2"], [data-ovb-prop="bgGradientType"], [data-ovb-prop="bgGradientAngle"]', function () {
+            updateGradientPreview();
+        });
+
+        // Toggle do Contorno / Borda
+        $('#ovb-elc-border-toggle').on('change', function () {
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            const st = rec.styles[currentBucket];
+            if ($(this).is(':checked')) {
+                if (!st.borderStyle || st.borderStyle === 'none') st.borderStyle = 'solid';
+                if (!st.borderWidth) st.borderWidth = '1px';
+                if (!st.borderColor) st.borderColor = '#8b5cf6';
+                $('[data-ovb-prop="borderStyle"]').val(st.borderStyle);
+                $('[data-ovb-prop="borderWidth"]').val(st.borderWidth);
+                $('[data-ovb-prop="borderColor"]').val(st.borderColor);
+            } else {
+                st.borderStyle = 'none';
+                delete st.borderWidth;
+                $('[data-ovb-prop="borderStyle"]').val('none');
+                $('[data-ovb-prop="borderWidth"]').val('');
+            }
+            pushHistory();
+            syncPreview();
+        });
+
 
 
         $('#ovb-content-src').on('input change', function () {

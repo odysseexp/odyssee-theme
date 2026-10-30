@@ -2016,3 +2016,138 @@ body.appearance_page_odyssee-visual-builder #wpbody-content {
     line-height: 1.4;
 }
 
+/* --- Inspetor Rápido de Cores do Elemento (Sol, Lua, Sólido, Degradê, Contorno) --- */
+.ovb-elc-theme-bar {
+    background: #0d121d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.ovb-elc-theme-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.ovb-elc-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #cbd5e1;
+}
+.ovb-elc-reset-btn {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.28);
+    color: #fca5a5;
+    padding: 3px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s;
+}
+.ovb-elc-reset-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #ffffff;
+}
+.ovb-elc-theme-pills {
+    display: flex;
+    gap: 5px;
+}
+.ovb-elc-theme-pill {
+    flex: 1;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.15s;
+}
+.ovb-elc-theme-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+.ovb-elc-theme-pill.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(217, 70, 239, 0.25));
+    border-color: #8b5cf6;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.25);
+}
+.ovb-elc-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+.ovb-elc-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.ovb-elc-card-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #f1f5f9;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.ovb-elc-card-title i {
+    color: #c084fc;
+    font-size: 12px;
+}
+.ovb-elc-type-pills {
+    display: inline-flex;
+    background: #0b0f19;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    padding: 2px;
+    gap: 2px;
+}
+.ovb-elc-type-pill {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.ovb-elc-type-pill:hover {
+    color: #f8fafc;
+}
+.ovb-elc-type-pill.active {
+    background: #8b5cf6;
+    color: #ffffff;
+}
+.ovb-elc-box {
+    margin-top: 4px;
+}
+.ovb-elc-grad-bar {
+    width: 100%;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.4);
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+}
+
+
