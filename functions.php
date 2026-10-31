@@ -43,9 +43,97 @@ function odyssee_security_headers() {
     header( "Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=(), browsing-topics=(), attribution-reporting=()" );
 }
 
+/**
+ * Sanitiza URLs de mídia e conteúdo para garantir que nunca apontem para localhost ou 127.0.0.1.
+ * Converte qualquer URL local (ex: http://localhost:8881/wp-content/...) em caminho relativo (/wp-content/...),
+ * garantindo que carregue corretamente em produção (odysseexp.com) sem acionar prompts de permissão
+ * de rede local ("Access other apps and services on this device").
+ */
+function odyssee_sanitize_media_url( $url ) {
+    if ( empty( $url ) || ! is_string( $url ) ) {
+        return $url;
+    }
+    // Remove protocolo e host local (localhost ou 127.0.0.1 com qualquer porta)
+    $clean = preg_replace( '#^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?(/.*)?$#i', '$1', $url );
+    if ( ! empty( $clean ) && $clean[0] !== '/' && strpos( $clean, '://' ) === false && strpos( $clean, 'data:' ) !== 0 ) {
+        $clean = '/' . $clean;
+    }
+    return ! empty( $clean ) ? $clean : $url;
+}
+
+function odyssee_sanitize_html_urls( $html ) {
+    if ( empty( $html ) || ! is_string( $html ) ) {
+        return $html;
+    }
+    return preg_replace( '#https?://(?:localhost|127\.0\.0\.1)(?::\d+)?(/wp-content/[^\s"\'<>]*)#i', '$1', $html );
+}
+
+// Filtros para interceptar qualquer URL de anexo/imagem gerada pelo WordPress
+add_filter( 'wp_get_attachment_url', 'odyssee_sanitize_media_url', 99 );
+add_filter( 'wp_get_attachment_image_src', function( $image ) {
+    if ( is_array( $image ) && ! empty( $image[0] ) ) {
+        $image[0] = odyssee_sanitize_media_url( $image[0] );
+    }
+    return $image;
+}, 99 );
+add_filter( 'wp_calculate_image_srcset', function( $sources ) {
+    if ( is_array( $sources ) ) {
+        foreach ( $sources as &$src ) {
+            if ( isset( $src['url'] ) ) {
+                $src['url'] = odyssee_sanitize_media_url( $src['url'] );
+            }
+        }
+        unset( $src );
+    }
+    return $sources;
+}, 99 );
+add_filter( 'the_content', 'odyssee_sanitize_html_urls', 99 );
+
+// Filtra dinamicamente as opções salvas no banco para garantir que thumbnails nunca tenham localhost
+add_filter( 'option_odyssee_servicos_overrides', function( $overrides ) {
+    if ( is_array( $overrides ) ) {
+        foreach ( $overrides as &$item ) {
+            if ( is_array( $item ) && ! empty( $item['thumbnail'] ) ) {
+                $item['thumbnail'] = odyssee_sanitize_media_url( $item['thumbnail'] );
+            }
+        }
+        unset( $item );
+    }
+    return $overrides;
+}, 99 );
+
+add_filter( 'option_odyssee_cv_data', function( $cv_data ) {
+    if ( is_array( $cv_data ) && isset( $cv_data['habilidades'] ) && is_array( $cv_data['habilidades'] ) ) {
+        foreach ( $cv_data['habilidades'] as &$skills ) {
+            if ( is_array( $skills ) ) {
+                foreach ( $skills as &$skill ) {
+                    if ( isset( $skill['icon_url'] ) ) {
+                        $skill['icon_url'] = odyssee_sanitize_media_url( $skill['icon_url'] );
+                    }
+                }
+                unset( $skill );
+            }
+        }
+        unset( $skills );
+    }
+    return $cv_data;
+}, 99 );
+
+add_filter( 'option_odyssee_produtos_custom', function( $produtos ) {
+    if ( is_array( $produtos ) ) {
+        foreach ( $produtos as &$p ) {
+            if ( is_array( $p ) && ! empty( $p['thumbnail'] ) ) {
+                $p['thumbnail'] = odyssee_sanitize_media_url( $p['thumbnail'] );
+            }
+        }
+        unset( $p );
+    }
+    return $produtos;
+}, 99 );
+
 function odyssee_scripts() {
     
-    $theme_version = '26.10.15';
+    $theme_version = '26.10.16';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
@@ -756,7 +844,7 @@ function odyssee_sanitize_overrides( $input ) {
             $sanitized['descricao'] = sanitize_textarea_field( $fields['descricao'] );
         }
         if ( isset( $fields['thumbnail'] ) && trim( $fields['thumbnail'] ) !== '' ) {
-            $sanitized['thumbnail'] = esc_url_raw( $fields['thumbnail'] );
+            $sanitized['thumbnail'] = odyssee_sanitize_media_url( esc_url_raw( $fields['thumbnail'] ) );
         }
         if ( isset( $fields['informativo'] ) && trim( $fields['informativo'] ) !== '' ) {
             $sanitized['informativo'] = sanitize_textarea_field( $fields['informativo'] );
@@ -1166,7 +1254,7 @@ function odyssee_produtos_handle_actions() {
                 'descricao'   => isset( $_POST['novo_descricao'] ) ? sanitize_textarea_field( $_POST['novo_descricao'] ) : '',
                 'informativo' => isset( $_POST['novo_informativo'] ) ? sanitize_textarea_field( $_POST['novo_informativo'] ) : '',
                 'itens'       => isset( $_POST['novo_itens'] ) ? sanitize_textarea_field( $_POST['novo_itens'] ) : '',
-                'thumbnail'   => isset( $_POST['novo_thumbnail'] ) ? esc_url_raw( $_POST['novo_thumbnail'] ) : '',
+                'thumbnail'   => isset( $_POST['novo_thumbnail'] ) ? odyssee_sanitize_media_url( esc_url_raw( $_POST['novo_thumbnail'] ) ) : '',
                 'preco'       => isset( $_POST['novo_preco'] ) ? floatval( $_POST['novo_preco'] ) : 0,
             );
             update_option( 'odyssee_produtos_custom', $produtos );
@@ -1210,7 +1298,7 @@ function odyssee_produtos_handle_actions() {
                     'descricao'   => isset( $p['descricao'] ) ? sanitize_textarea_field( $p['descricao'] ) : '',
                     'informativo' => isset( $p['informativo'] ) ? sanitize_textarea_field( $p['informativo'] ) : '',
                     'itens'       => isset( $p['itens'] ) ? sanitize_textarea_field( $p['itens'] ) : '',
-                    'thumbnail'   => isset( $p['thumbnail'] ) ? esc_url_raw( $p['thumbnail'] ) : '',
+                    'thumbnail'   => isset( $p['thumbnail'] ) ? odyssee_sanitize_media_url( esc_url_raw( $p['thumbnail'] ) ) : '',
                     'preco'       => isset( $p['preco'] ) ? floatval( $p['preco'] ) : 0,
                 );
             }
@@ -1645,8 +1733,11 @@ function odyssee_produtos_admin_page() {
 
 function odyssee_get_initial_posts() {
     $cached = get_transient( 'odyssee_initial_posts' );
-    if ( false !== $cached && is_array( $cached ) ) {
-        return $cached;
+    if ( false !== $cached && is_array( $cached ) && ! empty( $cached ) ) {
+        // Se o cache tiver URLs de localhost antigas, força recomputação com URLs limpas
+        if ( ! isset( $cached[0]['image'] ) || strpos( $cached[0]['image'], 'localhost' ) === false ) {
+            return $cached;
+        }
     }
 
     $args = array(
@@ -1703,10 +1794,10 @@ function odyssee_get_initial_posts() {
                 'category'      => $category_list[0],
                 'subCategories' => $sub_category_list,
                 'subCategory'   => isset($sub_category_list[0]) ? $sub_category_list[0] : '',
-                'image'         => $img_url,
+                'image'         => odyssee_sanitize_media_url( $img_url ),
                 'date'          => get_the_date( 'c' ),
                 'link'          => get_permalink(),
-                'content'       => html_entity_decode( get_the_content(), ENT_QUOTES, 'UTF-8' ),
+                'content'       => odyssee_sanitize_html_urls( html_entity_decode( get_the_content(), ENT_QUOTES, 'UTF-8' ) ),
             );
         }
         wp_reset_postdata();

@@ -2,7 +2,7 @@
 
 $orbit_pool = get_transient( 'odyssee_orbit_pool' );
 
-if ( false === $orbit_pool || ! is_array( $orbit_pool ) || empty( $orbit_pool ) || empty( $orbit_pool[0]['thumb'] ) ) {
+if ( false === $orbit_pool || ! is_array( $orbit_pool ) || empty( $orbit_pool ) || empty( $orbit_pool[0]['thumb'] ) || ( isset( $orbit_pool[0]['thumb'] ) && strpos( $orbit_pool[0]['thumb'], 'localhost' ) !== false ) ) {
     $orbit_query = new WP_Query( array(
         'post_type'              => 'post',
         'post_status'            => 'publish',
@@ -39,8 +39,8 @@ if ( false === $orbit_pool || ! is_array( $orbit_pool ) || empty( $orbit_pool ) 
             $orbit_pool[] = array(
                 'id'     => get_the_ID(),
                 'title'  => get_the_title(),
-                'thumb'  => $chosen_thumb,
-                'full'   => $full_url,
+                'thumb'  => function_exists( 'odyssee_sanitize_media_url' ) ? odyssee_sanitize_media_url( $chosen_thumb ) : $chosen_thumb,
+                'full'   => function_exists( 'odyssee_sanitize_media_url' ) ? odyssee_sanitize_media_url( $full_url ) : $full_url,
                 'width'  => $w,
                 'height' => $h,
             );

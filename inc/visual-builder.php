@@ -273,7 +273,7 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
  */
 function odyssee_vb_asset_ver( $relative_path ) {
     $full = get_template_directory() . '/' . ltrim( $relative_path, '/' );
-    return file_exists( $full ) ? (string) filemtime( $full ) : '26.10.15';
+    return file_exists( $full ) ? (string) filemtime( $full ) : '26.10.16';
 }
 
 /**

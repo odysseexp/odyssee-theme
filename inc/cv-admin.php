@@ -960,7 +960,7 @@ function odyssee_cv_sanitize_habilidades( $habilidades_raw ) {
                     $sanitized[ $categoria ][] = array(
                         'nome' => isset( $item['nome'] ) ? sanitize_text_field( $item['nome'] ) : '',
                         'nivel' => isset( $item['nivel'] ) ? sanitize_text_field( $item['nivel'] ) : '',
-                        'icon_url' => isset( $item['icon_url'] ) ? esc_url_raw( $item['icon_url'] ) : '',
+                        'icon_url' => isset( $item['icon_url'] ) ? ( function_exists( 'odyssee_sanitize_media_url' ) ? odyssee_sanitize_media_url( esc_url_raw( $item['icon_url'] ) ) : esc_url_raw( $item['icon_url'] ) ) : '',
                         'icon_id' => isset( $item['icon_id'] ) ? intval( $item['icon_id'] ) : 0,
                     );
                 }

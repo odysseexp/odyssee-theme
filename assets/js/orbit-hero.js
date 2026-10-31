@@ -52,6 +52,15 @@
                 { id: 5, title: 'Ilustração Cartoon', thumb: '/wp-content/uploads/2026/01/art-card-services_13.webp', full: '/wp-content/uploads/2026/01/art-card-services_13.webp', width: 600, height: 400 },
                 { id: 6, title: 'Motion Design', thumb: '/wp-content/uploads/2025/12/art-card-services-motion.webp', full: '/wp-content/uploads/2025/12/art-card-services-motion.webp', width: 600, height: 400 }
             ];
+        } else {
+            items.forEach(function (it) {
+                if (it && typeof it.thumb === 'string') {
+                    it.thumb = it.thumb.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i, '/');
+                }
+                if (it && typeof it.full === 'string') {
+                    it.full = it.full.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i, '/');
+                }
+            });
         }
 
         function getCfg() {

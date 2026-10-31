@@ -1,5 +1,10 @@
 
 
+function odysseeCleanUrl(url) {
+    if (!url || typeof url !== 'string') return url;
+    return url.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i, '/');
+}
+
 function escapeHtml(str) {
     if (typeof str !== 'string') return '';
     const div = document.createElement('div');
@@ -383,7 +388,13 @@ let allPosts = (typeof odysseeInitialPosts !== 'undefined' && Array.isArray(odys
             const cached = (window.safeStorage && window.safeStorage.getItem(cacheKey)) || (typeof localStorage !== 'undefined' ? localStorage.getItem(cacheKey) : null);
             return cached ? JSON.parse(cached) : [];
         } catch (e) { return []; }
-    })(); 
+    })();
+
+if (Array.isArray(allPosts)) {
+    allPosts.forEach(function (p) {
+        if (p && p.image) p.image = odysseeCleanUrl(p.image);
+    });
+} 
 
 const wpConfig = {
     baseUrl: (typeof window !== 'undefined' ? window.location.origin : ''),
@@ -815,11 +826,12 @@ if (typeof odysseeOverrides !== 'undefined') {
     const allServiceArrays = [designServices, designPackages, videoServices, videoPackages, motionGraphicsServices, ilustracaoDigitalServices];
     allServiceArrays.forEach(function (arr) {
         arr.forEach(function (svc, idx) {
+            svc.image = odysseeCleanUrl(svc.image);
             const override = odysseeOverrides[svc.id];
             if (override) {
                 if (override.nome) svc.title = override.nome;
                 if (override.descricao) svc.desc = override.descricao;
-                if (override.thumbnail) svc.image = override.thumbnail;
+                if (override.thumbnail) svc.image = odysseeCleanUrl(override.thumbnail);
                 if (override.ordem !== undefined && override.ordem !== '') {
                     svc.ordem = parseInt(override.ordem, 10);
                 } else {
