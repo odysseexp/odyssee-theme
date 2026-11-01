@@ -2037,8 +2037,8 @@
 
             sec.querySelectorAll(
                 '#artcraft-orbit-container, .hero-content-centered, .hero-logo-container, .hero-symbol, .hero-slogan, .scroll-indicator, ' +
-                'h1, h2, h3, h4, p, .category-banner-wrapper, img.category-banner, svg#dg-animated-banner, ' +
-                'svg#dg-animated-banner g.dg-item[id], svg#dg-animated-banner text.dg-item, ' +
+                'h1, h2, h3, h4, p, .category-banner-wrapper, img.category-banner, svg#dg-animated-banner, svg.dg-banner-svg, ' +
+                'g.dg-item[id], text.dg-item, ' +
                 '.portfolio-showcase, .carousel-wrapper, .category-buttons, .category-image-placeholder, .category-posts-link, ' +
                 '.services-grid, .service-card, .package-card, .btn-primary, button, a.btn, .ovb-custom-block'
             ).forEach(child => {
@@ -2048,9 +2048,9 @@
                     customName = `🔤 Título Principal Abaixo da Logo (.hero-slogan)`;
                 } else if (child.matches && child.matches('.hero-symbol')) {
                     customName = `🎨 Logo Símbolo Central (.hero-symbol)`;
-                } else if (child.matches && child.matches('svg#dg-animated-banner g.dg-item[id]')) {
+                } else if (child.matches && child.matches('g.dg-item[id]')) {
                     customName = `🎨 Ícone SVG: ${child.id.replace('.png', '')}`;
-                } else if (child.matches && child.matches('svg#dg-animated-banner text.dg-item')) {
+                } else if (child.matches && child.matches('text.dg-item')) {
                     customName = `🔤 Texto SVG: ${child.textContent.trim()}`;
                 }
                 const n = makeNode(child, customName, getElementLabel(sec));
@@ -2067,8 +2067,14 @@
         // 5. Páginas sem <section> ou elementos de Currículo/FAQ/Blog + Blocos Customizados na Raiz
         document.querySelectorAll('.cv-container, .faq-container, .posts-page-container, article, footer.site-footer').forEach(box => {
             const bChildren = [];
-            box.querySelectorAll('h1, h2, h3, h4, p, img, button, a, .faq-item, .cv-card, .cv-section, .ovb-custom-block').forEach(ch => {
-                const n = makeNode(ch, null, getElementLabel(box));
+            box.querySelectorAll('h1, h2, h3, h4, p, img, button, a, .faq-item, .cv-card, .cv-section, .ovb-custom-block, .category-banner-wrapper, svg.dg-banner-svg, g.dg-item[id], text.dg-item').forEach(ch => {
+                let customName = null;
+                if (ch.matches && ch.matches('g.dg-item[id]')) {
+                    customName = `🎨 Ícone SVG: ${ch.id.replace('.png', '')}`;
+                } else if (ch.matches && ch.matches('text.dg-item')) {
+                    customName = `🔤 Texto SVG: ${ch.textContent.trim()}`;
+                }
+                const n = makeNode(ch, customName, getElementLabel(box));
                 if (n) bChildren.push(n);
             });
             const bGroup = makeNode(box, `📄 Camada: ${getElementLabel(box)}`);
