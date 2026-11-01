@@ -2,6 +2,18 @@
 (function () {
     
     const categoryBanners = {
+        'design-grafico': {
+            'theme-dark color-red': '/wp-content/uploads/2025/12/banner-dg_1.webp',
+            'theme-dark color-blue': '/wp-content/uploads/2025/12/banner-dg_5.webp',
+            'theme-dark color-green': '/wp-content/uploads/2025/12/banner-dg_3.webp',
+            'theme-dark color-yellow': '/wp-content/uploads/2026/05/banner-dg_2.webp',
+            'theme-dark color-purple': '/wp-content/uploads/2025/12/banner-dg_4.webp',
+            'theme-light color-red': '/wp-content/uploads/2026/05/banner-dg_6.webp',
+            'theme-light color-yellow': '/wp-content/uploads/2026/05/banner-dg_7.webp',
+            'theme-light color-green': '/wp-content/uploads/2026/05/banner-dg_8.webp',
+            'theme-light color-purple': '/wp-content/uploads/2026/05/banner-dg_9.webp',
+            'theme-light color-blue': '/wp-content/uploads/2026/05/banner-dg_10.webp'
+        },
         'edicao-video': {
             'theme-dark color-red': '/wp-content/uploads/2025/12/banner-dg_11.webp',
             'theme-dark color-yellow': '/wp-content/uploads/2026/05/banner-dg_12.webp',
@@ -71,6 +83,11 @@
         const banner = document.getElementById(`banner-${category}`);
         if (!banner) return;
 
+        // Se o banner for um wrapper SVG (div.category-banner-wrapper), não alterar nem ocultar
+        if (banner.tagName !== 'IMG') {
+            return;
+        }
+
         const currentTheme = getCurrentTheme();
         const bannerUrl = categoryBanners[category] && categoryBanners[category][currentTheme];
 
@@ -78,7 +95,6 @@
             banner.src = bannerUrl;
             banner.style.display = 'block';
         } else {
-            
             banner.style.display = 'none';
         }
     }
