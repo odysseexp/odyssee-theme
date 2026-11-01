@@ -2132,54 +2132,33 @@ function initCategoryBannerAnimations() {
     const banners = document.querySelectorAll('.category-banner-wrapper');
     if (!banners.length) return;
 
-    let ticking = false;
+    banners.forEach(b => {
+        const svg = b.querySelector('.dg-banner-svg');
+        if (!svg) return;
 
-    function checkVisibility() {
-        const vh = window.innerHeight || document.documentElement.clientHeight;
-        banners.forEach(b => {
-            const svg = b.querySelector('.dg-banner-svg');
-            if (!svg) return;
-            const rect = b.getBoundingClientRect();
-            
-            const isCompletelyOutOfView = rect.bottom < -30 || rect.top > vh + 30;
-            const isExitingTop = rect.bottom > 0 && rect.bottom < vh * 0.16;
-            const isExitingBottom = rect.top < vh && rect.top > vh * 0.88;
-            const isNearExit = isExitingTop || isExitingBottom;
+        // Garante visibilidade imediata (nunca preso em opacidade zero)
+        svg.classList.add('dg-in-view');
+        svg.classList.remove('dg-exiting');
 
-            if (isCompletelyOutOfView) {
-                svg.classList.remove('dg-in-view');
-                svg.classList.remove('dg-exiting');
-            } else if (isNearExit) {
-                if (svg.classList.contains('dg-in-view')) {
-                    svg.classList.remove('dg-in-view');
-                    svg.classList.add('dg-exiting');
-                }
-            } else {
-                svg.classList.remove('dg-exiting');
-                svg.classList.add('dg-in-view');
-            }
-        });
-        ticking = false;
-    }
-
-    window.addEventListener('scroll', () => {
-        if (!ticking) {
-            requestAnimationFrame(checkVisibility);
-            ticking = true;
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        svg.classList.add('dg-in-view');
+                        svg.classList.remove('dg-exiting');
+                    }
+                });
+            }, {
+                root: null,
+                rootMargin: '150px 0px 150px 0px',
+                threshold: [0, 0.05, 0.1]
+            });
+            observer.observe(b);
         }
-    }, { passive: true });
-
-    window.addEventListener('resize', () => {
-        if (!ticking) {
-            requestAnimationFrame(checkVisibility);
-            ticking = true;
-        }
-    }, { passive: true });
-
-    checkVisibility();
+    });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function runInitializations() {
     initUI();
     initHeroTilt();
     initBannerParallax();
@@ -2191,7 +2170,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     try { detectFontAwesomeAndEnableSvgFallback(); } catch(e){}
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runInitializations);
+} else {
+    runInitializations();
+}
 
 window.addEventListener('load', () => {
     initUI();

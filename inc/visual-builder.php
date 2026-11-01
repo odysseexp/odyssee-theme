@@ -273,7 +273,7 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
  */
 function odyssee_vb_asset_ver( $relative_path ) {
     $full = get_template_directory() . '/' . ltrim( $relative_path, '/' );
-    return file_exists( $full ) ? (string) filemtime( $full ) : '26.10.16';
+    return file_exists( $full ) ? (string) filemtime( $full ) : '26.10.17';
 }
 
 /**
@@ -431,6 +431,12 @@ function odyssee_vb_ajax_save() {
         'shortcuts'               => isset( $decoded['shortcuts'] ) && is_array( $decoded['shortcuts'] ) ? $decoded['shortcuts'] : array(),
         'uiStyleColors'           => isset( $decoded['uiStyleColors'] ) && is_array( $decoded['uiStyleColors'] ) ? $decoded['uiStyleColors'] : array(),
     );
+
+    // Sanitiza recursivamente para garantir que nenhuma URL local (localhost/127.0.0.1) seja gravada no banco ou nos arquivos do tema
+    if ( function_exists( 'odyssee_sanitize_data_urls_recursive' ) ) {
+        $clean        = odyssee_sanitize_data_urls_recursive( $clean );
+        $compiled_css = odyssee_sanitize_data_urls_recursive( $compiled_css );
+    }
 
     // 1. Save revision backup (up to 10 revisions)
     $revisions = get_option( ODYSSEE_VB_REVISIONS_KEY, array() );

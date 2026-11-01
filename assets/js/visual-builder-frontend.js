@@ -1099,6 +1099,12 @@
             // Apply Custom Color Palettes Engine (Global, Per-Page, and Visitor Cookie/Session)
             applyColorPalettesEngine();
 
+            // Garante que o banner SVG de Design Gráfico esteja sempre visível e ativo (no editor e para visitantes)
+            document.querySelectorAll('.dg-banner-svg').forEach(svg => {
+                svg.classList.add('dg-in-view');
+                svg.classList.remove('dg-exiting');
+            });
+
             if (!scrollObserver && 'IntersectionObserver' in window) {
                 scrollObserver = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {

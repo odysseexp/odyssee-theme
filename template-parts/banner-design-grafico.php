@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0 1920 720" class="dg-banner-svg" id="dg-animated-banner">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0 1920 720" class="dg-banner-svg dg-in-view" id="dg-animated-banner">
   
   <g id="Layer_1" data-name="Layer 1">
     <g class="dg-anim-wrap">

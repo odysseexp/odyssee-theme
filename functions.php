@@ -131,9 +131,37 @@ add_filter( 'option_odyssee_produtos_custom', function( $produtos ) {
     return $produtos;
 }, 99 );
 
+/**
+ * Sanitiza recursivamente qualquer array, objeto ou string JSON para remover referências a localhost ou 127.0.0.1,
+ * convertendo URLs para caminhos relativos (/wp-content/...).
+ */
+function odyssee_sanitize_data_urls_recursive( $data ) {
+    if ( is_string( $data ) ) {
+        if ( ( str_starts_with( $data, '{' ) && str_ends_with( $data, '}' ) ) || ( str_starts_with( $data, '[' ) && str_ends_with( $data, ']' ) ) ) {
+            $maybe_json = json_decode( $data, true );
+            if ( json_last_error() === JSON_ERROR_NONE && is_array( $maybe_json ) ) {
+                return wp_json_encode( odyssee_sanitize_data_urls_recursive( $maybe_json ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+            }
+        }
+        return preg_replace( '#https?://(?:localhost|127\.0\.0\.1)(?::\d+)?(/wp-content/[^\s"\'<>]*)#i', '$1', $data );
+    }
+    if ( is_array( $data ) ) {
+        foreach ( $data as $k => $v ) {
+            $data[ $k ] = odyssee_sanitize_data_urls_recursive( $v );
+        }
+    }
+    return $data;
+}
+
+// Filtra opções do Visual Studio antes de salvar no banco e ao carregar do banco
+add_filter( 'pre_update_option_odyssee_visual_builder_data', 'odyssee_sanitize_data_urls_recursive', 99 );
+add_filter( 'pre_update_option_odyssee_visual_builder_presets', 'odyssee_sanitize_data_urls_recursive', 99 );
+add_filter( 'option_odyssee_visual_builder_data', 'odyssee_sanitize_data_urls_recursive', 99 );
+add_filter( 'option_odyssee_visual_builder_presets', 'odyssee_sanitize_data_urls_recursive', 99 );
+
 function odyssee_scripts() {
     
-    $theme_version = '26.10.16';
+    $theme_version = '26.10.17';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 

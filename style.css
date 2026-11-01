@@ -3,7 +3,7 @@ Theme Name: OdysseeXP WordPress Theme
 Theme URI: https://odysseexp.com
 Author: Harley
 Description: Tema moderno para a Odyssee Experience com o layout original (esteira, hamburger e categorias), com fundo estrito Claro/Escuro neutro e acentos refinados em Roxo e Vermelho.
-Version: 26.10.16
+Version: 26.10.17
 */
 :root {
     --font-ubuntu: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -961,12 +961,12 @@ body.theme-light .dg-banner-svg {
 .dg-banner-svg path,
 .dg-banner-svg text,
 .dg-banner-svg tspan {
-    fill: currentColor !important;
+    fill: currentColor;
     transition: fill 0.3s ease, filter 0.3s ease, transform 0.35s ease;
 }
 .dg-anim-wrap {
-    opacity: 0;
-    transform: scale(0.85) translateY(28px);
+    opacity: 1;
+    transform: scale(1) translateY(0);
     transform-origin: center center;
     transform-box: fill-box;
     transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1000,10 +1000,8 @@ body.theme-light .dg-banner-svg {
 .dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(22) { transition-delay: 0.66s; }
 
 .dg-banner-svg.dg-exiting .dg-anim-wrap {
-    opacity: 0;
-    transform: scale(0.88) translateY(-22px);
-    transition: opacity 0.45s ease-in, transform 0.5s ease-in;
-    transition-delay: 0s !important;
+    opacity: 1;
+    transform: scale(1) translateY(0);
 }
 .dg-item {
     transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease;
@@ -1067,6 +1065,22 @@ body.theme-light .dg-item:hover {
 @keyframes dgLogoPulse {
     0% { transform: scale(1) rotate(0deg); }
     100% { transform: scale(1.06) rotate(3deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .dg-anim-wrap,
+    .dg-banner-svg,
+    .dg-item,
+    .dg-float-1,
+    .dg-float-2,
+    .dg-float-3,
+    .dg-float-top,
+    .dg-center-palette,
+    .dg-center-logo {
+        animation: none !important;
+        transition: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
 }
 @media (max-width:768px) {
     .category-banner,
