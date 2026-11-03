@@ -72,24 +72,98 @@ function odyssee_sanitize_html_urls( $html ) {
 }
 
 // Filtros para interceptar qualquer URL de anexo/imagem gerada pelo WordPress
-add_filter( 'wp_get_attachment_url', 'odyssee_sanitize_media_url', 99 );
-add_filter( 'wp_get_attachment_image_src', function( $image ) {
+/**
+ * Garante fallback dinâmico para arquivos de thumbnails/mídia inexistentes no disco.
+ * Caso uma miniatura gerada após edição de imagem (-e{timestamp}-150x150, etc.) não exista fisicamente,
+ * resolve dinamicamente para o arquivo sem o timestamp de edição ou para o arquivo original/principal.
+ */
+function odyssee_resolve_attachment_file_fallback( $url, $attachment_id = 0 ) {
+    if ( empty( $url ) || ! is_string( $url ) ) {
+        return $url;
+    }
+
+    $upload_info = wp_upload_dir();
+    $base_dir = isset( $upload_info['basedir'] ) ? wp_normalize_path( $upload_info['basedir'] ) : '';
+    if ( empty( $base_dir ) ) {
+        return $url;
+    }
+
+    $rel_path = '';
+    if ( preg_match( '#/wp-content/uploads/(.+?)(?:\?.*)?$#i', $url, $m ) ) {
+        $rel_path = $m[1];
+    } elseif ( ! empty( $upload_info['baseurl'] ) && strpos( $url, $upload_info['baseurl'] ) !== false ) {
+        $rel_path = ltrim( str_replace( $upload_info['baseurl'], '', $url ), '/' );
+    }
+
+    if ( empty( $rel_path ) ) {
+        return $url;
+    }
+
+    $full_file_path = $base_dir . '/' . $rel_path;
+    if ( file_exists( $full_file_path ) ) {
+        return $url;
+    }
+
+    // 1. Tenta versão sem timestamp de edição no sufixo de tamanho (-e\d+-WxH.ext)
+    if ( preg_match( '#-e\d+(-\d+x\d+\.[a-zA-Z0-9]+)$#i', $rel_path ) ) {
+        $clean_rel = preg_replace( '#-e\d+(-\d+x\d+\.[a-zA-Z0-9]+)$#i', '$1', $rel_path );
+        if ( file_exists( $base_dir . '/' . $clean_rel ) ) {
+            return str_replace( $rel_path, $clean_rel, $url );
+        }
+    }
+
+    // 2. Tenta o arquivo principal registrado para este anexo (_wp_attached_file)
+    if ( $attachment_id ) {
+        $attached = get_post_meta( $attachment_id, '_wp_attached_file', true );
+        if ( ! empty( $attached ) && file_exists( $base_dir . '/' . $attached ) ) {
+            return str_replace( $rel_path, $attached, $url );
+        }
+    }
+
+    // 3. Tenta imagem base no diretório (removendo -WxH)
+    $base_without_dim = preg_replace( '#-\d+x\d+(\.[a-zA-Z0-9]+)$#i', '$1', $rel_path );
+    if ( file_exists( $base_dir . '/' . $base_without_dim ) ) {
+        return str_replace( $rel_path, $base_without_dim, $url );
+    }
+
+    // 4. Tenta imagem base limpa (removendo -WxH e -e\d+)
+    $base_clean = preg_replace( '#-e\d+#i', '', $base_without_dim );
+    if ( file_exists( $base_dir . '/' . $base_clean ) ) {
+        return str_replace( $rel_path, $base_clean, $url );
+    }
+
+    return $url;
+}
+
+add_filter( 'wp_get_attachment_url', function( $url, $post_id = 0 ) {
+    if ( ! empty( $url ) ) {
+        $url = odyssee_resolve_attachment_file_fallback( $url, $post_id );
+        $url = odyssee_sanitize_media_url( $url );
+    }
+    return $url;
+}, 99, 2 );
+
+add_filter( 'wp_get_attachment_image_src', function( $image, $attachment_id = 0 ) {
     if ( is_array( $image ) && ! empty( $image[0] ) ) {
+        $image[0] = odyssee_resolve_attachment_file_fallback( $image[0], $attachment_id );
         $image[0] = odyssee_sanitize_media_url( $image[0] );
     }
     return $image;
-}, 99 );
-add_filter( 'wp_calculate_image_srcset', function( $sources ) {
+}, 99, 2 );
+
+add_filter( 'wp_calculate_image_srcset', function( $sources, $size_array = array(), $image_src = '', $image_meta = array(), $attachment_id = 0 ) {
     if ( is_array( $sources ) ) {
         foreach ( $sources as &$src ) {
             if ( isset( $src['url'] ) ) {
+                $src['url'] = odyssee_resolve_attachment_file_fallback( $src['url'], $attachment_id );
                 $src['url'] = odyssee_sanitize_media_url( $src['url'] );
             }
         }
         unset( $src );
     }
     return $sources;
-}, 99 );
+}, 99, 5 );
+
 add_filter( 'the_content', 'odyssee_sanitize_html_urls', 99 );
 
 // Filtra dinamicamente as opções salvas no banco para garantir que thumbnails nunca tenham localhost
