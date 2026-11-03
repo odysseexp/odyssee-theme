@@ -958,21 +958,30 @@ body.theme-light .category-banner-wrapper:hover {
     width: 100%;
     height: auto;
     display: block;
-    color: rgba(226, 232, 240, 0.52);
+    color: rgba(226, 232, 240, 0.75);
     shape-rendering: geometricPrecision;
     text-rendering: geometricPrecision;
     overflow: visible !important;
-    padding-bottom: 14px;
+    padding-bottom: 24px;
 }
 [data-theme="light"] .dg-banner-svg,
 body.theme-light .dg-banner-svg {
-    color: rgba(30, 41, 59, 0.58);
+    color: rgba(30, 41, 59, 0.75);
+}
+.dg-banner-svg [fill="#000000"],
+.dg-banner-svg [fill="#000"],
+.dg-banner-svg [fill="black"],
+.dg-banner-svg path:not([fill]),
+.dg-banner-svg g:not([fill]) > path:not([fill]) {
+    fill: currentColor !important;
 }
 .dg-banner-svg path,
 .dg-banner-svg text,
-.dg-banner-svg tspan {
-    fill: currentColor;
-    transition: fill 0.3s ease, filter 0.3s ease, transform 0.35s ease;
+.dg-banner-svg tspan,
+.dg-banner-svg circle,
+.dg-banner-svg rect,
+.dg-banner-svg polygon {
+    transition: fill 0.3s ease, filter 0.3s ease, transform 0.35s ease, color 0.3s ease;
 }
 .dg-anim-wrap {
     opacity: 1;
@@ -986,49 +995,97 @@ body.theme-light .dg-banner-svg {
     opacity: 1;
     transform: scale(1) translateY(0);
 }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(1) { transition-delay: 0.03s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(2) { transition-delay: 0.06s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(3) { transition-delay: 0.09s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(4) { transition-delay: 0.12s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(5) { transition-delay: 0.15s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(6) { transition-delay: 0.18s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(7) { transition-delay: 0.21s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(8) { transition-delay: 0.24s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(9) { transition-delay: 0.27s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(10) { transition-delay: 0.30s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(11) { transition-delay: 0.33s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(12) { transition-delay: 0.36s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(13) { transition-delay: 0.39s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(14) { transition-delay: 0.42s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(15) { transition-delay: 0.45s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(16) { transition-delay: 0.48s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(17) { transition-delay: 0.51s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(18) { transition-delay: 0.54s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(19) { transition-delay: 0.57s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(20) { transition-delay: 0.60s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(21) { transition-delay: 0.63s; }
-.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(22) { transition-delay: 0.66s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(1) { transition-delay: 0.02s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(2) { transition-delay: 0.04s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(3) { transition-delay: 0.06s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(4) { transition-delay: 0.08s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(5) { transition-delay: 0.10s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(6) { transition-delay: 0.12s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(7) { transition-delay: 0.14s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(8) { transition-delay: 0.16s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(9) { transition-delay: 0.18s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(10) { transition-delay: 0.20s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(11) { transition-delay: 0.22s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(12) { transition-delay: 0.24s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(13) { transition-delay: 0.26s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(14) { transition-delay: 0.28s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(15) { transition-delay: 0.30s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(16) { transition-delay: 0.32s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(17) { transition-delay: 0.34s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(18) { transition-delay: 0.36s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(19) { transition-delay: 0.38s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(20) { transition-delay: 0.40s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(21) { transition-delay: 0.42s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(22) { transition-delay: 0.44s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(23) { transition-delay: 0.46s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(24) { transition-delay: 0.48s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(25) { transition-delay: 0.50s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(26) { transition-delay: 0.52s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(27) { transition-delay: 0.54s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(28) { transition-delay: 0.56s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(29) { transition-delay: 0.58s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(30) { transition-delay: 0.60s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(31) { transition-delay: 0.62s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(32) { transition-delay: 0.64s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(33) { transition-delay: 0.66s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(34) { transition-delay: 0.68s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(35) { transition-delay: 0.70s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(36) { transition-delay: 0.72s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(37) { transition-delay: 0.74s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(38) { transition-delay: 0.76s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(39) { transition-delay: 0.78s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(40) { transition-delay: 0.80s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(41) { transition-delay: 0.82s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(42) { transition-delay: 0.84s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(43) { transition-delay: 0.86s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(44) { transition-delay: 0.88s; }
+.dg-banner-svg.dg-in-view .dg-anim-wrap:nth-child(45) { transition-delay: 0.90s; }
 
 .dg-banner-svg.dg-exiting .dg-anim-wrap {
     opacity: 1;
     transform: scale(1) translateY(0);
 }
 .dg-item {
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease, fill 0.3s ease;
     transform-origin: center center;
     transform-box: fill-box;
-    will-change: transform;
+    will-change: transform, filter;
     cursor: pointer;
 }
-.dg-item:hover {
+.dg-item:hover,
+.dg-banner-svg .dg-item:hover,
+.dg-banner-svg g[id]:hover,
+.dg-banner-svg path[id]:hover {
     transform: scale(1.08) translateY(-4px) !important;
     color: #ffffff !important;
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35)) drop-shadow(0 1px 2px var(--color-accent));
+    fill: #ffffff !important;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 14px var(--color-accent)) !important;
+    animation-play-state: paused !important;
+}
+.dg-item:hover *,
+.dg-banner-svg .dg-item:hover *,
+.dg-banner-svg g[id]:hover *,
+.dg-banner-svg path[id]:hover * {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+    animation-play-state: paused !important;
 }
 [data-theme="light"] .dg-item:hover,
-body.theme-light .dg-item:hover {
+body.theme-light .dg-item:hover,
+[data-theme="light"] .dg-banner-svg .dg-item:hover,
+body.theme-light .dg-banner-svg .dg-item:hover {
     color: #0f172a !important;
-    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.15)) drop-shadow(0 1px 2px var(--color-accent));
+    fill: #0f172a !important;
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.15)) drop-shadow(0 0 12px var(--color-accent)) !important;
+    animation-play-state: paused !important;
+}
+[data-theme="light"] .dg-item:hover *,
+body.theme-light .dg-item:hover *,
+[data-theme="light"] .dg-banner-svg .dg-item:hover *,
+body.theme-light .dg-banner-svg .dg-item:hover * {
+    color: #0f172a !important;
+    fill: #0f172a !important;
+    animation-play-state: paused !important;
 }
 .dg-float-1 {
     animation: dgFloatOne 6.5s ease-in-out infinite alternate;

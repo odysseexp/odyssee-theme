@@ -1753,6 +1753,23 @@
                     populateSidebarFromSelection();
                     break;
                 }
+                case 'OVB_BANNER_FX_APPLIED': {
+                    const sel = msg.selector || currentSelector;
+                    if (sel && msg.newInnerHtml) {
+                        const rec = ensureElementRecord(sel);
+                        rec.content = rec.content || {};
+                        rec.content.innerHTML = msg.newInnerHtml;
+                        if (currentSnapshot && currentSnapshot.isCustomBlock && currentSnapshot.blockId && Array.isArray(state.blocks)) {
+                            const blk = state.blocks.find(b => b && b.id === currentSnapshot.blockId);
+                            if (blk) {
+                                if (!blk.content) blk.content = {};
+                                blk.content.html = msg.newInnerHtml;
+                            }
+                        }
+                    }
+                    pushHistory();
+                    break;
+                }
                 case 'OVB_DOM_MOVED': {
                     if (msg.move) {
                         if (!Array.isArray(state.domMoves)) state.domMoves = [];
@@ -2206,20 +2223,46 @@
             }
             const rec = ensureElementRecord(currentSelector);
             const curSt = rec.styles[currentBucket] = rec.styles[currentBucket] || {};
-            curSt.hoverGlowEnabled = true;
-            curSt.hoverGlowColor = 'var(--color-accent)';
-            curSt.hoverGlowBlur = '12px';
-            curSt.hoverTextColor = '#ffffff';
-            curSt.hoverScaleEnabled = true;
-            curSt.hoverScaleFactor = '1.08';
-            curSt.hoverLiftY = '-4px';
-            curSt.floatingPreset = 'float-1';
-            curSt.scrollEntrancePreset = 'elastic-pop';
-            curSt.mouseParallax3D = true;
+
+            const isBanner = currentSelector.includes('banner') ||
+                             (currentSnapshot && (currentSnapshot.tag === 'SVG' || currentSnapshot.isSvg || currentSnapshot.tag === 'DIV'));
+
+            if (isBanner) {
+                curSt.mouseParallax3D = true;
+                curSt.scrollEntrancePreset = 'elastic-pop';
+                delete curSt.floatingPreset;
+                delete curSt.hoverScaleEnabled;
+                delete curSt.hoverGlowEnabled;
+                delete curSt.hoverLiftY;
+
+                postToPreview({
+                    type: 'OVB_APPLY_DESIGN_BANNER_FX',
+                    selector: currentSelector
+                });
+
+                showToast('⚡ Efeitos completos do Banner de Design Gráfico (3D Parallax, Pop-in, 43 itens flutuantes e Glow) aplicados ao Banner!', 'success');
+            } else {
+                curSt.hoverGlowEnabled = true;
+                curSt.hoverGlowColor = 'var(--color-accent)';
+                curSt.hoverGlowBlur = '12px';
+                curSt.hoverTextColor = '#ffffff';
+                curSt.hoverScaleEnabled = true;
+                curSt.hoverScaleFactor = '1.08';
+                curSt.hoverLiftY = '-4px';
+                curSt.floatingPreset = 'float-1';
+                curSt.fill = 'currentColor';
+
+                postToPreview({
+                    type: 'OVB_APPLY_DESIGN_BANNER_FX',
+                    selector: currentSelector
+                });
+
+                showToast('✨ Efeitos (Hover Glow, Aumento e Flutuação) aplicados ao elemento selecionado!', 'success');
+            }
+
             populateSidebarFromSelection();
             pushHistory();
             syncPreview();
-            showToast('✨ Efeitos do Banner de Design Gráfico aplicados ao elemento selecionado!', 'success');
         });
 
         // Desbloqueio e Sincronização inteligente ao selecionar preset de hover

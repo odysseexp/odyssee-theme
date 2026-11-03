@@ -115,7 +115,9 @@ if ( ! empty( $orbit_items ) ) {
     <section id="edicao-video" class="category-section">
         <h2 class="section-title" data-key="edicao-video">Edição de Vídeo</h2>
 
-        <img src="" class="category-banner" id="banner-edicao-video" alt="Edição de Vídeo" data-category="edicao-video">
+        <div class="category-banner-wrapper" id="banner-edicao-video" data-category="edicao-video">
+            <?php get_template_part( 'template-parts/banner', 'edicao-video' ); ?>
+        </div>
         
         <div class="portfolio-showcase">
              <div class="carousel-wrapper" id="carousel-edicao-video"></div>

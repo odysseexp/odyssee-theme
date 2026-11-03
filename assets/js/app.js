@@ -2100,42 +2100,46 @@ function initHeroTilt() {
 }
 
 function initBannerParallax() {
-    const banner = document.querySelector('.category-banner-wrapper');
-    if (!banner) return;
-    let ticking = false;
-    banner.addEventListener('mousemove', (e) => {
-        if (!ticking) {
-            requestAnimationFrame(() => {
-                const rect = banner.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width - 0.5) * 12;
-                const y = ((e.clientY - rect.top) / rect.height - 0.5) * 8;
-                const svg = banner.querySelector('.dg-banner-svg');
-                if (svg) {
-                    svg.style.transform = `perspective(1000px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg)`;
-                }
-                ticking = false;
-            });
-            ticking = true;
-        }
-    });
-    banner.addEventListener('mouseleave', () => {
-        const svg = banner.querySelector('.dg-banner-svg');
-        if (svg) {
-            svg.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
-            svg.style.transform = '';
-            setTimeout(() => {
-                if (svg) svg.style.transition = '';
-            }, 600);
-        }
+    const banners = document.querySelectorAll('.category-banner-wrapper, .ovb-svg-png-banner');
+    if (!banners.length) return;
+    banners.forEach(banner => {
+        if (banner.dataset.ovbParallaxActive === 'true') return;
+        banner.dataset.ovbParallaxActive = 'true';
+        let ticking = false;
+        banner.addEventListener('mousemove', (e) => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    const rect = banner.getBoundingClientRect();
+                    const x = ((e.clientX - rect.left) / Math.max(1, rect.width) - 0.5) * 12;
+                    const y = ((e.clientY - rect.top) / Math.max(1, rect.height) - 0.5) * 8;
+                    const svg = banner.querySelector('.dg-banner-svg') || banner.querySelector('svg');
+                    if (svg) {
+                        svg.style.transform = `perspective(1000px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg)`;
+                    }
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+        banner.addEventListener('mouseleave', () => {
+            const svg = banner.querySelector('.dg-banner-svg') || banner.querySelector('svg');
+            if (svg) {
+                svg.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                svg.style.transform = '';
+                setTimeout(() => {
+                    if (svg) svg.style.transition = '';
+                }, 600);
+            }
+        });
     });
 }
 
 function initCategoryBannerAnimations() {
-    const banners = document.querySelectorAll('.category-banner-wrapper');
+    const banners = document.querySelectorAll('.category-banner-wrapper, .ovb-svg-png-banner');
     if (!banners.length) return;
 
     banners.forEach(b => {
-        const svg = b.querySelector('.dg-banner-svg');
+        const svg = b.querySelector('.dg-banner-svg') || b.querySelector('svg');
         if (!svg) return;
 
         // Garante visibilidade imediata (nunca preso em opacidade zero)

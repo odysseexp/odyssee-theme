@@ -1034,8 +1034,9 @@
         bannerWrappers.forEach(banner => {
             if (banner.dataset.ovbParallaxBound === 'true') return;
             banner.dataset.ovbParallaxBound = 'true';
-            const svg = banner.querySelector('.dg-banner-svg');
+            const svg = banner.querySelector('.dg-banner-svg') || banner.querySelector('svg');
             if (svg) {
+                svg.classList.add('dg-banner-svg');
                 svg.classList.add('dg-in-view');
                 svg.classList.remove('dg-exiting');
 

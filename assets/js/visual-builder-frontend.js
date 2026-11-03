@@ -579,25 +579,25 @@
             rules.push(`transform-box: fill-box${imp}`);
             switch (st.floatingPreset) {
                 case 'float-1':
-                    rules.push(`animation: dgFloatOne 6.5s ease-in-out infinite alternate${imp}`);
+                    rules.push(`animation: dgFloatOne 6.5s ease-in-out infinite alternate`);
                     break;
                 case 'float-2':
-                    rules.push(`animation: dgFloatTwo 7.4s ease-in-out infinite alternate 0.8s${imp}`);
+                    rules.push(`animation: dgFloatTwo 7.4s ease-in-out infinite alternate 0.8s`);
                     break;
                 case 'float-3':
-                    rules.push(`animation: dgFloatThree 8.2s ease-in-out infinite alternate 1.6s${imp}`);
+                    rules.push(`animation: dgFloatThree 8.2s ease-in-out infinite alternate 1.6s`);
                     break;
                 case 'float-top':
-                    rules.push(`animation: dgFloatTop 6.2s ease-in-out infinite alternate 0.3s${imp}`);
+                    rules.push(`animation: dgFloatTop 6.2s ease-in-out infinite alternate 0.3s`);
                     break;
                 case 'center-palette':
-                    rules.push(`animation: dgPalettePulse 5.8s ease-in-out infinite alternate${imp}`);
+                    rules.push(`animation: dgPalettePulse 5.8s ease-in-out infinite alternate`);
                     break;
                 case 'center-logo':
-                    rules.push(`animation: dgLogoPulse 7s ease-in-out infinite alternate 1.2s${imp}`);
+                    rules.push(`animation: dgLogoPulse 7s ease-in-out infinite alternate 1.2s`);
                     break;
                 case 'sway':
-                    rules.push(`animation: dgFloatSway 6.8s ease-in-out infinite alternate${imp}`);
+                    rules.push(`animation: dgFloatSway 6.8s ease-in-out infinite alternate`);
                     break;
             }
         }
@@ -607,28 +607,31 @@
             rules.push(`cursor: pointer${imp}`);
             rules.push(`transform-origin: center center${imp}`);
             rules.push(`transform-box: fill-box${imp}`);
-            rules.push(`transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease${imp}`);
+            rules.push(`transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease, fill 0.3s ease${imp}`);
             rules.push(`will-change: transform, filter${imp}`);
         }
 
         // Hover declarations for Banner & SVG effects
         if (isHover) {
+            rules.push(`animation-play-state: paused !important`);
+            rules.push(`transform-origin: center center !important`);
+            rules.push(`transform-box: fill-box !important`);
             if (st.hoverGlowEnabled) {
-                const hBlur = st.hoverGlowBlur !== undefined && st.hoverGlowBlur !== '' ? parseFloat(String(st.hoverGlowBlur)) : 12;
+                const hBlur = st.hoverGlowBlur !== undefined && st.hoverGlowBlur !== '' ? parseFloat(String(st.hoverGlowBlur)) : 14;
                 const hCol = st.hoverGlowColor || 'var(--color-accent)';
-                rules.push(`filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35)) drop-shadow(0 0 ${hBlur}px ${hCol})${imp}`);
-                if (st.hoverTextColor) {
-                    rules.push(`color: ${st.hoverTextColor}${imp}`);
-                    rules.push(`fill: currentColor${imp}`);
-                }
+                rules.push(`filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 ${hBlur}px ${hCol}) !important`);
+                const hColVal = st.hoverTextColor || '#ffffff';
+                rules.push(`color: ${hColVal} !important`);
+                rules.push(`fill: ${hColVal} !important`);
             }
             if (st.hoverScaleEnabled) {
                 const hFactor = st.hoverScaleFactor !== undefined && st.hoverScaleFactor !== '' ? st.hoverScaleFactor : '1.08';
                 const hLift = st.hoverLiftY !== undefined && st.hoverLiftY !== '' ? st.hoverLiftY : '-4px';
                 const normLift = /^-?\d+(\.\d+)?$/.test(String(hLift)) ? `${hLift}px` : hLift;
-                rules.push(`transform: scale(${hFactor}) translateY(${normLift})${imp}`);
+                rules.push(`transform: scale(${hFactor}) translateY(${normLift}) !important`);
             }
-            rules.push(`transition: all ${st.hoverTransition || '0.32s'} cubic-bezier(0.22, 1, 0.36, 1)${imp}`);
+            rules.push(`cursor: pointer !important`);
+            rules.push(`transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease, fill 0.3s ease !important`);
         }
 
         return rules.join('; ');
@@ -701,15 +704,18 @@
             // Auto-emit hover rule for Banner & SVG interactive effects if active on primary bucket
             const primarySt = (elConfig.styles && (elConfig.styles.desktop || elConfig.styles.global)) || {};
             if ((primarySt.hoverGlowEnabled || primarySt.hoverScaleEnabled) && (!elConfig.styles || !elConfig.styles.hover)) {
-                const autoHoverRules = [];
+                const autoHoverRules = [
+                    'animation-play-state: paused !important',
+                    'transform-origin: center center !important',
+                    'transform-box: fill-box !important'
+                ];
+                const hColor = primarySt.hoverTextColor || '#ffffff';
                 if (primarySt.hoverGlowEnabled) {
-                    const hBlur = primarySt.hoverGlowBlur !== undefined && primarySt.hoverGlowBlur !== '' ? parseFloat(String(primarySt.hoverGlowBlur)) : 12;
+                    const hBlur = primarySt.hoverGlowBlur !== undefined && primarySt.hoverGlowBlur !== '' ? parseFloat(String(primarySt.hoverGlowBlur)) : 14;
                     const hCol = primarySt.hoverGlowColor || 'var(--color-accent)';
-                    autoHoverRules.push(`filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35)) drop-shadow(0 0 ${hBlur}px ${hCol}) !important`);
-                    if (primarySt.hoverTextColor) {
-                        autoHoverRules.push(`color: ${primarySt.hoverTextColor} !important`);
-                        autoHoverRules.push(`fill: currentColor !important`);
-                    }
+                    autoHoverRules.push(`filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 ${hBlur}px ${hCol}) !important`);
+                    autoHoverRules.push(`color: ${hColor} !important`);
+                    autoHoverRules.push(`fill: ${hColor} !important`);
                 }
                 if (primarySt.hoverScaleEnabled) {
                     const hFactor = primarySt.hoverScaleFactor !== undefined && primarySt.hoverScaleFactor !== '' ? primarySt.hoverScaleFactor : '1.08';
@@ -718,8 +724,9 @@
                     autoHoverRules.push(`transform: scale(${hFactor}) translateY(${normLift}) !important`);
                 }
                 if (autoHoverRules.length > 0) {
-                    cssParts.push(`${fullSel} { cursor: pointer !important; transform-origin: center center !important; transform-box: fill-box !important; transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease !important; will-change: transform, filter !important; }`);
+                    cssParts.push(`${fullSel} { cursor: pointer !important; transform-origin: center center !important; transform-box: fill-box !important; transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease, fill 0.3s ease !important; will-change: transform, filter !important; }`);
                     cssParts.push(`${fullSel}:hover { ${autoHoverRules.join('; ')}; }`);
+                    cssParts.push(`${fullSel}:hover * { fill: ${hColor} !important; color: ${hColor} !important; animation-play-state: paused !important; }`);
                 }
             }
 
@@ -1752,7 +1759,7 @@
 
         // If user clicked a path/tspan inside a named SVG group (.dg-item) in the vector banner,
         // allow selecting the SVG icon group itself unless they already selected the group and clicked deeper!
-        const svgGroup = el.closest && el.closest('g.dg-item[id]');
+        const svgGroup = el.closest && el.closest('g.dg-item, g[id], path[id], .dg-anim-wrap > g, svg > g');
         if (svgGroup && el !== svgGroup && selectedElement !== svgGroup) {
             el = svgGroup;
         }
@@ -3145,6 +3152,80 @@
                         floatBadge.querySelector('[data-act="move-up"]').click();
                     } else if (dir === 'down') {
                         floatBadge.querySelector('[data-act="move-down"]').click();
+                    }
+                    break;
+                }
+                case 'OVB_APPLY_DESIGN_BANNER_FX': {
+                    const sel = msg.selector || selectedSelector;
+                    if (!sel) break;
+                    let el = null;
+                    try { el = document.querySelector(sel); } catch (e) { break; }
+                    if (!el) break;
+
+                    const isBanner = el.classList.contains('category-banner-wrapper') ||
+                                     el.classList.contains('ovb-svg-png-banner') ||
+                                     (el.id && el.id.includes('banner')) ||
+                                     el.tagName.toLowerCase() === 'svg' ||
+                                     !!el.querySelector('svg');
+
+                    if (isBanner) {
+                        const svg = el.tagName.toLowerCase() === 'svg' ? el : el.querySelector('svg');
+                        if (svg) {
+                            svg.classList.add('dg-banner-svg', 'dg-in-view');
+                            svg.classList.remove('dg-exiting');
+                            if (!svg.getAttribute('viewBox')) {
+                                svg.setAttribute('viewBox', '0 0 1920 760');
+                            }
+
+                            // Equip children items with .dg-item and staggered floating animations
+                            const floatPresets = ['dg-float-1', 'dg-float-2', 'dg-float-3', 'dg-float-sway', 'dg-float-top', 'dg-center-palette', 'dg-center-logo'];
+                            const children = Array.from(svg.querySelectorAll('g[id], path[id], g.dg-item, .dg-anim-wrap > g, svg > g'));
+                            children.forEach((item, idx) => {
+                                item.classList.add('dg-item');
+                                floatPresets.forEach(fp => item.classList.remove(fp));
+                                item.classList.add(floatPresets[idx % floatPresets.length]);
+
+                                if (['#000000', '#000', 'black'].includes(item.getAttribute('fill'))) {
+                                    item.setAttribute('fill', 'currentColor');
+                                }
+                                item.querySelectorAll('[fill="#000000"], [fill="#000"], [fill="black"]').forEach(child => {
+                                    child.setAttribute('fill', 'currentColor');
+                                });
+                            });
+
+                            svg.querySelectorAll('[fill="#000000"], [fill="#000"], [fill="black"]').forEach(p => {
+                                p.setAttribute('fill', 'currentColor');
+                            });
+
+                            const bannerWrapper = el.classList.contains('category-banner-wrapper') ? el : (el.closest('.category-banner-wrapper') || el);
+                            if (bannerWrapper) {
+                                bannerWrapper.setAttribute('data-ovb-parallax', 'true');
+                                bannerWrapper.classList.add('category-banner-wrapper');
+                            }
+
+                            window.parent.postMessage({
+                                type: 'OVB_BANNER_FX_APPLIED',
+                                selector: sel,
+                                isBanner: true,
+                                newInnerHtml: (el.tagName.toLowerCase() === 'svg' ? el.outerHTML : el.innerHTML)
+                            }, '*');
+                        }
+                    } else {
+                        // Individual SVG element
+                        el.classList.add('dg-item', 'dg-float-1');
+                        if (['#000000', '#000', 'black'].includes(el.getAttribute('fill'))) {
+                            el.setAttribute('fill', 'currentColor');
+                        }
+                        if (el.querySelectorAll) {
+                            el.querySelectorAll('[fill="#000000"], [fill="#000"], [fill="black"]').forEach(p => {
+                                p.setAttribute('fill', 'currentColor');
+                            });
+                        }
+                        window.parent.postMessage({
+                            type: 'OVB_BANNER_FX_APPLIED',
+                            selector: sel,
+                            isBanner: false
+                        }, '*');
                     }
                     break;
                 }
