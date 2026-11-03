@@ -53,8 +53,10 @@ function odyssee_sanitize_media_url( $url ) {
     if ( empty( $url ) || ! is_string( $url ) ) {
         return $url;
     }
+    // Converte URLs com domínio (localhost, odysseexp.com, etc.) apontando para /wp-content/ em caminho relativo
+    $clean = preg_replace( '#^https?://[^/\s"\']+(/wp-content/[^\s"\'<>]*)#i', '$1', $url );
     // Remove protocolo e host local (localhost ou 127.0.0.1 com qualquer porta)
-    $clean = preg_replace( '#^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?(/.*)?$#i', '$1', $url );
+    $clean = preg_replace( '#^https?://(?:localhost|127\.0\.0\.1)(?::\d+)?(/.*)?$#i', '$1', $clean );
     if ( ! empty( $clean ) && $clean[0] !== '/' && strpos( $clean, '://' ) === false && strpos( $clean, 'data:' ) !== 0 ) {
         $clean = '/' . $clean;
     }
@@ -65,6 +67,7 @@ function odyssee_sanitize_html_urls( $html ) {
     if ( empty( $html ) || ! is_string( $html ) ) {
         return $html;
     }
+    $html = preg_replace( '#https?://[^/\s"\']+(/wp-content/[^\s"\'<>]*)#i', '$1', $html );
     return preg_replace( '#https?://(?:localhost|127\.0\.0\.1)(?::\d+)?(/wp-content/[^\s"\'<>]*)#i', '$1', $html );
 }
 
@@ -143,6 +146,7 @@ function odyssee_sanitize_data_urls_recursive( $data ) {
                 return wp_json_encode( odyssee_sanitize_data_urls_recursive( $maybe_json ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
             }
         }
+        $data = preg_replace( '#https?://[^/\s"\']+(/wp-content/[^\s"\'<>]*)#i', '$1', $data );
         return preg_replace( '#https?://(?:localhost|127\.0\.0\.1)(?::\d+)?(/wp-content/[^\s"\'<>]*)#i', '$1', $data );
     }
     if ( is_array( $data ) ) {
@@ -161,7 +165,7 @@ add_filter( 'option_odyssee_visual_builder_presets', 'odyssee_sanitize_data_urls
 
 function odyssee_scripts() {
     
-    $theme_version = '26.10.18';
+    $theme_version = '26.10.19';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
@@ -377,6 +381,81 @@ add_filter( 'document_title_parts', function( $title_parts ) {
     }
     return $title_parts;
 }, 999 );
+
+/**
+ * Roteamento e query dedicados para 'Todos os Posts' (/posts e /todos-os-posts).
+ * Garante que a listagem de posts nunca retorne 404 ou vazia, com suporte a paginação e URLs relativas.
+ */
+add_action( 'init', function() {
+    add_rewrite_rule( '^(?:posts|todos-os-posts)/?$', 'index.php?odyssee_all_posts=1', 'top' );
+    add_rewrite_rule( '^(?:posts|todos-os-posts)/page/([0-9]+)/?$', 'index.php?odyssee_all_posts=1&paged=$matches[1]', 'top' );
+} );
+
+add_filter( 'query_vars', function( $vars ) {
+    $vars[] = 'odyssee_all_posts';
+    return $vars;
+} );
+
+add_action( 'parse_request', function( $wp ) {
+    $req = trim( $wp->request, '/' );
+    if ( $req === 'posts' || preg_match( '#^posts/page/([0-9]+)$#', $req, $m ) || $req === 'todos-os-posts' || preg_match( '#^todos-os-posts/page/([0-9]+)$#', $req, $m ) ) {
+        $wp->query_vars['post_type']   = 'post';
+        $wp->query_vars['post_status'] = 'publish';
+        $wp->query_vars['odyssee_all_posts'] = 1;
+        if ( isset( $m[1] ) ) {
+            $wp->query_vars['paged'] = max( 1, intval( $m[1] ) );
+        }
+        unset( $wp->query_vars['pagename'] );
+        unset( $wp->query_vars['name'] );
+        unset( $wp->query_vars['category_name'] );
+        unset( $wp->query_vars['error'] );
+    }
+} );
+
+add_action( 'pre_get_posts', function( $query ) {
+    if ( is_admin() || ! $query->is_main_query() ) {
+        return;
+    }
+
+    $req_uri = isset( $_SERVER['REQUEST_URI'] ) ? parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ) : '';
+    $path = trim( $req_uri, '/' );
+
+    $is_posts_route = ( $query->get( 'odyssee_all_posts' ) == 1 )
+                   || ( $path === 'posts' || strpos( $path, 'posts/' ) === 0 )
+                   || ( $path === 'todos-os-posts' || strpos( $path, 'todos-os-posts/' ) === 0 );
+
+    if ( $is_posts_route ) {
+        $paged = 1;
+        if ( preg_match( '#(?:posts|todos-os-posts)(?:/page/([0-9]+)|/([0-9]+))?/?$#', $path, $m ) && ! empty( $m[1] ) ) {
+            $paged = max( 1, intval( $m[1] ) );
+        } elseif ( $query->get( 'paged' ) ) {
+            $paged = max( 1, intval( $query->get( 'paged' ) ) );
+        }
+
+        $query->is_404     = false;
+        $query->is_archive = true;
+        $query->is_home    = true;
+        $query->is_page    = false;
+        $query->is_single  = false;
+        $query->set( 'post_type', 'post' );
+        $query->set( 'post_status', 'publish' );
+        $query->set( 'posts_per_page', 12 );
+        $query->set( 'paged', $paged );
+    }
+} );
+
+add_filter( 'template_include', function( $template ) {
+    $req_uri = isset( $_SERVER['REQUEST_URI'] ) ? parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ) : '';
+    $path = trim( $req_uri, '/' );
+    if ( get_query_var( 'odyssee_all_posts' ) == 1 || $path === 'posts' || strpos( $path, 'posts/' ) === 0 || $path === 'todos-os-posts' || strpos( $path, 'todos-os-posts/' ) === 0 ) {
+        status_header( 200 );
+        $index = locate_template( array( 'index.php' ) );
+        if ( $index ) {
+            return $index;
+        }
+    }
+    return $template;
+} );
 
 function odyssee_jsonld_schema() {
     $site_url = home_url();
@@ -1771,7 +1850,7 @@ function odyssee_get_initial_posts() {
     $args = array(
         'post_type'              => 'post',
         'post_status'            => 'publish',
-        'posts_per_page'         => 40,
+        'posts_per_page'         => -1,
         'orderby'                => 'date',
         'order'                  => 'DESC',
         'no_found_rows'          => true,

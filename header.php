@@ -91,7 +91,7 @@
         <header class="main-header transparent">
             <div class="header-left">
                 <a href="<?php echo esc_url( home_url() ); ?>" class="logo-link">
-                    <img src="<?php echo esc_url( home_url( '/wp-content/uploads/2025/11/typeblack.webp' ) ); ?>" alt="Odyssee Hawk" class="header-logo" id="header-logotype">
+                    <img src="<?php echo esc_url( function_exists( 'odyssee_sanitize_media_url' ) ? odyssee_sanitize_media_url( home_url( '/wp-content/uploads/2025/11/typeblack.webp' ) ) : '/wp-content/uploads/2025/11/typeblack.webp' ); ?>" alt="Odyssee Hawk" class="header-logo" id="header-logotype">
                 </a>
                 <div class="header-mobile-buttons">
                     <a href="<?php echo esc_url( home_url( '/sobre-mim/' ) ); ?>" class="btn-header-about" aria-label="Sobre Mim">

@@ -2,7 +2,8 @@
 
 function odysseeCleanUrl(url) {
     if (!url || typeof url !== 'string') return url;
-    return url.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i, '/');
+    return url.replace(/^https?:\/\/[^\/\s"']+(\/wp-content\/[^\s"']*)/i, '$1')
+              .replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i, '/');
 }
 
 function escapeHtml(str) {
@@ -441,9 +442,10 @@ async function fetchRealPosts() {
     try {
         console.log('[API] Buscando posts atualizados...');
 
-        const restBaseUrl = (typeof odysseeSecure !== 'undefined' && odysseeSecure.restUrl)
+        const rawRest = (typeof odysseeSecure !== 'undefined' && odysseeSecure.restUrl)
             ? odysseeSecure.restUrl
-            : wpConfig.baseUrl + '/wp-json/';
+            : (wpConfig.baseUrl ? wpConfig.baseUrl + '/wp-json/' : '/wp-json/');
+        const restBaseUrl = rawRest.replace(/^https?:\/\/[^\/]+/i, '');
 
         const url = restBaseUrl + 'wp/v2/posts?_embed&per_page=' + wpConfig.postsPerPage;
         

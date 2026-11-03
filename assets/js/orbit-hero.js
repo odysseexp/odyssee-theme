@@ -55,10 +55,10 @@
         } else {
             items.forEach(function (it) {
                 if (it && typeof it.thumb === 'string') {
-                    it.thumb = it.thumb.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i, '/');
+                    it.thumb = it.thumb.replace(/^https?:\/\/[^\/\s"']+(\/wp-content\/[^\s"']*)/i, '$1').replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i, '/');
                 }
                 if (it && typeof it.full === 'string') {
-                    it.full = it.full.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i, '/');
+                    it.full = it.full.replace(/^https?:\/\/[^\/\s"']+(\/wp-content\/[^\s"']*)/i, '$1').replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\//i, '/');
                 }
             });
         }
