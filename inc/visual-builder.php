@@ -273,7 +273,7 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
  */
 function odyssee_vb_asset_ver( $relative_path ) {
     $full = get_template_directory() . '/' . ltrim( $relative_path, '/' );
-    return file_exists( $full ) ? (string) filemtime( $full ) : '26.10.20';
+    return file_exists( $full ) ? (string) filemtime( $full ) : '26.11.03';
 }
 
 /**
@@ -2014,7 +2014,7 @@ function odyssee_vb_render_admin_page() {
                                             🔒 Bloqueado no Comportamento
                                         </span>
                                     </div>
-                                    <select class="ovb-select" data-ovb-prop="hoverAnimPreset" id="ovb-hover-anim-preset-select" disabled>
+                                    <select class="ovb-select" data-ovb-prop="hoverAnimPreset" id="ovb-hover-anim-preset-select">
                                         <option value="none">Sem animação de aproximação</option>
                                         <option value="scale-up">🔍 Aumentar um pouco (Scale Up)</option>
                                         <option value="scale-down">🤏 Diminuir um pouco (Scale Down)</option>
@@ -2038,7 +2038,7 @@ function odyssee_vb_render_admin_page() {
                                             🔒 Bloqueado no Comportamento
                                         </span>
                                     </div>
-                                    <select class="ovb-select" data-ovb-prop="clickAnimPreset" id="ovb-click-anim-preset-select" disabled>
+                                    <select class="ovb-select" data-ovb-prop="clickAnimPreset" id="ovb-click-anim-preset-select">
                                         <option value="none">Sem animação de clique</option>
                                         <option value="scale-up">🔍 Aumentar um pouco (Scale Up)</option>
                                         <option value="scale-down">🤏 Diminuir um pouco (Scale Down)</option>
@@ -2049,6 +2049,127 @@ function odyssee_vb_render_admin_page() {
                                         <option value="slide-up">↑ Ir para Cima</option>
                                         <option value="slide-corner">↗ Ir para a Quina / Diagonal</option>
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EFEITOS INTERATIVOS DE BANNER & SVG (GLOW, AUMENTO, FLUTUAÇÃO, POP-IN & PARALLAX 3D) -->
+                        <div class="ovb-section" id="ovb-sec-banner-svg-interactive">
+                            <div class="ovb-section-header">
+                                <span class="ovb-sec-title"><i class="fas fa-sparkles"></i> ✨ Efeitos Interativos de Banner &amp; SVG (Glow, Aumento, Flutuação, Pop-in &amp; Parallax)</span>
+                                <i class="fas fa-chevron-down ovb-chevron"></i>
+                            </div>
+                            <div class="ovb-section-body">
+                                <p style="font-size:11px;color:#94a3b8;margin:0 0 10px 0;line-height:1.4;">
+                                    Ajuste ou replique as propriedades interativas do Banner de Design Gráfico em qualquer elemento SVG, grupo &lt;g&gt;, imagem ou banner inteiro.
+                                </p>
+
+                                <!-- Botão de 1-Clique Mágico para Replicar Tudo -->
+                                <button type="button" class="ovb-btn-secondary" id="ovb-btn-clone-design-banner-fx" style="width:100%;margin-bottom:12px;background:linear-gradient(135deg, rgba(168,85,247,0.25), rgba(236,72,153,0.25));border:1px solid #a855f7;color:#f3e8ff;font-weight:700;padding:8px 12px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                                    <i class="fas fa-bolt" style="color:#facc15;"></i> ⚡ Copiar / Aplicar Efeitos do Banner de Design
+                                </button>
+
+                                <!-- 1. Brilho por Aproximação (Hover Glow) -->
+                                <div class="ovb-field-box" style="padding:10px;background:rgba(15,23,42,0.6);border:1px solid rgba(168,85,247,0.3);border-radius:6px;margin-bottom:8px;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                                        <label class="ovb-label" style="color:#c084fc;font-weight:700;margin:0;">
+                                            🌟 Brilho por Aproximação (Hover Glow)
+                                        </label>
+                                        <input type="checkbox" class="ovb-toggle-chk" data-ovb-prop="hoverGlowEnabled" id="ovb-chk-hover-glow">
+                                    </div>
+                                    <div id="ovb-hover-glow-controls" style="display:none;margin-top:8px;">
+                                        <div class="ovb-field" style="margin-bottom:6px;">
+                                            <label class="ovb-label" style="font-size:10.5px;">Cor do Glow no Hover</label>
+                                            <div class="ovb-color-wrap">
+                                                <input type="color" class="ovb-color-picker" data-ovb-prop="hoverGlowColor" value="#a855f7">
+                                                <input type="text" class="ovb-input" data-ovb-prop="hoverGlowColor" value="#a855f7" placeholder="ex: #a855f7 ou var(--color-accent)">
+                                            </div>
+                                        </div>
+                                        <div class="ovb-field" style="margin-bottom:6px;">
+                                            <label class="ovb-label" style="font-size:10.5px;">Raio de Difusão / Blur (px)</label>
+                                            <div class="ovb-range-wrap">
+                                                <input type="range" class="ovb-range" data-ovb-range-for="hoverGlowBlur" min="2" max="50" value="12" step="1">
+                                                <input type="text" class="ovb-input ovb-num-input" data-ovb-prop="hoverGlowBlur" value="12px">
+                                            </div>
+                                        </div>
+                                        <div class="ovb-field">
+                                            <label class="ovb-label" style="font-size:10.5px;">Cor do Elemento ao Passar o Mouse</label>
+                                            <div class="ovb-color-wrap">
+                                                <input type="color" class="ovb-color-picker" data-ovb-prop="hoverTextColor" value="#ffffff">
+                                                <input type="text" class="ovb-input" data-ovb-prop="hoverTextColor" value="#ffffff" placeholder="ex: #ffffff">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Aumento / Elevação por Aproximação (Hover Scale & Lift) -->
+                                <div class="ovb-field-box" style="padding:10px;background:rgba(15,23,42,0.6);border:1px solid rgba(56,189,248,0.3);border-radius:6px;margin-bottom:8px;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                                        <label class="ovb-label" style="color:#38bdf8;font-weight:700;margin:0;">
+                                            🔍 Aumento &amp; Elevação por Aproximação (Hover Scale)
+                                        </label>
+                                        <input type="checkbox" class="ovb-toggle-chk" data-ovb-prop="hoverScaleEnabled" id="ovb-chk-hover-scale">
+                                    </div>
+                                    <div id="ovb-hover-scale-controls" style="display:none;margin-top:8px;">
+                                        <div class="ovb-field" style="margin-bottom:6px;">
+                                            <label class="ovb-label" style="font-size:10.5px;">Fator de Aumento (Scale Multiplier)</label>
+                                            <div class="ovb-range-wrap">
+                                                <input type="range" class="ovb-range" data-ovb-range-for="hoverScaleFactor" min="1.0" max="1.4" value="1.08" step="0.01">
+                                                <input type="text" class="ovb-input ovb-num-input" data-ovb-prop="hoverScaleFactor" value="1.08">
+                                            </div>
+                                        </div>
+                                        <div class="ovb-field">
+                                            <label class="ovb-label" style="font-size:10.5px;">Elevação Y (Pulinho para cima ao passar mouse)</label>
+                                            <div class="ovb-range-wrap">
+                                                <input type="range" class="ovb-range" data-ovb-range-for="hoverLiftY" min="-30" max="10" value="-4" step="1">
+                                                <input type="text" class="ovb-input ovb-num-input" data-ovb-prop="hoverLiftY" value="-4px">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Flutuação Contínua (Floating Loop) -->
+                                <div class="ovb-field-box" style="padding:10px;background:rgba(15,23,42,0.6);border:1px solid rgba(244,114,182,0.3);border-radius:6px;margin-bottom:8px;">
+                                    <label class="ovb-label" style="color:#f472b6;font-weight:700;margin-bottom:6px;display:block;">
+                                        🫧 Flutuação Contínua (Loop Sem Parar)
+                                    </label>
+                                    <select class="ovb-select" data-ovb-prop="floatingPreset" id="ovb-select-floating-preset">
+                                        <option value="none">Nenhuma flutuação</option>
+                                        <option value="float-1">🌊 Flutuação Suave 1 (dgFloatOne - 6.5s)</option>
+                                        <option value="float-2">🌊 Flutuação Deslocada 2 (dgFloatTwo - 7.4s)</option>
+                                        <option value="float-3">🌊 Flutuação Lenta 3 (dgFloatThree - 8.2s)</option>
+                                        <option value="float-top">🔝 Flutuação no Topo (dgFloatTop - 6.2s)</option>
+                                        <option value="center-palette">🎨 Pulso de Paleta Central (dgPalettePulse - 5.8s)</option>
+                                        <option value="center-logo">💎 Giro Sutil de Logo (dgLogoPulse - 7s)</option>
+                                        <option value="sway">🍂 Balanço Pendular Suave (Sway - 6.8s)</option>
+                                    </select>
+                                </div>
+
+                                <!-- 4. Animação de Scroll / Pop-in ao Chegar na Sessão -->
+                                <div class="ovb-field-box" style="padding:10px;background:rgba(15,23,42,0.6);border:1px solid rgba(52,211,153,0.3);border-radius:6px;margin-bottom:8px;">
+                                    <label class="ovb-label" style="color:#34d399;font-weight:700;margin-bottom:6px;display:block;">
+                                        🎬 Entrada com Scroll (Pop-in ao Chegar na Sessão)
+                                    </label>
+                                    <select class="ovb-select" data-ovb-prop="scrollEntrancePreset" id="ovb-select-scroll-entrance">
+                                        <option value="none">Nenhuma animação de scroll</option>
+                                        <option value="elastic-pop">⚡ Pop-In Elástico com Escala (Igual Design Banner)</option>
+                                        <option value="staggered-pop-in">🪜 Pop-In Escalonado em Cascata (Filhos em sequência)</option>
+                                        <option value="fade-up">⬆️ Fade-In com Subida Suave</option>
+                                        <option value="zoom-in">🔍 Zoom-In Fluido</option>
+                                    </select>
+                                </div>
+
+                                <!-- 5. Parallax 3D com Movimento do Mouse -->
+                                <div class="ovb-field-box" style="padding:10px;background:rgba(15,23,42,0.6);border:1px solid rgba(251,191,36,0.3);border-radius:6px;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                                        <label class="ovb-label" style="color:#fbbf24;font-weight:700;margin:0;">
+                                            🧭 Parallax 3D &amp; Inclinação com o Mouse
+                                        </label>
+                                        <input type="checkbox" class="ovb-toggle-chk" data-ovb-prop="mouseParallax3D" id="ovb-chk-mouse-parallax">
+                                    </div>
+                                    <p style="font-size:10px;color:#94a3b8;margin:4px 0 0 0;">
+                                        Faz a perspectiva e inclinação 3D responderem suavemente à posição do cursor do mouse, igual ao Banner do Design Gráfico.
+                                    </p>
                                 </div>
                             </div>
                         </div>

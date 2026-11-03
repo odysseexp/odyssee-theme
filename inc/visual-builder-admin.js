@@ -194,6 +194,13 @@
             if (!$('#ovb-text-quick-en').is(':focus')) $('#ovb-text-quick-en').val('');
             $('.ovb-text-toggle').removeClass('active');
             $('.ovb-text-align').removeClass('active');
+            $('#ovb-chk-hover-glow').prop('checked', false);
+            $('#ovb-hover-glow-controls').hide();
+            $('#ovb-chk-hover-scale').prop('checked', false);
+            $('#ovb-hover-scale-controls').hide();
+            $('#ovb-select-floating-preset').val('none');
+            $('#ovb-select-scroll-entrance').val('none');
+            $('#ovb-chk-mouse-parallax').prop('checked', false);
             if ($('#ovb-color-manager').is(':visible')) {
                 populateColorManagerTargets();
             }
@@ -275,6 +282,56 @@
                 .text('🔒 Bloqueado no Comportamento')
                 .css({ 'background': 'rgba(239,68,68,0.2)', 'color': '#fca5a5' });
         }
+
+        // Sincronização e Two-Way Binding dos Efeitos Interativos de Banner & SVG
+        const effFx = (currentSnapshot && currentSnapshot.interactiveEffects) || {};
+        const isGlowActive = st.hoverGlowEnabled !== undefined ? !!st.hoverGlowEnabled : !!effFx.hasHoverGlow;
+        $('#ovb-chk-hover-glow').prop('checked', isGlowActive);
+        $('#ovb-hover-glow-controls').toggle(isGlowActive);
+        if (st.hoverGlowColor !== undefined) {
+            $('[data-ovb-prop="hoverGlowColor"]').val(st.hoverGlowColor);
+        } else if (effFx.hoverGlowColor) {
+            $('[data-ovb-prop="hoverGlowColor"]').val(effFx.hoverGlowColor);
+        }
+        if (st.hoverGlowBlur !== undefined) {
+            $('[data-ovb-prop="hoverGlowBlur"]').val(st.hoverGlowBlur);
+            $('.ovb-range[data-ovb-range-for="hoverGlowBlur"]').val(parseFloat(st.hoverGlowBlur) || 12);
+        } else if (effFx.hoverGlowBlur) {
+            $('[data-ovb-prop="hoverGlowBlur"]').val(effFx.hoverGlowBlur + 'px');
+            $('.ovb-range[data-ovb-range-for="hoverGlowBlur"]').val(parseFloat(effFx.hoverGlowBlur) || 12);
+        }
+        if (st.hoverTextColor !== undefined) {
+            $('[data-ovb-prop="hoverTextColor"]').val(st.hoverTextColor);
+        } else if (effFx.hoverTextColor) {
+            $('[data-ovb-prop="hoverTextColor"]').val(effFx.hoverTextColor);
+        }
+
+        const isScaleActive = st.hoverScaleEnabled !== undefined ? !!st.hoverScaleEnabled : !!effFx.hasHoverScale;
+        $('#ovb-chk-hover-scale').prop('checked', isScaleActive);
+        $('#ovb-hover-scale-controls').toggle(isScaleActive);
+        if (st.hoverScaleFactor !== undefined) {
+            $('[data-ovb-prop="hoverScaleFactor"]').val(st.hoverScaleFactor);
+            $('.ovb-range[data-ovb-range-for="hoverScaleFactor"]').val(parseFloat(st.hoverScaleFactor) || 1.08);
+        } else if (effFx.hoverScaleFactor) {
+            $('[data-ovb-prop="hoverScaleFactor"]').val(effFx.hoverScaleFactor);
+            $('.ovb-range[data-ovb-range-for="hoverScaleFactor"]').val(parseFloat(effFx.hoverScaleFactor) || 1.08);
+        }
+        if (st.hoverLiftY !== undefined) {
+            $('[data-ovb-prop="hoverLiftY"]').val(st.hoverLiftY);
+            $('.ovb-range[data-ovb-range-for="hoverLiftY"]').val(parseFloat(st.hoverLiftY) || -4);
+        } else if (effFx.hoverLiftY) {
+            $('[data-ovb-prop="hoverLiftY"]').val(effFx.hoverLiftY + 'px');
+            $('.ovb-range[data-ovb-range-for="hoverLiftY"]').val(parseFloat(effFx.hoverLiftY) || -4);
+        }
+
+        const effFloat = st.floatingPreset !== undefined ? st.floatingPreset : (effFx.floatingPreset || 'none');
+        $('#ovb-select-floating-preset').val(effFloat);
+
+        const effScroll = st.scrollEntrancePreset !== undefined ? st.scrollEntrancePreset : (effFx.scrollEntrancePreset || 'none');
+        $('#ovb-select-scroll-entrance').val(effScroll);
+
+        const effParallax = st.mouseParallax3D !== undefined ? !!st.mouseParallax3D : !!effFx.mouseParallax3D;
+        $('#ovb-chk-mouse-parallax').prop('checked', effParallax);
 
         // Código CSS do Elemento no final da Aba 1 (Propriedades)
         const customCssVal = st.customCss || rec.customCss || '';
@@ -2089,6 +2146,94 @@
                     .text('🔒 Bloqueado no Comportamento')
                     .css({ 'background': 'rgba(239,68,68,0.2)', 'color': '#fca5a5' });
             }
+            pushHistory();
+            syncPreview();
+        });
+
+        // Efeitos Interativos de Banner & SVG: Hover Glow Toggle
+        $(document).on('change', '#ovb-chk-hover-glow', function () {
+            const isChecked = $(this).is(':checked');
+            $('#ovb-hover-glow-controls').toggle(isChecked);
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].hoverGlowEnabled = isChecked;
+            if (isChecked && !rec.styles[currentBucket].hoverGlowColor) {
+                rec.styles[currentBucket].hoverGlowColor = 'var(--color-accent)';
+                $('[data-ovb-prop="hoverGlowColor"]').val('var(--color-accent)');
+            }
+            if (isChecked && !rec.styles[currentBucket].hoverGlowBlur) {
+                rec.styles[currentBucket].hoverGlowBlur = '12px';
+                $('[data-ovb-prop="hoverGlowBlur"]').val('12px');
+            }
+            pushHistory();
+            syncPreview();
+        });
+
+        // Efeitos Interativos de Banner & SVG: Hover Scale Toggle
+        $(document).on('change', '#ovb-chk-hover-scale', function () {
+            const isChecked = $(this).is(':checked');
+            $('#ovb-hover-scale-controls').toggle(isChecked);
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].hoverScaleEnabled = isChecked;
+            if (isChecked && !rec.styles[currentBucket].hoverScaleFactor) {
+                rec.styles[currentBucket].hoverScaleFactor = '1.08';
+                $('[data-ovb-prop="hoverScaleFactor"]').val('1.08');
+            }
+            if (isChecked && !rec.styles[currentBucket].hoverLiftY) {
+                rec.styles[currentBucket].hoverLiftY = '-4px';
+                $('[data-ovb-prop="hoverLiftY"]').val('-4px');
+            }
+            pushHistory();
+            syncPreview();
+        });
+
+        // Efeitos Interativos de Banner & SVG: Parallax 3D Toggle
+        $(document).on('change', '#ovb-chk-mouse-parallax', function () {
+            const isChecked = $(this).is(':checked');
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            rec.styles[currentBucket].mouseParallax3D = isChecked;
+            pushHistory();
+            syncPreview();
+        });
+
+        // Efeitos Interativos de Banner & SVG: 1-Click Botão Copiar/Aplicar Efeitos do Banner de Design
+        $(document).on('click', '#ovb-btn-clone-design-banner-fx', function () {
+            if (!currentSelector) {
+                showToast('Selecione primeiro um elemento SVG, grupo ou banner.', 'warning');
+                return;
+            }
+            const rec = ensureElementRecord(currentSelector);
+            const curSt = rec.styles[currentBucket] = rec.styles[currentBucket] || {};
+            curSt.hoverGlowEnabled = true;
+            curSt.hoverGlowColor = 'var(--color-accent)';
+            curSt.hoverGlowBlur = '12px';
+            curSt.hoverTextColor = '#ffffff';
+            curSt.hoverScaleEnabled = true;
+            curSt.hoverScaleFactor = '1.08';
+            curSt.hoverLiftY = '-4px';
+            curSt.floatingPreset = 'float-1';
+            curSt.scrollEntrancePreset = 'elastic-pop';
+            curSt.mouseParallax3D = true;
+            populateSidebarFromSelection();
+            pushHistory();
+            syncPreview();
+            showToast('✨ Efeitos do Banner de Design Gráfico aplicados ao elemento selecionado!', 'success');
+        });
+
+        // Desbloqueio e Sincronização inteligente ao selecionar preset de hover
+        $(document).on('change', '#ovb-hover-anim-preset-select', function () {
+            const val = $(this).val();
+            if (!currentSelector) return;
+            const rec = ensureElementRecord(currentSelector);
+            const isAct = val !== 'none';
+            rec.enableHoverAnim = isAct;
+            rec.styles[currentBucket].enableHoverAnim = isAct;
+            $('#ovb-chk-enable-hover').prop('checked', isAct);
+            $('#ovb-hover-lock-badge')
+                .text(isAct ? '✅ Ativo pelo Comportamento' : '⚪ Desativado')
+                .css({ 'background': isAct ? 'rgba(16,185,129,0.2)' : 'rgba(148,163,184,0.2)', 'color': isAct ? '#6ee7b7' : '#94a3b8' });
             pushHistory();
             syncPreview();
         });

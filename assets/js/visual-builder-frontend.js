@@ -573,7 +573,61 @@
             });
         }
 
+        // Banner & SVG Interactive: Continuous Floating Loop
+        if (!isHover && st.floatingPreset && st.floatingPreset !== 'none') {
+            rules.push(`transform-origin: center center${imp}`);
+            rules.push(`transform-box: fill-box${imp}`);
+            switch (st.floatingPreset) {
+                case 'float-1':
+                    rules.push(`animation: dgFloatOne 6.5s ease-in-out infinite alternate${imp}`);
+                    break;
+                case 'float-2':
+                    rules.push(`animation: dgFloatTwo 7.4s ease-in-out infinite alternate 0.8s${imp}`);
+                    break;
+                case 'float-3':
+                    rules.push(`animation: dgFloatThree 8.2s ease-in-out infinite alternate 1.6s${imp}`);
+                    break;
+                case 'float-top':
+                    rules.push(`animation: dgFloatTop 6.2s ease-in-out infinite alternate 0.3s${imp}`);
+                    break;
+                case 'center-palette':
+                    rules.push(`animation: dgPalettePulse 5.8s ease-in-out infinite alternate${imp}`);
+                    break;
+                case 'center-logo':
+                    rules.push(`animation: dgLogoPulse 7s ease-in-out infinite alternate 1.2s${imp}`);
+                    break;
+                case 'sway':
+                    rules.push(`animation: dgFloatSway 6.8s ease-in-out infinite alternate${imp}`);
+                    break;
+            }
+        }
+
+        // Base properties for Banner & SVG Hover effects (smooth transition, cursor, transform-box)
+        if (!isHover && (st.hoverGlowEnabled || st.hoverScaleEnabled)) {
+            rules.push(`cursor: pointer${imp}`);
+            rules.push(`transform-origin: center center${imp}`);
+            rules.push(`transform-box: fill-box${imp}`);
+            rules.push(`transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease${imp}`);
+            rules.push(`will-change: transform, filter${imp}`);
+        }
+
+        // Hover declarations for Banner & SVG effects
         if (isHover) {
+            if (st.hoverGlowEnabled) {
+                const hBlur = st.hoverGlowBlur !== undefined && st.hoverGlowBlur !== '' ? parseFloat(String(st.hoverGlowBlur)) : 12;
+                const hCol = st.hoverGlowColor || 'var(--color-accent)';
+                rules.push(`filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35)) drop-shadow(0 0 ${hBlur}px ${hCol})${imp}`);
+                if (st.hoverTextColor) {
+                    rules.push(`color: ${st.hoverTextColor}${imp}`);
+                    rules.push(`fill: currentColor${imp}`);
+                }
+            }
+            if (st.hoverScaleEnabled) {
+                const hFactor = st.hoverScaleFactor !== undefined && st.hoverScaleFactor !== '' ? st.hoverScaleFactor : '1.08';
+                const hLift = st.hoverLiftY !== undefined && st.hoverLiftY !== '' ? st.hoverLiftY : '-4px';
+                const normLift = /^-?\d+(\.\d+)?$/.test(String(hLift)) ? `${hLift}px` : hLift;
+                rules.push(`transform: scale(${hFactor}) translateY(${normLift})${imp}`);
+            }
             rules.push(`transition: all ${st.hoverTransition || '0.32s'} cubic-bezier(0.22, 1, 0.36, 1)${imp}`);
         }
 
@@ -642,6 +696,36 @@
                     cssParts.push(`${fullSel} { transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1); }`);
                     cssParts.push(`${fullSel}:hover { ${hCss}; }`);
                 }
+            }
+
+            // Auto-emit hover rule for Banner & SVG interactive effects if active on primary bucket
+            const primarySt = (elConfig.styles && (elConfig.styles.desktop || elConfig.styles.global)) || {};
+            if ((primarySt.hoverGlowEnabled || primarySt.hoverScaleEnabled) && (!elConfig.styles || !elConfig.styles.hover)) {
+                const autoHoverRules = [];
+                if (primarySt.hoverGlowEnabled) {
+                    const hBlur = primarySt.hoverGlowBlur !== undefined && primarySt.hoverGlowBlur !== '' ? parseFloat(String(primarySt.hoverGlowBlur)) : 12;
+                    const hCol = primarySt.hoverGlowColor || 'var(--color-accent)';
+                    autoHoverRules.push(`filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35)) drop-shadow(0 0 ${hBlur}px ${hCol}) !important`);
+                    if (primarySt.hoverTextColor) {
+                        autoHoverRules.push(`color: ${primarySt.hoverTextColor} !important`);
+                        autoHoverRules.push(`fill: currentColor !important`);
+                    }
+                }
+                if (primarySt.hoverScaleEnabled) {
+                    const hFactor = primarySt.hoverScaleFactor !== undefined && primarySt.hoverScaleFactor !== '' ? primarySt.hoverScaleFactor : '1.08';
+                    const hLift = primarySt.hoverLiftY !== undefined && primarySt.hoverLiftY !== '' ? primarySt.hoverLiftY : '-4px';
+                    const normLift = /^-?\d+(\.\d+)?$/.test(String(hLift)) ? `${hLift}px` : hLift;
+                    autoHoverRules.push(`transform: scale(${hFactor}) translateY(${normLift}) !important`);
+                }
+                if (autoHoverRules.length > 0) {
+                    cssParts.push(`${fullSel} { cursor: pointer !important; transform-origin: center center !important; transform-box: fill-box !important; transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease, color 0.3s ease !important; will-change: transform, filter !important; }`);
+                    cssParts.push(`${fullSel}:hover { ${autoHoverRules.join('; ')}; }`);
+                }
+            }
+
+            if (primarySt.scrollEntrancePreset && primarySt.scrollEntrancePreset !== 'none') {
+                cssParts.push(`${fullSel} { opacity: 0; transform: scale(0.92) translateY(24px); transform-origin: center center; transform-box: fill-box; transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) !important; will-change: transform, opacity; }`);
+                cssParts.push(`${fullSel}.ovb-in-view, .ovb-in-view ${fullSel}, .dg-in-view ${fullSel} { opacity: 1 !important; transform: scale(1) translateY(0) !important; }`);
             }
 
             if (elConfig.styles && elConfig.styles.dark) {
@@ -1537,6 +1621,51 @@
                         });
                     }
 
+                    // 2c. Banner & SVG Mouse Parallax 3D Engine
+                    if (st.mouseParallax3D && !el._ovbParallaxBound) {
+                        el._ovbParallaxBound = true;
+                        el.setAttribute('data-ovb-parallax', 'true');
+                        let ticking = false;
+                        const targetSvg = el.querySelector('.dg-banner-svg') || el.querySelector('svg') || el.querySelector('img') || el;
+                        el.addEventListener('mousemove', (e) => {
+                            if (!ticking) {
+                                requestAnimationFrame(() => {
+                                    const rect = el.getBoundingClientRect();
+                                    const x = ((e.clientX - rect.left) / Math.max(1, rect.width) - 0.5) * 12;
+                                    const y = ((e.clientY - rect.top) / Math.max(1, rect.height) - 0.5) * 8;
+                                    targetSvg.style.transform = `perspective(1000px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg)`;
+                                    ticking = false;
+                                });
+                                ticking = true;
+                            }
+                        });
+                        el.addEventListener('mouseleave', () => {
+                            targetSvg.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                            targetSvg.style.transform = '';
+                            setTimeout(() => { if (targetSvg) targetSvg.style.transition = ''; }, 600);
+                        });
+                    }
+
+                    // 2d. Scroll Entrance Pop-In Trigger
+                    if (st.scrollEntrancePreset && st.scrollEntrancePreset !== 'none' && !el._ovbScrollObserved) {
+                        el._ovbScrollObserved = true;
+                        el.setAttribute('data-ovb-scroll-entrance', st.scrollEntrancePreset);
+                        if ('IntersectionObserver' in window) {
+                            const observer = new IntersectionObserver((entries) => {
+                                entries.forEach(entry => {
+                                    if (entry.isIntersecting) {
+                                        el.classList.add('ovb-in-view');
+                                        el.classList.add('dg-in-view');
+                                        observer.unobserve(el);
+                                    }
+                                });
+                            }, { threshold: 0.12 });
+                            observer.observe(el);
+                        } else {
+                            el.classList.add('ovb-in-view');
+                        }
+                    }
+
                     // 3. Extra Layer Overlay (Blend Mode Layer inside HTML Element)
                     if (st.overlayEnabled && st.overlayColor && !(el instanceof SVGElement)) {
                         const compPos = window.getComputedStyle(el).position;
@@ -1870,11 +1999,57 @@
             editableHtml = el.innerHTML || '';
         }
 
+        // Detect banner & SVG interactive effects (from .dg-item, .dg-float-*, .dg-banner-svg, etc.)
+        let isDgItem = false;
+        try {
+            isDgItem = (el.classList && el.classList.contains('dg-item')) || !!(el.closest && el.closest('.dg-item'));
+        } catch (e) {}
+
+        let detectedFloat = 'none';
+        try {
+            if (el.classList) {
+                if (el.classList.contains('dg-float-1')) detectedFloat = 'float-1';
+                else if (el.classList.contains('dg-float-2')) detectedFloat = 'float-2';
+                else if (el.classList.contains('dg-float-3')) detectedFloat = 'float-3';
+                else if (el.classList.contains('dg-float-top')) detectedFloat = 'float-top';
+                else if (el.classList.contains('dg-center-palette')) detectedFloat = 'center-palette';
+                else if (el.classList.contains('dg-center-logo')) detectedFloat = 'center-logo';
+                else if (el.classList.contains('dg-float-sway')) detectedFloat = 'sway';
+            }
+        } catch (e) {}
+
+        let detectedScroll = 'none';
+        try {
+            if ((el.classList && el.classList.contains('dg-anim-wrap')) || (el.closest && el.closest('.dg-anim-wrap')) || (el.closest && el.closest('.dg-banner-svg'))) {
+                detectedScroll = 'elastic-pop';
+            }
+        } catch (e) {}
+
+        let detectedParallax = false;
+        try {
+            detectedParallax = !!(el.closest && el.closest('.category-banner-wrapper, .ovb-svg-png-banner, .dg-banner')) ||
+                               (el.dataset && el.dataset.ovbParallax === 'true');
+        } catch (e) {}
+
+        const interactiveFx = {
+            hasHoverGlow: isDgItem,
+            hoverGlowColor: 'var(--color-accent)',
+            hoverGlowBlur: '12px',
+            hoverTextColor: '#ffffff',
+            hasHoverScale: isDgItem,
+            hoverScaleFactor: '1.08',
+            hoverLiftY: '-4px',
+            floatingPreset: detectedFloat,
+            scrollEntrancePreset: detectedScroll,
+            mouseParallax3D: detectedParallax
+        };
+
         return {
             tagName: el.tagName.toLowerCase(),
             isSvg: el instanceof SVGElement,
             parentSvgSelector: parentSvgSelector,
             label: getElementLabel(el),
+            interactiveEffects: interactiveFx,
             innerHTML: editableHtml,
             text: (el.children.length === 0 || el.tagName === 'TEXT' || el.tagName === 'TSPAN') ? (el.textContent || '').trim() : (el.querySelector('span[data-key], span') ? el.querySelector('span[data-key], span').textContent.trim() : ''),
             src: el.tagName === 'IMG' ? (el.getAttribute('src') || '') : '',

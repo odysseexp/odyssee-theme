@@ -3,7 +3,7 @@ Theme Name: OdysseeXP WordPress Theme
 Theme URI: https://odysseexp.com
 Author: Harley
 Description: Tema moderno para a Odyssee Experience com o layout original (esteira, hamburger e categorias), com fundo estrito Claro/Escuro neutro e acentos refinados em Roxo e Vermelho.
-Version: 26.10.20
+Version: 26.11.03
 */
 :root {
     --font-ubuntu: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -920,9 +920,18 @@ body.color-red #onboarding-container .color-option-btn[data-color="red"] .color-
     outline: none !important;
     position: relative;
     box-sizing: border-box;
+    overflow: visible !important;
+}
+.category-banner {
+    object-fit: cover;
+    object-position: center top;
+    transform: scale(1.03);
+    transform-origin: center top;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+    will-change: transform;
 }
 .category-banner:hover {
-    transform: scale(1.01);
+    transform: scale(1.05);
 }
 .category-banner-wrapper {
     background: transparent;
@@ -952,7 +961,8 @@ body.theme-light .category-banner-wrapper:hover {
     color: rgba(226, 232, 240, 0.52);
     shape-rendering: geometricPrecision;
     text-rendering: geometricPrecision;
-    overflow: visible;
+    overflow: visible !important;
+    padding-bottom: 14px;
 }
 [data-theme="light"] .dg-banner-svg,
 body.theme-light .dg-banner-svg {
@@ -1065,6 +1075,11 @@ body.theme-light .dg-item:hover {
 @keyframes dgLogoPulse {
     0% { transform: scale(1) rotate(0deg); }
     100% { transform: scale(1.06) rotate(3deg); }
+}
+@keyframes dgFloatSway {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(1.5deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
 }
 @media (prefers-reduced-motion: reduce) {
     .dg-anim-wrap,

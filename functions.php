@@ -239,7 +239,7 @@ add_filter( 'option_odyssee_visual_builder_presets', 'odyssee_sanitize_data_urls
 
 function odyssee_scripts() {
     
-    $theme_version = '26.10.20';
+    $theme_version = '26.11.03';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
