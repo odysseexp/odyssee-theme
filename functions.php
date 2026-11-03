@@ -239,7 +239,7 @@ add_filter( 'option_odyssee_visual_builder_presets', 'odyssee_sanitize_data_urls
 
 function odyssee_scripts() {
     
-    $theme_version = '26.10.19';
+    $theme_version = '26.10.20';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
@@ -515,6 +515,8 @@ add_action( 'pre_get_posts', function( $query ) {
         $query->set( 'post_status', 'publish' );
         $query->set( 'posts_per_page', 12 );
         $query->set( 'paged', $paged );
+    } elseif ( $query->is_category() || $query->is_tag() || $query->is_archive() || $query->is_home() ) {
+        $query->set( 'posts_per_page', 12 );
     }
 } );
 

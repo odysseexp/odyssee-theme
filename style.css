@@ -3,7 +3,7 @@ Theme Name: OdysseeXP WordPress Theme
 Theme URI: https://odysseexp.com
 Author: Harley
 Description: Tema moderno para a Odyssee Experience com o layout original (esteira, hamburger e categorias), com fundo estrito Claro/Escuro neutro e acentos refinados em Roxo e Vermelho.
-Version: 26.10.19
+Version: 26.10.20
 */
 :root {
     --font-ubuntu: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -4125,9 +4125,26 @@ body.theme-dark #onboarding-container .theme-picker #btn-dark {
 }
 .portfolio-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 2rem;
     width: 100%;
+}
+@media (max-width: 1240px) {
+    .portfolio-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+@media (max-width: 860px) {
+    .portfolio-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+}
+@media (max-width: 580px) {
+    .portfolio-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
 }
 .portfolio-card {
     background: var(--bg-card);

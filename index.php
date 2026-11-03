@@ -50,7 +50,7 @@ if ( ! $query_to_use->have_posts() || is_404() || $is_posts_slug ) {
 }
 ?>
 
-<div class="container" style="padding-top: 3.5rem; padding-bottom: 5rem;">
+<div class="container gallery-container" style="max-width: 1360px; margin: 0 auto; padding: 3.5rem 1.5rem 5rem;">
     <header class="page-hero">
         <span class="section-badge">Portfólio & Artigos</span>
         <h1 class="page-title">
