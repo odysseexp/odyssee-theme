@@ -743,6 +743,35 @@
     }
 
     /**
+     * Sanitizes and namespaces internal IDs in inserted block HTML (SVG/HTML) to ensure
+     * that preset banners and widgets never duplicate IDs with other elements on the page.
+     */
+    function namespaceBlockHtmlIds(html, blockId) {
+        if (!html || typeof html !== 'string' || !blockId) return html;
+        const cleanBlockId = String(blockId).replace(/[^a-zA-Z0-9_-]/g, '');
+        const idRegex = /\bid=["']([^"']+)["']/g;
+        const ids = new Set();
+        let m;
+        while ((m = idRegex.exec(html)) !== null) {
+            const idVal = m[1];
+            if (!idVal.endsWith('-' + cleanBlockId) && !idVal.startsWith('ovb_')) {
+                ids.add(idVal);
+            }
+        }
+        if (ids.size === 0) return html;
+
+        let res = html;
+        ids.forEach(idVal => {
+            const newId = `${idVal}-${cleanBlockId}`;
+            const escaped = idVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            res = res.replace(new RegExp(`\\bid=(["'])${escaped}\\1`, 'g'), `id=$1${newId}$1`);
+            res = res.replace(new RegExp(`\\b(href|xlink:href)=(["'])#${escaped}\\2`, 'g'), `$1=$2#${newId}$2`);
+            res = res.replace(new RegExp(`url\\(#${escaped}\\)`, 'g'), `url(#${newId})`);
+        });
+        return res;
+    }
+
+    /**
      * Renders cloned pre-existing elements
      */
     function renderClonedElements() {
@@ -758,6 +787,11 @@
                 copy.setAttribute('data-ovb-clone-id', cl.id);
                 copy.removeAttribute('data-ovb-selected');
                 copy.removeAttribute('data-ovb-hover');
+                copy.querySelectorAll('[id]').forEach(child => {
+                    if (child !== copy) {
+                        child.id = `${child.id}-${cl.id}`;
+                    }
+                });
                 src.parentNode.insertBefore(copy, src.nextSibling);
             } catch (e) {}
         });
@@ -877,7 +911,7 @@
             case 'html': {
                 const htmlBox = document.createElement('div');
                 htmlBox.className = 'ovb-block-html';
-                htmlBox.innerHTML = c.html || '<div style="padding:20px;text-align:center;">Bloco HTML / SVG Personalizado</div>';
+                htmlBox.innerHTML = namespaceBlockHtmlIds(c.html || '<div style="padding:20px;text-align:center;">Bloco HTML / SVG Personalizado</div>', block.id);
                 wrapper.appendChild(htmlBox);
                 break;
             }
@@ -890,7 +924,9 @@
                     presetEl.setAttribute('data-ovb-block-id', block.id);
                     presetEl.setAttribute('data-ovb-preset-id', presetDef.id);
                     presetEl.id = block.id;
-                    presetEl.innerHTML = (c && c.html) ? c.html : (presetDef.html || '');
+                    let rawHtml = (c && c.html) ? c.html : (presetDef.html || '');
+                    rawHtml = namespaceBlockHtmlIds(rawHtml, block.id);
+                    presetEl.innerHTML = rawHtml;
                     const mergedCfg = Object.assign({}, presetDef.defaultConfig || {}, block.config || {});
                     if (window.odysseeVBApplyElementConfig) {
                         setTimeout(() => window.odysseeVBApplyElementConfig(presetEl, mergedCfg), 40);
@@ -898,7 +934,7 @@
                     return presetEl;
                 } else if (block.type === 'user-component-preset' && c.html) {
                     wrapper.className = 'ovb-custom-block ovb-user-component-preset';
-                    wrapper.innerHTML = c.html;
+                    wrapper.innerHTML = namespaceBlockHtmlIds(c.html, block.id);
                     if (window.odysseeVBApplyElementConfig) {
                         setTimeout(() => window.odysseeVBApplyElementConfig(wrapper, block.config || {}), 40);
                     }
@@ -1576,7 +1612,11 @@
     }
 
     /**
-     * Generates a clean, accurate CSS selector for ANY HTML or SVG element on the page
+     * Generates a clean, accurate CSS selector for ANY HTML or SVG element on the page,
+     * guaranteeing absolute element isolation:
+     * - Any element inside a custom block or preset is ALWAYS strictly scoped to its block ID (#ovb_blk_...)
+     * - Native category banners & sections are strictly scoped to their section/banner ID (#edicao-video, #banner-design-grafico, etc.)
+     * - Generic classes (.category-banner, .category-banner-wrapper, etc.) NEVER leak globally across elements
      */
     function generateSelector(el) {
         if (!el || el.nodeType !== 1) return null;
@@ -1588,17 +1628,67 @@
             el = svgGroup;
         }
 
-        if (el.hasAttribute('data-ovb-block-id')) {
-            return `#${CSS.escape(el.getAttribute('data-ovb-block-id'))}`;
-        }
-        if (el.hasAttribute('data-ovb-clone-id')) {
-            return `#${CSS.escape(el.getAttribute('data-ovb-clone-id'))}`;
+        // 1. BLOCK / CLONE ISOLATION: Check if element is inside an inserted custom block or clone
+        const blockParent = el.closest ? el.closest('[data-ovb-block-id], [data-ovb-clone-id]') : null;
+        if (blockParent) {
+            const blockId = blockParent.getAttribute('data-ovb-block-id') || blockParent.getAttribute('data-ovb-clone-id') || blockParent.id;
+            const blockScope = `#${CSS.escape(blockId)}`;
+            if (el === blockParent) {
+                return blockScope;
+            }
+
+            // If the child element has an ID that is uniquely namespaced with blockId:
+            if (el.id && !el.id.startsWith('ovb-')) {
+                if (el.id.includes(blockId) && document.querySelectorAll('#' + CSS.escape(el.id)).length === 1) {
+                    return `#${CSS.escape(el.id)}`;
+                }
+                return `${blockScope} #${CSS.escape(el.id)}`;
+            }
+
+            // Build a relative path from el up to blockParent
+            const parts = [];
+            let cur = el;
+            while (cur && cur !== blockParent && cur.nodeType === 1) {
+                let part = cur.tagName.toLowerCase();
+                const validClasses = Array.from(cur.classList || []).filter(c =>
+                    !c.startsWith('ovb-') &&
+                    !['theme-dark', 'theme-light', 'color-purple', 'color-red', 'modo-onboarding', 'transparent', 'active', 'visible'].includes(c)
+                );
+                if (validClasses.length > 0) {
+                    part += '.' + validClasses.slice(0, 2).map(c => CSS.escape(c)).join('.');
+                }
+                if (cur.parentElement && cur.parentElement !== blockParent) {
+                    const siblings = Array.from(cur.parentElement.children).filter(ch => ch.tagName === cur.tagName);
+                    if (siblings.length > 1) {
+                        const idx = Array.from(cur.parentElement.children).indexOf(cur) + 1;
+                        part += `:nth-child(${idx})`;
+                    }
+                }
+                parts.unshift(part);
+
+                const subSel = parts.join(' > ');
+                try {
+                    if (blockParent.querySelectorAll(subSel).length === 1) {
+                        return `${blockScope} > ${subSel}`;
+                    }
+                } catch (e) {}
+
+                cur = cur.parentElement;
+            }
+
+            return `${blockScope} > ${parts.join(' > ') || '*'}`;
         }
 
+        // 2. Native Elements: Direct unique ID check across page
         if (el.id && !el.id.startsWith('ovb-')) {
-            return `#${CSS.escape(el.id)}`;
+            try {
+                if (document.querySelectorAll('#' + CSS.escape(el.id)).length === 1) {
+                    return `#${CSS.escape(el.id)}`;
+                }
+            } catch (e) {}
         }
 
+        // 3. data-key attribute (e.g. section titles, translated elements)
         const dataKey = el.getAttribute('data-key');
         if (dataKey) {
             const tag = el.tagName.toLowerCase();
@@ -1610,9 +1700,21 @@
             } catch (e) {}
         }
 
+        // 4. Check if inside a section or banner container with an ID
+        const sectionParent = el.closest ? el.closest('section[id], header[id], footer[id], main[id], .category-banner-wrapper[id], article[id]') : null;
+
+        const GENERIC_REPEATED_CLASSES = [
+            'category-banner', 'category-banner-wrapper', 'section-title',
+            'portfolio-showcase', 'category-buttons', 'category-image-placeholder',
+            'category-posts-link', 'carousel-wrapper', 'banner-overlay',
+            'service-card', 'carousel-card', 'btn-primary', 'section-actions'
+        ];
+
         const parts = [];
         let cur = el;
-        while (cur && cur.nodeType === 1 && cur !== document.body && cur !== document.documentElement) {
+        const stopAt = sectionParent || document.body;
+
+        while (cur && cur.nodeType === 1 && cur !== stopAt && cur !== document.body && cur !== document.documentElement) {
             if (cur.id && !cur.id.startsWith('ovb-')) {
                 parts.unshift(`#${CSS.escape(cur.id)}`);
                 break;
@@ -1628,7 +1730,7 @@
                 part += '.' + validClasses.slice(0, 2).map(c => CSS.escape(c)).join('.');
             }
 
-            if (cur.parentElement) {
+            if (cur.parentElement && cur.parentElement !== stopAt) {
                 const siblings = Array.from(cur.parentElement.children).filter(ch => ch.tagName === cur.tagName);
                 if (siblings.length > 1) {
                     const idx = Array.from(cur.parentElement.children).indexOf(cur) + 1;
@@ -1638,17 +1740,35 @@
 
             parts.unshift(part);
 
-            const testSel = parts.join(' > ');
-            try {
-                if (document.querySelectorAll(testSel).length === 1) {
-                    return testSel;
-                }
-            } catch (e) {}
+            const hasGenericClass = validClasses.some(c => GENERIC_REPEATED_CLASSES.includes(c));
+            if (!sectionParent && !hasGenericClass) {
+                const testSel = parts.join(' > ');
+                try {
+                    if (document.querySelectorAll(testSel).length === 1) {
+                        return testSel;
+                    }
+                } catch (e) {}
+            }
 
             cur = cur.parentElement;
         }
 
-        return parts.join(' > ') || 'body';
+        if (sectionParent && sectionParent !== el) {
+            parts.unshift(`#${CSS.escape(sectionParent.id)}`);
+            return parts.join(' > ');
+        }
+
+        const finalSel = parts.join(' > ') || 'body';
+
+        // Final safety net: NEVER allow bare generic repeated classes without ID anchoring
+        if (GENERIC_REPEATED_CLASSES.some(cls => finalSel === `.${cls}` || finalSel.endsWith(`.${cls}`))) {
+            const nearestIdEl = el.closest('[id]');
+            if (nearestIdEl && nearestIdEl !== el && !nearestIdEl.id.startsWith('ovb-')) {
+                return `#${CSS.escape(nearestIdEl.id)} ${finalSel}`;
+            }
+        }
+
+        return finalSel;
     }
 
     /**
@@ -1668,11 +1788,13 @@
             const cleanId = el.id.replace('.png', '');
             return `${tag} #${cleanId}`;
         }
+        const blockParent = el.closest && el.closest('[data-ovb-block-id]');
+        const prefix = blockParent ? `[${blockParent.getAttribute('data-ovb-block-id')}] ` : '';
         const key = el.getAttribute('data-key');
-        if (key) return `${tag} [${key}]`;
+        if (key) return `${prefix}${tag} [${key}]`;
         const cls = Array.from(el.classList || []).filter(c => !c.startsWith('ovb-'))[0];
-        if (cls) return `${tag} .${cls}`;
-        return tag;
+        if (cls) return `${prefix}${tag} .${cls}`;
+        return `${prefix}${tag}`;
     }
 
     /**

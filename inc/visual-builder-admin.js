@@ -712,6 +712,34 @@
         });
     }
 
+    /**
+     * Namespaces internal IDs in block HTML/SVG so instances remain strictly isolated
+     */
+    function namespaceBlockHtmlIds(html, blockId) {
+        if (!html || typeof html !== 'string' || !blockId) return html;
+        const cleanBlockId = String(blockId).replace(/[^a-zA-Z0-9_-]/g, '');
+        const idRegex = /\bid=["']([^"']+)["']/g;
+        const ids = new Set();
+        let m;
+        while ((m = idRegex.exec(html)) !== null) {
+            const idVal = m[1];
+            if (!idVal.endsWith('-' + cleanBlockId) && !idVal.startsWith('ovb_')) {
+                ids.add(idVal);
+            }
+        }
+        if (ids.size === 0) return html;
+
+        let res = html;
+        ids.forEach(idVal => {
+            const newId = `${idVal}-${cleanBlockId}`;
+            const escaped = idVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            res = res.replace(new RegExp(`\\bid=(["'])${escaped}\\1`, 'g'), `id=$1${newId}$1`);
+            res = res.replace(new RegExp(`\\b(href|xlink:href)=(["'])#${escaped}\\2`, 'g'), `$1=$2#${newId}$2`);
+            res = res.replace(new RegExp(`url\\(#${escaped}\\)`, 'g'), `url(#${newId})`);
+        });
+        return res;
+    }
+
     function insertNewBlock(type) {
         const targetSel = currentSelector || '#home';
         const pos = $('#ovb-insert-position').val() || 'after';
@@ -3272,6 +3300,8 @@
             const targetSel = currentSelector || 'main, .main-content, .immersive-wrapper, body';
             const pos = $('#ovb-insert-position').val() || 'after';
             const id = 'ovb_blk_' + Math.random().toString(36).substring(2, 8);
+            let blockHtml = presetDef.html || '';
+            blockHtml = namespaceBlockHtmlIds(blockHtml, id);
 
             const newBlock = {
                 id: id,
@@ -3279,7 +3309,7 @@
                 targetSelector: targetSel,
                 position: pos,
                 config: deepClone(presetDef.defaultConfig || {}),
-                content: { html: presetDef.html || '' }
+                content: { html: blockHtml }
             };
 
             if (!Array.isArray(state.blocks)) state.blocks = [];
@@ -3759,13 +3789,15 @@
             const targetSel = currentSelector || 'main, .main-content, .immersive-wrapper, body';
             const pos = $('#ovb-insert-position').val() || 'after';
             const id = 'ovb_blk_' + Math.random().toString(36).substring(2, 8);
+            let compHtml = comp.html || '';
+            compHtml = namespaceBlockHtmlIds(compHtml, id);
 
             state.blocks.push({
                 id: id,
                 type: 'user-component-preset',
                 targetSelector: targetSel,
                 position: pos,
-                content: { html: comp.html }
+                content: { html: compHtml }
             });
             if (comp.elConfig && Object.keys(comp.elConfig).length > 0) {
                 state.elements['#' + id] = deepClone(comp.elConfig);
