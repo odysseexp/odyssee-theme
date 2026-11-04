@@ -12,6 +12,88 @@ define( 'ODYSSEE_VB_PRESETS_KEY', 'odyssee_visual_builder_presets' );
 define( 'ODYSSEE_VB_REVISIONS_KEY', 'odyssee_visual_builder_revisions' );
 
 /**
+ * Sanitiza e autocorrige dados salvos do Visual Builder (evita banners ocultos acidentalmente,
+ * remove customCss quebrado e blocos duplicados conflitantes).
+ */
+function odyssee_vb_sanitize_builder_data( $data ) {
+    if ( ! is_array( $data ) ) {
+        return array();
+    }
+
+    // 1. Sanitiza customCss global se for valor inválido (como o texto cru "Artboard 1")
+    if ( ! empty( $data['customCss'] ) && is_string( $data['customCss'] ) ) {
+        $trimmed_css = trim( $data['customCss'] );
+        if ( $trimmed_css === 'Artboard 1' || ( strpos( $trimmed_css, '{' ) === false && strpos( $trimmed_css, '@' ) === false ) ) {
+            $data['customCss'] = '';
+        }
+    }
+
+    // 2. Protege banners estruturais de categoria e seus subelementos vetoriais contra hidden acidental
+    if ( ! empty( $data['elements'] ) && is_array( $data['elements'] ) ) {
+        $banner_identifiers = array(
+            '#banner-edicao-video',
+            '#banner-design-grafico',
+            '#banner-motion',
+            '#banner-ilustracao',
+            '#banner-impressos',
+            '.category-banner-wrapper',
+            '#dg-animated-banner',
+            '#dg-animated-banner-video',
+            '.dg-banner-svg'
+        );
+
+        foreach ( $data['elements'] as $sel => &$el_cfg ) {
+            if ( ! is_array( $el_cfg ) ) continue;
+
+            $is_banner = false;
+            foreach ( $banner_identifiers as $b_sel ) {
+                if ( strpos( $sel, $b_sel ) !== false ) {
+                    $is_banner = true;
+                    break;
+                }
+            }
+
+            if ( ! empty( $el_cfg['styles'] ) && is_array( $el_cfg['styles'] ) ) {
+                foreach ( $el_cfg['styles'] as $bucket => &$st ) {
+                    if ( is_array( $st ) ) {
+                        if ( $is_banner && ! empty( $st['hidden'] ) ) {
+                            unset( $st['hidden'] );
+                        }
+                        if ( ! empty( $st['hidden'] ) && ( strpos( $sel, 'path' ) !== false || strpos( $sel, 'svg' ) !== false || strpos( $sel, 'cls-' ) !== false ) ) {
+                            unset( $st['hidden'] );
+                        }
+                    }
+                }
+                unset( $st );
+            }
+
+            // Sanitiza customCss por elemento
+            if ( ! empty( $el_cfg['customCss'] ) && is_string( $el_cfg['customCss'] ) ) {
+                $el_css = trim( $el_cfg['customCss'] );
+                if ( $el_css === 'Artboard 1' || ( strpos( $el_css, '{' ) === false && strpos( $el_css, '@' ) === false ) ) {
+                    $el_cfg['customCss'] = '';
+                }
+            }
+        }
+        unset( $el_cfg );
+    }
+
+    // 3. Remove blocos duplicados de preset que tentavam injetar SVG após #banner-edicao-video
+    if ( ! empty( $data['blocks'] ) && is_array( $data['blocks'] ) ) {
+        $filtered_blocks = array();
+        foreach ( $data['blocks'] as $blk ) {
+            if ( is_array( $blk ) && isset( $blk['targetSelector'] ) && $blk['targetSelector'] === '#banner-edicao-video' && isset( $blk['type'] ) && $blk['type'] === 'preset-svg-png-banner' ) {
+                continue;
+            }
+            $filtered_blocks[] = $blk;
+        }
+        $data['blocks'] = $filtered_blocks;
+    }
+
+    return $data;
+}
+
+/**
  * Retrieves saved Visual Builder data with safe defaults.
  * Falls back to presets/odysseexp.json inside the theme folder if the database option is empty,
  * making the theme 100% portable when exported or moved to another site.
@@ -31,7 +113,7 @@ function odyssee_vb_get_data() {
     if ( ! is_array( $data ) ) {
         $data = array();
     }
-    return wp_parse_args( $data, array(
+    $merged = wp_parse_args( $data, array(
         'presetName'              => 'OdysseeXP',
         'uiStyle'                 => 'odysseexp',
         'iconPack'                => 'default',
@@ -60,6 +142,7 @@ function odyssee_vb_get_data() {
         'shortcuts'               => array(),
         'uiStyleColors'           => array(),
     ) );
+    return odyssee_vb_sanitize_builder_data( $merged );
 }
 
 /**
@@ -273,7 +356,7 @@ function odyssee_vb_enqueue_admin_assets( $hook ) {
  */
 function odyssee_vb_asset_ver( $relative_path ) {
     $full = get_template_directory() . '/' . ltrim( $relative_path, '/' );
-    return file_exists( $full ) ? (string) filemtime( $full ) : '26.11.03';
+    return file_exists( $full ) ? (string) filemtime( $full ) : '26.11.04';
 }
 
 /**
@@ -437,6 +520,8 @@ function odyssee_vb_ajax_save() {
         $clean        = odyssee_sanitize_data_urls_recursive( $clean );
         $compiled_css = odyssee_sanitize_data_urls_recursive( $compiled_css );
     }
+
+    $clean = odyssee_vb_sanitize_builder_data( $clean );
 
     // 1. Save revision backup (up to 10 revisions)
     $revisions = get_option( ODYSSEE_VB_REVISIONS_KEY, array() );

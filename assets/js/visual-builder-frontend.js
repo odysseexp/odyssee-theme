@@ -76,19 +76,74 @@
         return result;
     }
 
+    function isBannerSelector(sel) {
+        if (!sel || typeof sel !== 'string') return false;
+        return sel.includes('banner-edicao-video') ||
+               sel.includes('banner-design-grafico') ||
+               sel.includes('category-banner-wrapper') ||
+               sel.includes('dg-banner-svg') ||
+               sel.includes('dg-animated-banner');
+    }
+
     function normalizeData(raw) {
         const d = raw && typeof raw === 'object' ? raw : {};
+
+        let safeCustomCss = typeof d.customCss === 'string' ? d.customCss.trim() : '';
+        if (safeCustomCss === 'Artboard 1' || (!safeCustomCss.includes('{') && !safeCustomCss.startsWith('@'))) {
+            safeCustomCss = '';
+        }
+
+        const rawElements = d.elements && typeof d.elements === 'object' && !Array.isArray(d.elements) ? d.elements : {};
+        const safeElements = {};
+        Object.entries(rawElements).forEach(([sel, elCfg]) => {
+            if (!elCfg || typeof elCfg !== 'object' || Array.isArray(elCfg)) return;
+            const copy = Object.assign({}, elCfg);
+            const isBanner = isBannerSelector(sel);
+            if (copy.styles && typeof copy.styles === 'object' && !Array.isArray(copy.styles)) {
+                const newStyles = {};
+                Object.entries(copy.styles).forEach(([bucket, st]) => {
+                    if (st && typeof st === 'object' && !Array.isArray(st)) {
+                        const stCopy = Object.assign({}, st);
+                        if (isBanner && stCopy.hidden) {
+                            delete stCopy.hidden;
+                        }
+                        if (stCopy.hidden && (sel.includes('cls-') || sel.includes('path') || sel.includes('svg'))) {
+                            delete stCopy.hidden;
+                        }
+                        newStyles[bucket] = stCopy;
+                    } else {
+                        newStyles[bucket] = {};
+                    }
+                });
+                copy.styles = newStyles;
+            }
+            if (copy.customCss && typeof copy.customCss === 'string') {
+                const elCss = copy.customCss.trim();
+                if (elCss === 'Artboard 1' || (!elCss.includes('{') && !elCss.startsWith('@'))) {
+                    copy.customCss = '';
+                }
+            }
+            safeElements[sel] = copy;
+        });
+
+        const safeBlocks = (Array.isArray(d.blocks) ? d.blocks : []).filter(b => {
+            if (b && b.targetSelector === '#banner-edicao-video' && b.type === 'preset-svg-png-banner') {
+                return false;
+            }
+            return true;
+        });
+
         return {
             presetName: typeof d.presetName === 'string' && d.presetName ? d.presetName : 'OdysseeXP',
             uiStyle: typeof d.uiStyle === 'string' && d.uiStyle ? d.uiStyle : 'odysseexp',
             iconPack: typeof d.iconPack === 'string' && d.iconPack ? d.iconPack : 'default',
             blankMode: !!d.blankMode,
-            elements: d.elements && typeof d.elements === 'object' && !Array.isArray(d.elements) ? d.elements : {},
-            blocks: Array.isArray(d.blocks) ? d.blocks : [],
+            elements: safeElements,
+            blocks: safeBlocks,
             domMoves: Array.isArray(d.domMoves) ? d.domMoves : [],
             clones: Array.isArray(d.clones) ? d.clones : [],
             globalVars: d.globalVars && typeof d.globalVars === 'object' && !Array.isArray(d.globalVars) ? d.globalVars : { all: {}, dark: {}, light: {} },
-            customCss: typeof d.customCss === 'string' ? d.customCss : '',
+            customCss: safeCustomCss,
             customJs: typeof d.customJs === 'string' ? d.customJs : '',
             componentPresets: Array.isArray(d.componentPresets) ? d.componentPresets : [],
             pagePresets: d.pagePresets && typeof d.pagePresets === 'object' ? d.pagePresets : {},
@@ -279,14 +334,14 @@
      * Compiles a single style ruleset object (for a specific state/device/theme) into CSS declarations
      */
     function compileRuleDeclarations(st, isHover) {
-        if (!st || typeof st !== 'object') return '';
+        if (!st || typeof st !== 'object' || Array.isArray(st)) return '';
         const rules = [];
         const imp = ' !important';
 
         // Visibility
-        if (st.hidden) {
+        if (st.hidden === true || st.hidden === 'true') {
             rules.push(`display: none${imp}`);
-        } else if (st.display) {
+        } else if (typeof st.display === 'string' && st.display) {
             rules.push(`display: ${st.display}${imp}`);
         }
 
@@ -383,8 +438,8 @@
         }
 
         // SVG Vector Properties
-        if (st.fill) rules.push(`fill: ${st.fill}${imp}`);
-        if (st.stroke) rules.push(`stroke: ${st.stroke}${imp}`);
+        if (typeof st.fill === 'string' && st.fill.trim()) rules.push(`fill: ${st.fill.trim()}${imp}`);
+        if (typeof st.stroke === 'string' && st.stroke.trim()) rules.push(`stroke: ${st.stroke.trim()}${imp}`);
         if (st.strokeWidth !== undefined && st.strokeWidth !== '') rules.push(`stroke-width: ${st.strokeWidth}${imp}`);
 
         // Background
@@ -664,37 +719,55 @@
         const mobileRules = [];
 
         Object.entries(data.elements || {}).forEach(([selector, elConfig]) => {
-            if (!elConfig || typeof elConfig !== 'object') return;
+            if (!elConfig || typeof elConfig !== 'object' || Array.isArray(elConfig)) return;
             const themeScope = elConfig.themeScope || 'all';
             const prefix = themeScope === 'dark' ? 'body.theme-dark ' : (themeScope === 'light' ? 'body.theme-light ' : '');
             const fullSel = prefix + selector;
 
+            const isBanner = isBannerSelector(selector);
+            const cleanBucket = (rawSt) => {
+                if (!rawSt || typeof rawSt !== 'object' || Array.isArray(rawSt)) return null;
+                if (isBanner && rawSt.hidden) {
+                    const copy = Object.assign({}, rawSt);
+                    delete copy.hidden;
+                    return copy;
+                }
+                return rawSt;
+            };
+
+            const styles = elConfig.styles || {};
+
             // Global rules (when user chooses "Global - Todos os Dispositivos")
-            if (elConfig.styles && elConfig.styles.global) {
-                const gCss = compileRuleDeclarations(elConfig.styles.global, false);
+            const gSt = cleanBucket(styles.global);
+            if (gSt) {
+                const gCss = compileRuleDeclarations(gSt, false);
                 if (gCss) cssParts.push(`${fullSel} { ${gCss}; }`);
             }
 
             // Desktop-only rules (>= 1025px)
-            if (elConfig.styles && elConfig.styles.desktop) {
-                const dCss = compileRuleDeclarations(elConfig.styles.desktop, false);
+            const dSt = cleanBucket(styles.desktop);
+            if (dSt) {
+                const dCss = compileRuleDeclarations(dSt, false);
                 if (dCss) desktopRules.push(`${fullSel} { ${dCss}; }`);
             }
 
             // Tablet-only rules (769px to 1024px)
-            if (elConfig.styles && elConfig.styles.tablet) {
-                const tCss = compileRuleDeclarations(elConfig.styles.tablet, false);
+            const tSt = cleanBucket(styles.tablet);
+            if (tSt) {
+                const tCss = compileRuleDeclarations(tSt, false);
                 if (tCss) tabletRules.push(`${fullSel} { ${tCss}; }`);
             }
 
             // Mobile-only rules (<= 768px)
-            if (elConfig.styles && elConfig.styles.mobile) {
-                const mCss = compileRuleDeclarations(elConfig.styles.mobile, false);
+            const mSt = cleanBucket(styles.mobile);
+            if (mSt) {
+                const mCss = compileRuleDeclarations(mSt, false);
                 if (mCss) mobileRules.push(`${fullSel} { ${mCss}; }`);
             }
 
-            if (elConfig.styles && elConfig.styles.hover) {
-                const hCss = compileRuleDeclarations(elConfig.styles.hover, true);
+            const hSt = cleanBucket(styles.hover);
+            if (hSt) {
+                const hCss = compileRuleDeclarations(hSt, true);
                 if (hCss) {
                     cssParts.push(`${fullSel} { transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1); }`);
                     cssParts.push(`${fullSel}:hover { ${hCss}; }`);
@@ -702,8 +775,8 @@
             }
 
             // Auto-emit hover rule for Banner & SVG interactive effects if active on primary bucket
-            const primarySt = (elConfig.styles && (elConfig.styles.desktop || elConfig.styles.global)) || {};
-            if ((primarySt.hoverGlowEnabled || primarySt.hoverScaleEnabled) && (!elConfig.styles || !elConfig.styles.hover)) {
+            const primarySt = (dSt || gSt) || {};
+            if ((primarySt.hoverGlowEnabled || primarySt.hoverScaleEnabled) && !hSt) {
                 const autoHoverRules = [
                     'animation-play-state: paused !important',
                     'transform-origin: center center !important',
@@ -735,18 +808,23 @@
                 cssParts.push(`${fullSel}.ovb-in-view, .ovb-in-view ${fullSel}, .dg-in-view ${fullSel} { opacity: 1 !important; transform: scale(1) translateY(0) !important; }`);
             }
 
-            if (elConfig.styles && elConfig.styles.dark) {
-                const darkCss = compileRuleDeclarations(elConfig.styles.dark, false);
+            const darkSt = cleanBucket(styles.dark);
+            if (darkSt) {
+                const darkCss = compileRuleDeclarations(darkSt, false);
                 if (darkCss) cssParts.push(`body.theme-dark ${selector} { ${darkCss}; }`);
             }
-            if (elConfig.styles && elConfig.styles.light) {
-                const lightCss = compileRuleDeclarations(elConfig.styles.light, false);
+            const lightSt = cleanBucket(styles.light);
+            if (lightSt) {
+                const lightCss = compileRuleDeclarations(lightSt, false);
                 if (lightCss) cssParts.push(`body.theme-light ${selector} { ${lightCss}; }`);
             }
 
-            if (elConfig.customCss && elConfig.customCss.trim()) {
-                const parsedCustom = elConfig.customCss.replace(/\bselector\b/g, fullSel);
-                cssParts.push(parsedCustom);
+            if (elConfig.customCss && typeof elConfig.customCss === 'string') {
+                const trimmedElCss = elConfig.customCss.trim();
+                if (trimmedElCss && trimmedElCss !== 'Artboard 1' && (trimmedElCss.includes('{') || trimmedElCss.startsWith('@'))) {
+                    const parsedCustom = trimmedElCss.replace(/\bselector\b/g, fullSel);
+                    cssParts.push(parsedCustom);
+                }
             }
         });
 
@@ -765,8 +843,11 @@
             try { cssParts.push(window.ODYSSEE_VB_STYLE_COLORS.compile(data.uiStyleColors)); } catch (e) {}
         }
 
-        if (data.customCss && data.customCss.trim()) {
-            cssParts.push(data.customCss);
+        if (data.customCss && typeof data.customCss === 'string') {
+            const trimmedDataCss = data.customCss.trim();
+            if (trimmedDataCss && trimmedDataCss !== 'Artboard 1' && (trimmedDataCss.includes('{') || trimmedDataCss.startsWith('@'))) {
+                cssParts.push(trimmedDataCss);
+            }
         }
 
         return cssParts.join('\n');
