@@ -103,13 +103,6 @@
                 const newStyles = {};
                 Object.entries(copy.styles).forEach(([bucket, st]) => {
                     if (st && typeof st === 'object' && !Array.isArray(st)) {
-                        const stCopy = Object.assign({}, st);
-                        if (isBanner && stCopy.hidden) {
-                            delete stCopy.hidden;
-                        }
-                        if (stCopy.hidden && (sel.includes('cls-') || sel.includes('path') || sel.includes('svg'))) {
-                            delete stCopy.hidden;
-                        }
                         newStyles[bucket] = stCopy;
                     } else {
                         newStyles[bucket] = {};
@@ -727,11 +720,6 @@
             const isBanner = isBannerSelector(selector);
             const cleanBucket = (rawSt) => {
                 if (!rawSt || typeof rawSt !== 'object' || Array.isArray(rawSt)) return null;
-                if (isBanner && rawSt.hidden) {
-                    const copy = Object.assign({}, rawSt);
-                    delete copy.hidden;
-                    return copy;
-                }
                 return rawSt;
             };
 
@@ -2514,6 +2502,7 @@
             <span class="ovb-badge-drag-handle" title="Arraste aqui (ou arraste o próprio elemento) para mover livremente em X/Y">
                 <i class="fas fa-arrows-alt"></i> <span class="ovb-badge-title">Elemento</span>
             </span>
+            <button type="button" class="ovb-badge-btn ovb-badge-banner-btn" data-act="select-banner" style="display:none;background:rgba(139,92,246,0.3);border-color:rgba(139,92,246,0.6);color:#e9d5ff;" title="Selecionar o Banner Inteiro"><i class="fas fa-image"></i> Banner</button>
             <button type="button" class="ovb-badge-btn" data-act="toggle-lock" title="Travar/Destravar Proporção ao Redimensionar"><i class="fas fa-lock"></i> Proporção</button>
             <button type="button" class="ovb-badge-btn" data-act="unstretch" title="Desfazer Esticamento / Restaurar Proporção Original 1:1">1:1</button>
             <button type="button" class="ovb-badge-btn" data-act="toggle-immune" title="Marcar/Desmarcar como 'Tema Não Aplicável (Imune a Temas)' — ideal para Logos e Banners SVG"><i class="fas fa-shield-alt"></i> Imune</button>
@@ -2522,6 +2511,7 @@
             <button type="button" class="ovb-badge-btn" data-act="parent" title="Selecionar Elemento Pai (Atalho: A)"><i class="fas fa-level-up-alt"></i> Pai</button>
             <button type="button" class="ovb-badge-btn" data-act="duplicate" title="Duplicar Elemento (Atalho: Ctrl+D ou Alt+Arrastar)"><i class="fas fa-copy"></i></button>
             <button type="button" class="ovb-badge-btn" data-act="hide" title="Ocultar Elemento"><i class="fas fa-eye-slash"></i></button>
+            <button type="button" class="ovb-badge-btn" data-act="delete" style="background:rgba(239,68,68,0.3);border-color:rgba(239,68,68,0.7);color:#fca5a5;font-weight:700;" title="Apagar Elemento (Del / Backspace)"><i class="fas fa-trash-alt"></i> Apagar</button>
             <button type="button" class="ovb-badge-btn" data-act="add-after" title="Inserir Novo Bloco Abaixo"><i class="fas fa-plus"></i></button>
             <button type="button" class="ovb-badge-btn" data-act="reset" title="Resetar Posição e Estilo deste Elemento"><i class="fas fa-undo-alt"></i></button>
             <button type="button" class="ovb-badge-btn" data-act="flip-bar" style="background:rgba(56,189,248,0.28);border-color:rgba(56,189,248,0.55);" title="Mudar posição desta barra rápida (Acima / Abaixo / Rodapé da Tela)"><i class="fas fa-sort"></i> Posição</button>
@@ -2543,6 +2533,16 @@
 
         function updateSelectionOverlay() {
             if (selectedElement && document.body.contains(selectedElement) && !isInteractiveMode) {
+                // If element is hidden (display: none), don't show the bounding box or toolbar
+                try {
+                    const compDisplay = window.getComputedStyle(selectedElement).display;
+                    if (compDisplay === 'none') {
+                        selBox.style.display = 'none';
+                        floatBadge.style.display = 'none';
+                        return;
+                    }
+                } catch (e) {}
+
                 const rect = selectedElement.getBoundingClientRect();
                 selBox.style.display = 'block';
                 selBox.style.top = `${rect.top}px`;
@@ -2551,6 +2551,14 @@
                 selBox.style.height = `${Math.max(8, rect.height)}px`;
 
                 floatBadge.style.display = 'flex';
+
+                // Show/hide Banner shortcut button if inside a banner wrapper
+                const bannerBtn = floatBadge.querySelector('.ovb-badge-banner-btn');
+                if (bannerBtn) {
+                    const isInsideBanner = !!(selectedElement.closest && selectedElement.closest('.category-banner-wrapper, [id^="banner-"], [class*="category-banner"]') && !selectedElement.classList.contains('category-banner-wrapper') && !selectedElement.id.startsWith('banner-'));
+                    bannerBtn.style.display = isInsideBanner ? 'inline-flex' : 'none';
+                }
+
                 // Reset left temporarily so wrapping calculation gets full available viewport width on Mobile/Tablet
                 floatBadge.style.left = '8px';
                 const badgeRect = floatBadge.getBoundingClientRect();
@@ -3033,7 +3041,7 @@
 
             let elToAct = target;
             const svgGroup = target.closest && target.closest('g.dg-item[id]');
-            if (svgGroup && selectedElement !== target) {
+            if (svgGroup && selectedElement !== svgGroup && selectedElement !== target) {
                 elToAct = svgGroup;
             }
             if (selectedElement !== elToAct) {
@@ -3049,7 +3057,17 @@
             if (!btn || !selectedElement) return;
             const act = btn.getAttribute('data-act');
 
-            if (act === 'toggle-lock') {
+            if (act === 'select-banner') {
+                const bannerEl = selectedElement.closest && selectedElement.closest('.category-banner-wrapper, [id^="banner-"], [class*="category-banner"]');
+                if (bannerEl) {
+                    selectElement(bannerEl, false);
+                }
+            } else if (act === 'delete') {
+                window.parent.postMessage({
+                    type: 'OVB_SHORTCUT_COMMAND',
+                    command: 'delete-or-hide'
+                }, '*');
+            } else if (act === 'toggle-lock') {
                 lockAspectRatio = !lockAspectRatio;
                 btn.innerHTML = lockAspectRatio ? '<i class="fas fa-lock"></i> Proporção' : '<i class="fas fa-lock-open"></i> Livre';
                 window.parent.postMessage({

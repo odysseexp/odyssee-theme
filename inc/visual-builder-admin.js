@@ -1054,12 +1054,26 @@
                     $('#ovb-btn-delete-block').trigger('click');
                 } else {
                     const rec = ensureElementRecord(currentSelector);
-                    rec.styles[currentBucket].hidden = !rec.styles[currentBucket].hidden;
+                    rec.styles.global = rec.styles.global || {};
+                    rec.styles.desktop = rec.styles.desktop || {};
+                    rec.styles[currentBucket] = rec.styles[currentBucket] || {};
+
+                    const isCurrentlyHidden = !!(
+                        rec.styles[currentBucket].hidden ||
+                        rec.styles.global.hidden ||
+                        rec.styles.desktop.hidden
+                    );
+                    const willHide = !isCurrentlyHidden;
+
+                    rec.styles[currentBucket].hidden = willHide;
+                    rec.styles.desktop.hidden = willHide;
+                    rec.styles.global.hidden = willHide;
+
                     pushHistory();
                     syncPreview();
                     populateSidebarFromSelection();
                     renderNavigatorTree();
-                    showToast(rec.styles[currentBucket].hidden ? '👁️ Elemento ocultado neste dispositivo (Ctrl+Z para desfazer)' : '👁️ Elemento visível novamente');
+                    showToast(willHide ? '🗑️ Elemento apagado/ocultado (Ctrl+Z para desfazer)' : '👁️ Elemento visível novamente');
                 }
                 break;
             }
@@ -4251,7 +4265,20 @@
             const sel = $(this).attr('data-sel');
             if (!sel) return;
             const rec = ensureElementRecord(sel);
-            rec.styles[currentBucket].hidden = !rec.styles[currentBucket].hidden;
+            rec.styles.global = rec.styles.global || {};
+            rec.styles.desktop = rec.styles.desktop || {};
+            rec.styles[currentBucket] = rec.styles[currentBucket] || {};
+
+            const isCurrentlyHidden = !!(
+                rec.styles[currentBucket].hidden ||
+                rec.styles.global.hidden ||
+                rec.styles.desktop.hidden
+            );
+            const newHidden = !isCurrentlyHidden;
+            rec.styles[currentBucket].hidden = newHidden;
+            rec.styles.desktop.hidden = newHidden;
+            rec.styles.global.hidden = newHidden;
+
             pushHistory();
             syncPreview();
             renderNavigatorTree();
@@ -4292,11 +4319,29 @@
         $('#ovb-layer-act-vis').on('click', function () {
             if (!currentSelector) return;
             const rec = ensureElementRecord(currentSelector);
-            rec.styles[currentBucket].hidden = !rec.styles[currentBucket].hidden;
+            rec.styles.global = rec.styles.global || {};
+            rec.styles.desktop = rec.styles.desktop || {};
+            rec.styles[currentBucket] = rec.styles[currentBucket] || {};
+
+            const isCurrentlyHidden = !!(
+                rec.styles[currentBucket].hidden ||
+                rec.styles.global.hidden ||
+                rec.styles.desktop.hidden
+            );
+            const newHidden = !isCurrentlyHidden;
+            rec.styles[currentBucket].hidden = newHidden;
+            rec.styles.desktop.hidden = newHidden;
+            rec.styles.global.hidden = newHidden;
+
             pushHistory();
             syncPreview();
             renderNavigatorTree();
             populateSidebarFromSelection();
+            showToast(newHidden ? '👁️ Elemento ocultado' : '👁️ Elemento visível');
+        });
+
+        $('#ovb-btn-delete-element, #ovb-layer-act-del').on('click', function () {
+            executeShortcutCommand('delete-element');
         });
 
         $('#ovb-layer-act-lock').on('click', function () {

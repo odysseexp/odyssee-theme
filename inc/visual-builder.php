@@ -28,46 +28,11 @@ function odyssee_vb_sanitize_builder_data( $data ) {
         }
     }
 
-    // 2. Protege banners estruturais de categoria e seus subelementos vetoriais contra hidden acidental
+    // 2. Sanitiza customCss por elemento se for inválido
     if ( ! empty( $data['elements'] ) && is_array( $data['elements'] ) ) {
-        $banner_identifiers = array(
-            '#banner-edicao-video',
-            '#banner-design-grafico',
-            '#banner-motion',
-            '#banner-ilustracao',
-            '#banner-impressos',
-            '.category-banner-wrapper',
-            '#dg-animated-banner',
-            '#dg-animated-banner-video',
-            '.dg-banner-svg'
-        );
-
         foreach ( $data['elements'] as $sel => &$el_cfg ) {
             if ( ! is_array( $el_cfg ) ) continue;
 
-            $is_banner = false;
-            foreach ( $banner_identifiers as $b_sel ) {
-                if ( strpos( $sel, $b_sel ) !== false ) {
-                    $is_banner = true;
-                    break;
-                }
-            }
-
-            if ( ! empty( $el_cfg['styles'] ) && is_array( $el_cfg['styles'] ) ) {
-                foreach ( $el_cfg['styles'] as $bucket => &$st ) {
-                    if ( is_array( $st ) ) {
-                        if ( $is_banner && ! empty( $st['hidden'] ) ) {
-                            unset( $st['hidden'] );
-                        }
-                        if ( ! empty( $st['hidden'] ) && ( strpos( $sel, 'path' ) !== false || strpos( $sel, 'svg' ) !== false || strpos( $sel, 'cls-' ) !== false ) ) {
-                            unset( $st['hidden'] );
-                        }
-                    }
-                }
-                unset( $st );
-            }
-
-            // Sanitiza customCss por elemento
             if ( ! empty( $el_cfg['customCss'] ) && is_string( $el_cfg['customCss'] ) ) {
                 $el_css = trim( $el_cfg['customCss'] );
                 if ( $el_css === 'Artboard 1' || ( strpos( $el_css, '{' ) === false && strpos( $el_css, '@' ) === false ) ) {
@@ -909,6 +874,12 @@ function odyssee_vb_render_admin_page() {
                                         <button type="button" id="ovb-btn-apply-selector" class="ovb-mini-btn">Selecionar</button>
                                     </div>
                                 </div>
+
+                                <div style="margin-top:10px;">
+                                    <button type="button" id="ovb-btn-delete-element" class="ovb-action-btn ovb-danger-btn" style="width:100%;background:#ef4444 !important;color:#ffffff !important;font-weight:700;padding:8px 12px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;" title="Apagar ou ocultar o elemento selecionado da página">
+                                        <i class="fas fa-trash-alt"></i> Apagar / Ocultar Elemento (Del)
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -1579,6 +1550,7 @@ function odyssee_vb_render_admin_page() {
                                     <button type="button" id="ovb-layer-act-lock" class="ovb-mini-btn" title="Trancar/Destrancar">🔒</button>
                                     <button type="button" id="ovb-layer-act-up" class="ovb-mini-btn" title="Subir Z-Index">⬆ ]</button>
                                     <button type="button" id="ovb-layer-act-down" class="ovb-mini-btn" title="Descer Z-Index">⬇ [</button>
+                                    <button type="button" id="ovb-layer-act-del" class="ovb-mini-btn" title="Apagar Elemento Selecionado (Del)" style="color:#f87171;background:rgba(239,68,68,0.2);border-color:rgba(239,68,68,0.5);">🗑️</button>
                                 </div>
 
                                 <div id="ovb-navigator-tree" class="ovb-tree-list ovb-ps-layers-panel"></div>
