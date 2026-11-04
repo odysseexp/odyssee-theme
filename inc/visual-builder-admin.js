@@ -475,7 +475,11 @@
 
         // Highlight selected row in Photoshop Layers panel
         $('.ovb-ps-layer-row').removeClass('is-selected');
-        $(`.ovb-ps-layer-row[data-sel="${CSS.escape(currentSelector)}"]`).addClass('is-selected');
+        if (currentSelector) {
+            $('.ovb-ps-layer-row').filter(function () {
+                return $(this).attr('data-sel') === currentSelector;
+            }).addClass('is-selected');
+        }
 
         // Sincroniza Aba de Texto (#tab-text)
         if (!$('#ovb-text-quick-pt').is(':focus')) {
@@ -1769,16 +1773,14 @@
                 }
                 case 'OVB_BANNER_FX_APPLIED': {
                     const sel = msg.selector || currentSelector;
-                    if (sel && msg.newInnerHtml) {
+                    if (sel) {
                         const rec = ensureElementRecord(sel);
-                        rec.content = rec.content || {};
-                        rec.content.innerHTML = msg.newInnerHtml;
-                        if (currentSnapshot && currentSnapshot.isCustomBlock && currentSnapshot.blockId && Array.isArray(state.blocks)) {
-                            const blk = state.blocks.find(b => b && b.id === currentSnapshot.blockId);
-                            if (blk) {
-                                if (!blk.content) blk.content = {};
-                                blk.content.html = msg.newInnerHtml;
-                            }
+                        rec.classes = rec.classes || [];
+                        if (msg.isBanner) {
+                            if (!rec.classes.includes('category-banner-wrapper')) rec.classes.push('category-banner-wrapper');
+                        } else {
+                            if (!rec.classes.includes('dg-item')) rec.classes.push('dg-item');
+                            if (!rec.classes.includes('dg-float-1')) rec.classes.push('dg-float-1');
                         }
                     }
                     pushHistory();

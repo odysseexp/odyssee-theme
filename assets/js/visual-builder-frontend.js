@@ -2055,7 +2055,7 @@
             if (el instanceof SVGElement) {
                 editableHtml = cleanClone.outerHTML || el.outerHTML || '';
                 if (el.tagName.toLowerCase() !== 'svg' && el.ownerSVGElement) {
-                    parentSvgSelector = buildUniqueSelector(el.ownerSVGElement) || '';
+                    parentSvgSelector = generateSelector(el.ownerSVGElement) || '';
                 }
             } else if (el.tagName === 'IMG') {
                 const imgSrc = el.getAttribute('src') || '';
@@ -2698,19 +2698,20 @@
 
         document.addEventListener('mousedown', (e) => {
             if (isInteractiveMode || !dragModeEnabled || e.button !== 0) return;
-            const target = e.target;
+            let target = e.target;
+            if (!target) return;
+            if (target.nodeType === 3) target = target.parentElement;
             if (!target || target === document.body || target === document.documentElement) return;
-            if (target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar')) return;
+            if (target.closest && target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar, .ovb-lightbox-overlay')) return;
 
             let elToAct = target;
             const svgGroup = target.closest && target.closest('g.dg-item[id]');
-            if (svgGroup && selectedElement !== target) {
+            if (svgGroup && selectedElement !== svgGroup && selectedElement !== target) {
                 elToAct = svgGroup;
             }
 
             selectElement(elToAct, false);
             startDraggingElement(e, elToAct);
-            e.preventDefault();
         }, true);
 
         // --- 8-POINT RESIZE HANDLES ENGINE (With Aspect Ratio Lock so it never stretches accidentally!) ---
@@ -3033,9 +3034,11 @@
         // Prevent accidental click navigation when in Editor Mode & Guarantee Element Selection on Click
         document.addEventListener('click', (e) => {
             if (isInteractiveMode) return;
-            const target = e.target;
+            let target = e.target;
+            if (!target) return;
+            if (target.nodeType === 3) target = target.parentElement;
             if (!target || target === document.body || target === document.documentElement) return;
-            if (target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar, .ovb-lightbox-overlay')) return;
+            if (target.closest && target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar, .ovb-lightbox-overlay')) return;
             e.preventDefault();
             e.stopPropagation();
 
@@ -3044,9 +3047,7 @@
             if (svgGroup && selectedElement !== svgGroup && selectedElement !== target) {
                 elToAct = svgGroup;
             }
-            if (selectedElement !== elToAct) {
-                selectElement(elToAct, false);
-            }
+            selectElement(elToAct, false);
         }, true);
 
         // Floating Badge Action Buttons
@@ -3154,9 +3155,11 @@
         // Hover Highlight
         document.addEventListener('mouseover', (e) => {
             if (isInteractiveMode || dragState) return;
-            const target = e.target;
+            let target = e.target;
+            if (!target) return;
+            if (target.nodeType === 3) target = target.parentElement;
             if (!target || target === document.body || target === document.documentElement) return;
-            if (target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar')) return;
+            if (target.closest && target.closest('#ovb-Floating-Badge, #ovb-Hover-Badge, #ovb-Selection-Box, #wpadminbar')) return;
 
             if (hoveredElement && hoveredElement !== target) {
                 hoveredElement.removeAttribute('data-ovb-hover');
@@ -3276,20 +3279,37 @@
                                 svg.setAttribute('viewBox', '0 0 1920 760');
                             }
 
-                            // Equip children items with .dg-item and staggered floating animations
-                            const floatPresets = ['dg-float-1', 'dg-float-2', 'dg-float-3', 'dg-float-sway', 'dg-float-top', 'dg-center-palette', 'dg-center-logo'];
-                            const children = Array.from(svg.querySelectorAll('g[id], path[id], g.dg-item, .dg-anim-wrap > g, svg > g'));
-                            children.forEach((item, idx) => {
+                            // Equip only decorative leaf elements with .dg-item and gentle floating animations
+                            // Panels, timelines, tool windows, and workspace backgrounds stay completely anchored!
+                            const panelBlacklist = /^(Layer_1|bg|background|timeline|_1|_2|_3|_3_copy|comp|align|align_copy|Layer_27|Layer_16|Layer_16_copy|toggle|toggle-2|t|icon-43|icon-16|icon-21|icon-23|icon-24|artboard|frame|window|workspace|track|grid)/i;
+                            const floatPresets = ['dg-float-1', 'dg-float-2', 'dg-float-3'];
+
+                            const allItems = Array.from(svg.querySelectorAll('g[id], path[id], g.dg-item, svg > g'));
+                            const candidates = allItems.filter(item => {
+                                const id = item.id || '';
+                                if (panelBlacklist.test(id)) return false;
+                                // Exclude if item contains child groups with IDs to avoid nested matrix transforms
+                                if (item.querySelector && item.querySelector('g[id]')) return false;
+                                try {
+                                    const bb = item.getBBox();
+                                    if (bb && (bb.width > 500 || bb.height > 450)) return false;
+                                } catch (e) {}
+                                return true;
+                            });
+
+                            candidates.forEach((item, idx) => {
                                 item.classList.add('dg-item');
-                                floatPresets.forEach(fp => item.classList.remove(fp));
+                                ['dg-float-1', 'dg-float-2', 'dg-float-3', 'dg-float-sway', 'dg-float-top', 'dg-center-palette', 'dg-center-logo'].forEach(fp => item.classList.remove(fp));
                                 item.classList.add(floatPresets[idx % floatPresets.length]);
 
                                 if (['#000000', '#000', 'black'].includes(item.getAttribute('fill'))) {
                                     item.setAttribute('fill', 'currentColor');
                                 }
-                                item.querySelectorAll('[fill="#000000"], [fill="#000"], [fill="black"]').forEach(child => {
-                                    child.setAttribute('fill', 'currentColor');
-                                });
+                                if (item.querySelectorAll) {
+                                    item.querySelectorAll('[fill="#000000"], [fill="#000"], [fill="black"]').forEach(child => {
+                                        child.setAttribute('fill', 'currentColor');
+                                    });
+                                }
                             });
 
                             svg.querySelectorAll('[fill="#000000"], [fill="#000"], [fill="black"]').forEach(p => {
@@ -3305,13 +3325,13 @@
                             window.parent.postMessage({
                                 type: 'OVB_BANNER_FX_APPLIED',
                                 selector: sel,
-                                isBanner: true,
-                                newInnerHtml: (el.tagName.toLowerCase() === 'svg' ? el.outerHTML : el.innerHTML)
+                                isBanner: true
                             }, '*');
                         }
                     } else {
                         // Individual SVG element
                         el.classList.add('dg-item', 'dg-float-1');
+                        ['dg-float-2', 'dg-float-3', 'dg-float-sway', 'dg-float-top', 'dg-center-palette', 'dg-center-logo'].forEach(fp => el.classList.remove(fp));
                         if (['#000000', '#000', 'black'].includes(el.getAttribute('fill'))) {
                             el.setAttribute('fill', 'currentColor');
                         }
