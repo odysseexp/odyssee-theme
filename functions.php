@@ -6,7 +6,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once get_template_directory() . '/inc/cv-admin.php';
 require_once get_template_directory() . '/inc/faq-admin.php';
-require_once get_template_directory() . '/inc/visual-builder.php';
 
 function odyssee_generate_csp_nonce() {
     if ( ! defined( 'ODYSSEE_CSP_NONCE' ) ) {
@@ -231,15 +230,9 @@ function odyssee_sanitize_data_urls_recursive( $data ) {
     return $data;
 }
 
-// Filtra opções do Visual Studio antes de salvar no banco e ao carregar do banco
-add_filter( 'pre_update_option_odyssee_visual_builder_data', 'odyssee_sanitize_data_urls_recursive', 99 );
-add_filter( 'pre_update_option_odyssee_visual_builder_presets', 'odyssee_sanitize_data_urls_recursive', 99 );
-add_filter( 'option_odyssee_visual_builder_data', 'odyssee_sanitize_data_urls_recursive', 99 );
-add_filter( 'option_odyssee_visual_builder_presets', 'odyssee_sanitize_data_urls_recursive', 99 );
-
 function odyssee_scripts() {
     
-    $theme_version = '26.11.04';
+    $theme_version = '26.11.05';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 

@@ -2100,11 +2100,11 @@ function initHeroTilt() {
 }
 
 function initBannerParallax() {
-    const banners = document.querySelectorAll('.category-banner-wrapper, .ovb-svg-png-banner');
+    const banners = document.querySelectorAll('.category-banner-wrapper');
     if (!banners.length) return;
     banners.forEach(banner => {
-        if (banner.dataset.ovbParallaxActive === 'true') return;
-        banner.dataset.ovbParallaxActive = 'true';
+        if (banner.dataset.parallaxActive === 'true') return;
+        banner.dataset.parallaxActive = 'true';
         let ticking = false;
         banner.addEventListener('mousemove', (e) => {
             if (!ticking) {
@@ -2135,7 +2135,7 @@ function initBannerParallax() {
 }
 
 function initCategoryBannerAnimations() {
-    const banners = document.querySelectorAll('.category-banner-wrapper, .ovb-svg-png-banner');
+    const banners = document.querySelectorAll('.category-banner-wrapper');
     if (!banners.length) return;
 
     banners.forEach(b => {
