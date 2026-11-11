@@ -232,7 +232,7 @@ function odyssee_sanitize_data_urls_recursive( $data ) {
 
 function odyssee_scripts() {
     
-    $theme_version = '26.11.05';
+    $theme_version = '26.11.06';
 
     wp_enqueue_style( 'odyssee-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
